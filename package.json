@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "description": "Package versioning for monorepos",
   "scripts": {
+    "prettier": "prettier . --write",
     "test": "mocha src/*/*.spec.js"
   },
   "repository": {
@@ -15,6 +16,12 @@
     "url": "https://github.com/eemeli/version/issues"
   },
   "homepage": "https://github.com/eemeli/version#readme",
+  "prettier": {
+    "arrowParens": "avoid",
+    "semi": false,
+    "singleQuote": true,
+    "trailingComma": "none"
+  },
   "dependencies": {
     "lodash": "^4.17.21",
     "through2": "^4.0.2",
@@ -22,6 +29,7 @@
   },
   "devDependencies": {
     "chai": "^4.3.4",
-    "mocha": "^8.3.2"
+    "mocha": "^8.3.2",
+    "prettier": "^2.2.1"
   }
 }
