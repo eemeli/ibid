@@ -90,24 +90,11 @@ function parser(raw, options, regex) {
 
   let continueNote = false
   let isBody = true
-  const headerCorrespondence = _.map(
-    options.headerCorrespondence,
-    function (part) {
-      return part.trim()
-    }
-  )
-  const revertCorrespondence = _.map(
-    options.revertCorrespondence,
-    function (field) {
-      return field.trim()
-    }
-  )
-  const mergeCorrespondence = _.map(
-    options.mergeCorrespondence,
-    function (field) {
-      return field.trim()
-    }
-  )
+  const {
+    headerCorrespondence,
+    revertCorrespondence,
+    mergeCorrespondence
+  } = options
 
   let body = null
   let footer = null
