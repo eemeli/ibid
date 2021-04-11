@@ -32,5 +32,9 @@
   },
   "engines": {
     "node": ">= 12"
+  },
+  "dependencies": {
+    "lodash": "^4.17.21",
+    "modify-values": "^1.0.1"
   }
 }
