@@ -11,23 +11,16 @@ function checkRef(ref) {
 
 function parseCommit(src) {
   const headMatch = src.match(
-    /^([0-9a-f]+)( \(.*\))?\s+Author:\s*(.*?)\s+Date:\s*(\d+)\s+\n/
+    /^([0-9a-f]+)\s+(?:Merge:.*\s+)?Author:\s*(.*?)\s+Date:\s*(\d+)\s+\n/
   )
   if (!headMatch) {
     if (src.trim()) throw new Error(`Malformed git commit:\ncommit ${src}`)
     return null
   }
-  const [head, hash, tagSrc, author, dateSrc] = headMatch
-  const tags = tagSrc
-    ? tagSrc
-        .slice(2, -1)
-        .split(', ')
-        .filter(tag => tag.startsWith('tag: '))
-        .map(tag => tag.substring(5))
-    : []
+  const [head, hash, author, dateSrc] = headMatch
   const date = new Date(Number(dateSrc) * 1000)
   const message = src.substring(head.length).replace(/^ {4}/gm, '').trimEnd()
-  return { hash, tags, author, date, message }
+  return { hash, author, date, message }
 }
 
 async function gitLog(from, to, { path } = {}) {
@@ -36,9 +29,9 @@ async function gitLog(from, to, { path } = {}) {
   const args = [
     'log',
     '--date=unix',
-    '--decorate=short',
     '--format=medium',
-    '--no-color'
+    '--no-color',
+    '--no-decorate'
   ]
   const range = from ? `${from}..${to || ''}` : to
   if (range) args.push(range)
