@@ -1,7 +1,7 @@
 'use strict'
 const { expect } = require('chai')
 const { beforeEach, describe, it } = require('mocha')
-const parse = require('./index')
+const parseMessage = require('./index')
 
 describe('parser', function () {
   let options
@@ -29,7 +29,7 @@ describe('parser', function () {
       ]
     }
 
-    msg = parse(
+    msg = parseMessage(
       'feat(scope): broadcast $destroy event on scope destruction\n' +
         'perf testing shows that in chrome this change adds 5-15% overhead\n' +
         'when destroying 10k nested scopes where each scope has a $destroy listener\n' +
@@ -41,7 +41,7 @@ describe('parser', function () {
       options
     )
 
-    longNoteMsg = parse(
+    longNoteMsg = parseMessage(
       'feat(scope): broadcast $destroy event on scope destruction\n' +
         'perf testing shows that in chrome this change adds 5-15% overhead\n' +
         'when destroying 10k nested scopes where each scope has a $destroy listener\n' +
@@ -54,14 +54,14 @@ describe('parser', function () {
       options
     )
 
-    simpleMsg = parse('chore: some chore\n', options)
+    simpleMsg = parseMessage('chore: some chore\n', options)
 
-    headerOnlyMsg = parse('header', options)
+    headerOnlyMsg = parseMessage('header', options)
   })
 
   it('should trim extra newlines', function () {
     expect(
-      parse(
+      parseMessage(
         '\n\n\n\n\n\n\nfeat(scope): broadcast $destroy event on scope destruction\n\n\n' +
           '\n\n\nperf testing shows that in chrome this change adds 5-15% overhead\n' +
           '\n\n\nwhen destroying 10k nested scopes where each scope has a $destroy listener\n\n' +
@@ -116,7 +116,7 @@ describe('parser', function () {
 
   it('should keep spaces', function () {
     expect(
-      parse(
+      parseMessage(
         ' feat(scope): broadcast $destroy event on scope destruction \n' +
           ' perf testing shows that in chrome this change adds 5-15% overhead \n\n' +
           ' when destroying 10k nested scopes where each scope has a $destroy listener \n' +
@@ -162,7 +162,7 @@ describe('parser', function () {
 
   it('should ignore gpg signature lines', function () {
     expect(
-      parse(
+      parseMessage(
         'gpg: Signature made Thu Oct 22 12:19:30 2020 EDT\n' +
           'gpg:                using RSA key ABCDEF1234567890\n' +
           'gpg: Good signature from "Author <author@example.com>" [ultimate]\n' +
@@ -206,7 +206,7 @@ describe('parser', function () {
   it('should ignore comments according to commentChar', function () {
     const commentOptions = Object.assign({}, options, { commentChar: '#' })
 
-    expect(parse('# comment', commentOptions)).to.eql({
+    expect(parseMessage('# comment', commentOptions)).to.eql({
       merge: null,
       header: null,
       body: null,
@@ -220,7 +220,7 @@ describe('parser', function () {
       type: null
     })
 
-    expect(parse(' # non-comment', commentOptions)).to.eql({
+    expect(parseMessage(' # non-comment', commentOptions)).to.eql({
       merge: null,
       header: ' # non-comment',
       body: null,
@@ -234,7 +234,7 @@ describe('parser', function () {
       type: null
     })
 
-    expect(parse('header\n# comment\n\nbody', commentOptions)).to.eql({
+    expect(parseMessage('header\n# comment\n\nbody', commentOptions)).to.eql({
       merge: null,
       header: 'header',
       body: 'body',
@@ -252,7 +252,7 @@ describe('parser', function () {
   it('should respect commentChar config', function () {
     const commentOptions = Object.assign({}, options, { commentChar: '*' })
 
-    expect(parse('* comment', commentOptions)).to.eql({
+    expect(parseMessage('* comment', commentOptions)).to.eql({
       merge: null,
       header: null,
       body: null,
@@ -266,7 +266,7 @@ describe('parser', function () {
       type: null
     })
 
-    expect(parse('# non-comment', commentOptions)).to.eql({
+    expect(parseMessage('# non-comment', commentOptions)).to.eql({
       merge: null,
       header: '# non-comment',
       body: null,
@@ -280,7 +280,7 @@ describe('parser', function () {
       type: null
     })
 
-    expect(parse(' * non-comment', commentOptions)).to.eql({
+    expect(parseMessage(' * non-comment', commentOptions)).to.eql({
       merge: null,
       header: ' * non-comment',
       body: null,
@@ -294,7 +294,7 @@ describe('parser', function () {
       type: null
     })
 
-    expect(parse('header\n* comment\n\nbody', commentOptions)).to.eql({
+    expect(parseMessage('header\n* comment\n\nbody', commentOptions)).to.eql({
       merge: null,
       header: 'header',
       body: 'body',
@@ -310,7 +310,7 @@ describe('parser', function () {
   })
 
   it('should truncate from scissors line', function () {
-    const msg = parse(
+    const msg = parseMessage(
       'this is some header before a scissors-line\n' +
         '# ------------------------ >8 ------------------------\n' +
         'this is a line that should be truncated\n',
@@ -320,7 +320,7 @@ describe('parser', function () {
   })
 
   it('should keep header before scissor line', function () {
-    const msg = parse(
+    const msg = parseMessage(
       'this is some header before a scissors-line\n' +
         '# ------------------------ >8 ------------------------\n' +
         'this is a line that should be truncated\n',
@@ -330,7 +330,7 @@ describe('parser', function () {
   })
 
   it('should keep body before scissor line', function () {
-    const msg = parse(
+    const msg = parseMessage(
       'this is some subject before a scissors-line\n' +
         'this is some body before a scissors-line\n' +
         '# ------------------------ >8 ------------------------\n' +
@@ -349,7 +349,7 @@ describe('parser', function () {
         mergeCorrespondence: ['issueId', 'source']
       }
 
-      const msg = parse(
+      const msg = parseMessage(
         '@Steve\n' +
           '@conventional-changelog @someone' +
           '\n' +
@@ -375,7 +375,10 @@ describe('parser', function () {
       mergeCorrespondence: ['source', 'issueId']
     }
 
-    const mergeMsg = parse("Merge branch 'feature'\nHEADER", mergeOptions)
+    const mergeMsg = parseMessage(
+      "Merge branch 'feature'\nHEADER",
+      mergeOptions
+    )
 
     it('should parse merge header in merge commit', function () {
       expect(mergeMsg.source).to.equal('feature')
@@ -389,7 +392,7 @@ describe('parser', function () {
       mergeCorrespondence: ['issueId', 'source']
     }
 
-    const githubMsg = parse(
+    const githubMsg = parseMessage(
       'Merge pull request #1 from user/feature/feature-name\n' +
         '\n' +
         'feat(scope): broadcast $destroy event on scope destruction\n' +
@@ -428,7 +431,7 @@ describe('parser', function () {
       mergeCorrespondence: ['source']
     }
 
-    const gitlabMsg = parse(
+    const gitlabMsg = parseMessage(
       "Merge branch 'feature/feature-name' into 'master'\r\n" +
         '\r\n' +
         'feat(scope): broadcast $destroy event on scope destruction\r\n' +
@@ -462,7 +465,7 @@ describe('parser', function () {
     })
 
     it('Should parse header if merge header is missing', function () {
-      const msgWithoutmergeHeader = parse(
+      const msgWithoutmergeHeader = parseMessage(
         'feat(scope): broadcast $destroy event on scope destruction',
         githubOptions
       )
@@ -475,7 +478,7 @@ describe('parser', function () {
     })
 
     it('Should not parse conventional header if pull request header present and mergePattern is not set', function () {
-      const msgWithmergeHeaderWithoutmergePattern = parse(
+      const msgWithmergeHeaderWithoutmergePattern = parseMessage(
         'Merge pull request #1 from user/feature/feature-name\n' +
           'feat(scope): broadcast $destroy event on scope destruction',
         options
@@ -486,13 +489,13 @@ describe('parser', function () {
     })
 
     it('does not throw if merge commit has no header', () => {
-      parse("Merge branch 'feature'", mergeOptions)
+      parseMessage("Merge branch 'feature'", mergeOptions)
     })
   })
 
   describe('header', function () {
     it('should allow ":" in scope', function () {
-      const msg = parse('feat(ng:list): Allow custom separator', {
+      const msg = parseMessage('feat(ng:list): Allow custom separator', {
         headerPattern: /^(\w*)(?:\(([:\w$.\-* ]*)\))?: (.*)$/,
         headerCorrespondence: ['type', 'scope', 'subject']
       })
@@ -520,7 +523,7 @@ describe('parser', function () {
     })
 
     it('should allow correspondence to be changed', function () {
-      const msg = parse('scope(my subject): fix this', {
+      const msg = parseMessage('scope(my subject): fix this', {
         headerPattern: /^(\w*)(?:\(([\w$.\-* ]*)\))?: (.*)$/,
         headerCorrespondence: ['scope', 'subject', 'type']
       })
@@ -531,7 +534,7 @@ describe('parser', function () {
     })
 
     it('should be `null` if it is missing in `options.headerCorrespondence`', function () {
-      msg = parse('scope(my subject): fix this', {
+      msg = parseMessage('scope(my subject): fix this', {
         headerPattern: /^(\w*)(?:\(([\w$.\-* ]*)\))?: (.*)$/,
         headerCorrespondence: ['scop', 'subject']
       })
@@ -540,7 +543,7 @@ describe('parser', function () {
     })
 
     it('should reference an issue with an owner', function () {
-      const msg = parse('handled angular/angular.js#1', options)
+      const msg = parseMessage('handled angular/angular.js#1', options)
       expect(msg.references).to.eql([
         {
           action: 'handled',
@@ -554,7 +557,7 @@ describe('parser', function () {
     })
 
     it('should reference an issue with a repository', function () {
-      const msg = parse('handled angular.js#1', options)
+      const msg = parseMessage('handled angular.js#1', options)
       expect(msg.references).to.eql([
         {
           action: 'handled',
@@ -568,7 +571,7 @@ describe('parser', function () {
     })
 
     it('should reference an issue without both', function () {
-      const msg = parse('handled gh-1', options)
+      const msg = parseMessage('handled gh-1', options)
       expect(msg.references).to.eql([
         {
           action: 'handled',
@@ -592,7 +595,7 @@ describe('parser', function () {
         issuePrefixes: ['#', 'gh-']
       }
 
-      const msg = parse('This is gh-1', options)
+      const msg = parseMessage('This is gh-1', options)
       expect(msg.references).to.eql([
         {
           action: null,
@@ -661,7 +664,7 @@ describe('parser', function () {
         'nesting elements or using `<template>` tags explicitly.'
       const text = expectedText + '\n' + 'Closes #9462'
       options.noteKeywords = ['BREAKING CHANGE']
-      const msg = parse(
+      const msg = parseMessage(
         'fix(core): report duplicate template bindings in templates\n' +
           '\n' +
           'Fixes #7315\n' +
@@ -685,7 +688,7 @@ describe('parser', function () {
 
     it('should not treat it as important notes if there are texts after `noteKeywords`', function () {
       options.noteKeywords = ['BREAKING CHANGE']
-      const msg = parse(
+      const msg = parseMessage(
         'fix(core): report duplicate template bindings in templates\n' +
           '\n' +
           'Fixes #7315\n' +
@@ -789,7 +792,7 @@ describe('parser', function () {
         issuePrefixes: ['#', 'gh-']
       }
 
-      const msg = parse(
+      const msg = parseMessage(
         'feat(scope): broadcast $destroy event on scope destruction\n' +
           'perf testing shows that in chrome this change adds 5-15% overhead\n' +
           'when destroying 10k nested scopes where each scope has a $destroy listener\n' +
@@ -853,7 +856,7 @@ describe('parser', function () {
     })
 
     it('should put everything after references in footer', function () {
-      const msg = parse(
+      const msg = parseMessage(
         'feat(scope): broadcast $destroy event on scope destruction\n' +
           'perf testing shows that in chrome this change adds 5-15% overhead\n' +
           'when destroying 10k nested scopes where each scope has a $destroy listener\n' +
@@ -871,7 +874,7 @@ describe('parser', function () {
     })
 
     it('should parse properly if important notes comes after references', function () {
-      const msg = parse(
+      const msg = parseMessage(
         'feat(scope): broadcast $destroy event on scope destruction\n' +
           'perf testing shows that in chrome this change adds 5-15% overhead\n' +
           'when destroying 10k nested scopes where each scope has a $destroy listener\n' +
@@ -907,7 +910,7 @@ describe('parser', function () {
     })
 
     it('should parse properly if important notes comes with more than one paragraphs after references', function () {
-      const msg = parse(
+      const msg = parseMessage(
         'feat(scope): broadcast $destroy event on scope destruction\n' +
           'perf testing shows that in chrome this change adds 5-15% overhead\n' +
           'when destroying 10k nested scopes where each scope has a $destroy listener\n' +
@@ -943,7 +946,7 @@ describe('parser', function () {
     })
 
     it('should parse properly if important notes comes after references', function () {
-      const msg = parse(
+      const msg = parseMessage(
         'feat(scope): broadcast $destroy event on scope destruction\n' +
           'perf testing shows that in chrome this change adds 5-15% overhead\n' +
           'when destroying 10k nested scopes where each scope has a $destroy listener\n' +
@@ -985,7 +988,7 @@ describe('parser', function () {
         breakingHeaderPattern: /^(\w*)(?:\((.*)\))?!: (.*)$/,
         headerCorrespondence: ['type', 'scope', 'subject']
       }
-      const msg = parse('feat!: breaking change feature', options)
+      const msg = parseMessage('feat!: breaking change feature', options)
       expect(msg.notes[0]).to.eql({
         title: 'BREAKING CHANGE',
         text: 'breaking change feature'
@@ -999,7 +1002,7 @@ describe('parser', function () {
         headerCorrespondence: ['type', 'scope', 'subject'],
         noteKeywords: ['BREAKING AMEND']
       }
-      const msg = parse(
+      const msg = parseMessage(
         'feat!: breaking change feature\nBREAKING AMEND: some breaking change',
         options
       )
@@ -1013,7 +1016,7 @@ describe('parser', function () {
 
   describe('others', function () {
     it('should parse hash', function () {
-      msg = parse(
+      msg = parseMessage(
         'My commit message\n' +
           '-hash-\n' +
           '9b1aff905b638aa274a5fc8f88662df446d374bd',
@@ -1024,7 +1027,7 @@ describe('parser', function () {
     })
 
     it('should parse sideNotes', function () {
-      msg = parse(
+      msg = parseMessage(
         'My commit message\n' +
           '-sideNotes-\n' +
           'It should warn the correct unfound file names.\n' +
@@ -1041,7 +1044,7 @@ describe('parser', function () {
     })
 
     it('should parse committer name and email', function () {
-      msg = parse(
+      msg = parseMessage(
         'My commit message\n' +
           '-committerName-\n' +
           'Steve Mao\n' +
@@ -1057,7 +1060,7 @@ describe('parser', function () {
 
   describe('revert', function () {
     it('should parse revert', function () {
-      msg = parse(
+      msg = parseMessage(
         'Revert "throw an error if a callback is passed to animate methods"\n\n' +
           'This reverts commit 9bb4d6ccbe80b7704c6b7f53317ca8146bc103ca.',
         options
@@ -1070,7 +1073,7 @@ describe('parser', function () {
     })
 
     it('should parse revert even if a field is missing', function () {
-      msg = parse('Revert ""\n\n' + 'This reverts commit .', options)
+      msg = parseMessage('Revert ""\n\n' + 'This reverts commit .', options)
 
       expect(msg.revert).to.eql({
         header: null,

@@ -82,7 +82,7 @@ function getOptions({
   }
 }
 
-function parse(commit, options) {
+function parseMessage(commit, options) {
   if (typeof commit !== 'string' || !commit.trim())
     throw new TypeError('Expected a raw commit')
 
@@ -90,4 +90,4 @@ function parse(commit, options) {
   return parser(commit, parserOpt, regex(regexOpt))
 }
 
-module.exports = parse
+module.exports = parseMessage

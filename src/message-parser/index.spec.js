@@ -2,15 +2,15 @@
 const { describe, it } = require('mocha')
 const { expect } = require('chai')
 
-const parse = require('./index')
+const parseMessage = require('./index')
 
-describe('parse()', () => {
+describe('parseMessage()', () => {
   it('should work', () => {
     const commit =
       'feat(ng-list): Allow custom separator\n' +
       'bla bla bla\n\n' +
       'Closes #123\nCloses #25\nFixes #33\n'
-    const result = parse(commit)
+    const result = parseMessage(commit)
 
     expect(result.header).to.equal('feat(ng-list): Allow custom separator')
     expect(result.footer).to.equal('Closes #123\nCloses #25\nFixes #33')
@@ -67,17 +67,19 @@ describe('parse()', () => {
         'd7a40a29214f37d469e57d730dfd042b639d4d1f'
     ]
 
-    expect(parse(commits[0]).header).to.equal(
+    expect(parseMessage(commits[0]).header).to.equal(
       'feat(ng-list): Allow custom separator'
     )
-    expect(parse(commits[1]).notes).to.eql([
+    expect(parseMessage(commits[1]).notes).to.eql([
       { title: 'BREAKING CHANGE', text: 'some breaking change' }
     ])
-    expect(parse(commits[2]).header).to.equal('fix(zzz): Very cool commit')
-    expect(parse(commits[3]).header).to.equal(
+    expect(parseMessage(commits[2]).header).to.equal(
+      'fix(zzz): Very cool commit'
+    )
+    expect(parseMessage(commits[3]).header).to.equal(
       'chore(scope with spaces): some chore'
     )
-    expect(parse(commits[4]).revert).to.eql({
+    expect(parseMessage(commits[4]).revert).to.eql({
       header: 'throw an error if a callback is passed to animate methods',
       hash: '9bb4d6ccbe80b7704c6b7f53317ca8146bc103ca'
     })
@@ -101,7 +103,7 @@ describe('parse()', () => {
         referenceActions: ['fix']
       }
 
-      let chunk = parse(commits[0], options)
+      let chunk = parseMessage(commits[0], options)
       expect(chunk.type).to.equal('feat')
       expect(chunk.scope).to.equal('ng-list')
       expect(chunk.subject).to.equal('Allow custom separator')
@@ -132,7 +134,7 @@ describe('parse()', () => {
         }
       ])
 
-      chunk = parse(commits[1], options)
+      chunk = parseMessage(commits[1], options)
       expect(chunk.type).to.equal('fix')
       expect(chunk.scope).to.equal('ng-list')
       expect(chunk.subject).to.equal('Another custom separator')
@@ -171,7 +173,7 @@ describe('parse()', () => {
         revertCorrespondence: ' header'
       }
 
-      let chunk = parse(commits[0], options)
+      let chunk = parseMessage(commits[0], options)
       expect(chunk.subject).to.equal('feat')
       expect(chunk.type).to.equal('ng-list')
       expect(chunk.scope).to.equal('Allow custom separator')
@@ -202,7 +204,7 @@ describe('parse()', () => {
         }
       ])
 
-      chunk = parse(commits[1], options)
+      chunk = parseMessage(commits[1], options)
       expect(chunk.type).to.equal('ng-list')
       expect(chunk.scope).to.equal('Another custom separator')
       expect(chunk.subject).to.equal('fix')
@@ -211,11 +213,11 @@ describe('parse()', () => {
         text: 'some breaking changes'
       })
 
-      chunk = parse(commits[2], options)
+      chunk = parseMessage(commits[2], options)
       expect(chunk.header).to.equal('blabla')
       expect(chunk.hash).to.equal('9b1aff905b638aa274a5fc8f88662df446d374bd')
 
-      chunk = parse(commits[3], options)
+      chunk = parseMessage(commits[3], options)
       expect(chunk.revert.header).to.equal(
         'throw an error if a callback is passed to animate methods'
       )
@@ -224,7 +226,7 @@ describe('parse()', () => {
 
   describe('header', () => {
     it('should parse references from header', () => {
-      const result = parse('Subject #1')
+      const result = parseMessage('Subject #1')
 
       expect(result.references).to.eql([
         {
@@ -239,7 +241,7 @@ describe('parse()', () => {
     })
 
     it('should parse slash in the header with default headerPattern option', () => {
-      const result = parse('feat(hello/world): message')
+      const result = parseMessage('feat(hello/world): message')
 
       expect(result.type).to.equal('feat')
       expect(result.scope).to.equal('hello/world')
@@ -250,9 +252,9 @@ describe('parse()', () => {
 
 describe('errors', () => {
   it('should throw if nothing to parse', () => {
-    expect(() => parse()).to.throw('Expected a raw commit')
-    expect(() => parse('\n')).to.throw('Expected a raw commit')
-    expect(() => parse(' ')).to.throw('Expected a raw commit')
+    expect(() => parseMessage()).to.throw('Expected a raw commit')
+    expect(() => parseMessage('\n')).to.throw('Expected a raw commit')
+    expect(() => parseMessage(' ')).to.throw('Expected a raw commit')
   })
 
   it('should ignore malformed commits', () => {
@@ -260,10 +262,11 @@ describe('errors', () => {
       'chore(scope with spaces): some chore\n',
       'fix(zzz): Very cool commit\n' + 'bla bla bla\n\n'
     ]
-    for (const commit of commits) expect(() => parse(commit)).not.to.throw()
+    for (const commit of commits)
+      expect(() => parseMessage(commit)).not.to.throw()
   })
 
   it('should throw error for an empty commit', () => {
-    expect(() => parse(' \n\n')).to.throw('Expected a raw commit')
+    expect(() => parseMessage(' \n\n')).to.throw('Expected a raw commit')
   })
 })
