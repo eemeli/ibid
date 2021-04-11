@@ -3,7 +3,7 @@
 const isMatch = require('lodash/isMatch')
 const modifyValues = require('modify-values')
 
-function modifyValue (val) {
+function modifyValue(val) {
   if (typeof val === 'string') {
     return val.trim()
   }
@@ -11,7 +11,7 @@ function modifyValue (val) {
   return val
 }
 
-function conventionalCommitsFilter (commits) {
+function conventionalCommitsFilter(commits) {
   if (!Array.isArray(commits)) {
     throw new TypeError('Expected an array')
   }
@@ -31,7 +31,9 @@ function conventionalCommitsFilter (commits) {
   ret = ret.filter(function (commit) {
     let ignoreThis = false
 
-    commit = commit.raw ? modifyValues(commit.raw, modifyValue) : modifyValues(commit, modifyValue)
+    commit = commit.raw
+      ? modifyValues(commit.raw, modifyValue)
+      : modifyValues(commit, modifyValue)
 
     ignores.some(function (ignoreCommit) {
       const ignore = modifyValues(ignoreCommit.revert, modifyValue)
