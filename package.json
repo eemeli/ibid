@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "description": "Package versioning for monorepos",
   "scripts": {
+    "lint": "eslint src/",
     "prettier": "prettier . --write",
     "test": "mocha src/*/*.spec.js"
   },
@@ -29,6 +30,8 @@
   },
   "devDependencies": {
     "chai": "^4.3.4",
+    "eslint": "^7.24.0",
+    "eslint-config-prettier": "^8.1.0",
     "mocha": "^8.3.2",
     "prettier": "^2.2.1"
   }
