@@ -74,18 +74,6 @@ function passTrough() {
 }
 
 function parser(raw, options, regex) {
-  if (!raw || !raw.trim()) {
-    throw new TypeError('Expected a raw commit')
-  }
-
-  if (_.isEmpty(options)) {
-    throw new TypeError('Expected options')
-  }
-
-  if (_.isEmpty(regex)) {
-    throw new TypeError('Expected regex')
-  }
-
   let currentProcessedField
   let mentionsMatch
   const otherFields = {}

@@ -83,18 +83,6 @@ describe('parse()', () => {
     })
   })
 
-  it('should ignore malformed commits', () => {
-    const commits = [
-      'chore(scope with spaces): some chore\n',
-      'fix(zzz): Very cool commit\n' + 'bla bla bla\n\n'
-    ]
-    for (const commit of commits) expect(() => parse(commit)).not.to.throw()
-  })
-
-  it('should throw error for an empty commit', () => {
-    expect(() => parse(' \n\n')).to.throw('Expected a raw commit')
-  })
-
   describe('options', () => {
     it('should take options', () => {
       const commits = [
@@ -257,5 +245,25 @@ describe('parse()', () => {
       expect(result.scope).to.equal('hello/world')
       expect(result.subject).to.equal('message')
     })
+  })
+})
+
+describe('errors', () => {
+  it('should throw if nothing to parse', () => {
+    expect(() => parse()).to.throw('Expected a raw commit')
+    expect(() => parse('\n')).to.throw('Expected a raw commit')
+    expect(() => parse(' ')).to.throw('Expected a raw commit')
+  })
+
+  it('should ignore malformed commits', () => {
+    const commits = [
+      'chore(scope with spaces): some chore\n',
+      'fix(zzz): Very cool commit\n' + 'bla bla bla\n\n'
+    ]
+    for (const commit of commits) expect(() => parse(commit)).not.to.throw()
+  })
+
+  it('should throw error for an empty commit', () => {
+    expect(() => parse(' \n\n')).to.throw('Expected a raw commit')
   })
 })

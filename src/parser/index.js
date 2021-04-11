@@ -71,10 +71,11 @@ function assignOpts(options) {
 }
 
 function parse(commit, options) {
-  options = assignOpts(options)
-  const reg = regex(options)
+  if (typeof commit !== 'string' || !commit.trim())
+    throw new TypeError('Expected a raw commit')
 
-  return parser(commit, options, reg)
+  options = assignOpts(options)
+  return parser(commit, options, regex(options))
 }
 
 module.exports = parse

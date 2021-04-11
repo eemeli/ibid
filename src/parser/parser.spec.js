@@ -69,32 +69,6 @@ describe('parser', function () {
     headerOnlyMsg = parser('header', options, reg)
   })
 
-  it('should throw if nothing to parse', function () {
-    expect(function () {
-      parser()
-    }).to.throw('Expected a raw commit')
-    expect(function () {
-      parser('\n')
-    }).to.throw('Expected a raw commit')
-    expect(function () {
-      parser(' ')
-    }).to.throw('Expected a raw commit')
-  })
-
-  it('should throw if `options` is empty', function () {
-    expect(function () {
-      parser('bla bla')
-    }).to.throw('Expected options')
-  })
-
-  it('should throw if `regex` is empty', function () {
-    expect(function () {
-      parser('bla bla', {
-        headerPattern: /^(\w*)(?:\(([\w$.\-* ]*)\))?: (.*)$/
-      })
-    }).to.throw('Expected regex')
-  })
-
   it('should trim extra newlines', function () {
     expect(
       parser(
