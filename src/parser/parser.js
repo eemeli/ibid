@@ -9,50 +9,51 @@ const append = (src, line) => (src ? src + '\n' + line : line)
 // license: MIT
 const trimOffNewlines = str => str.replace(/^(\r?\n)+|(\r?\n)+$/g, '')
 
-const getCommentFilter = commentChar =>
-  commentChar ? line => line[0] !== commentChar : () => true
-
-function truncateToScissor(lines) {
+function getLines(raw, commentChar) {
+  let lines = trimOffNewlines(raw).split(/\r?\n/)
   const scissorIndex = lines.indexOf(SCISSOR)
-  return scissorIndex === -1 ? lines : lines.slice(0, scissorIndex)
+  if (scissorIndex !== -1) lines = lines.slice(0, scissorIndex)
+  if (commentChar) lines = lines.filter(line => line[0] !== commentChar)
+  return lines.filter(line => !line.match(/^\s*gpg:/))
 }
 
-function getReferences(input, regex) {
-  const references = []
+function getParts(match, correspondence) {
+  const res = {}
+  for (let i = 0; i < correspondence.length; ++i) {
+    const name = correspondence[i]
+    res[name] = match[i + 1] || null
+  }
+  return res
+}
 
-  const reApplicable =
-    input.match(regex.references) !== null ? regex.references : CATCH_ALL
+function getReferences(input, { references, referenceParts }) {
+  const res = []
 
-  let referenceSentences
-  while ((referenceSentences = reApplicable.exec(input))) {
-    const action = referenceSentences[1] || null
-    const sentence = referenceSentences[2]
+  const reApplicable = input.match(references) ? references : CATCH_ALL
 
-    let referenceMatch
-    while ((referenceMatch = regex.referenceParts.exec(sentence))) {
+  for (const [, action, sentence] of input.matchAll(reApplicable)) {
+    for (const [raw, _repository, prefix, issue] of sentence.matchAll(
+      referenceParts
+    )) {
       let owner = null
-      let repository = referenceMatch[1] || ''
+      let repository = _repository || ''
       const ownerRepo = repository.split('/')
-
       if (ownerRepo.length > 1) {
         owner = ownerRepo.shift()
         repository = ownerRepo.join('/')
       }
-
-      const reference = {
-        action,
+      res.push({
+        action: action || null,
         owner,
         repository: repository || null,
-        issue: referenceMatch[3],
-        raw: referenceMatch[0],
-        prefix: referenceMatch[2]
-      }
-
-      references.push(reference)
+        issue,
+        raw,
+        prefix
+      })
     }
   }
 
-  return references
+  return res
 }
 
 function parser(
@@ -70,99 +71,64 @@ function parser(
   },
   regex
 ) {
-  let currentProcessedField
-  const otherFields = {}
-  const commentFilter = getCommentFilter(commentChar)
-  const gpgFilter = line => !line.match(/^\s*gpg:/)
-
-  const rawLines = trimOffNewlines(raw).split(/\r?\n/)
-  const lines = truncateToScissor(rawLines)
-    .filter(commentFilter)
-    .filter(gpgFilter)
-
-  if (lines.length === 0) {
-    return {
-      body: null,
-      footer: null,
-      header: null,
-      mentions: [],
-      merge: null,
-      notes: [],
-      references: [],
-      revert: null,
-      scope: null,
-      subject: null,
-      type: null
-    }
+  const commit = {
+    body: null,
+    footer: null,
+    header: null,
+    mentions: [],
+    merge: null,
+    notes: [],
+    references: [],
+    revert: null,
+    scope: null,
+    subject: null,
+    type: null
   }
 
-  let header = null
-  let merge = lines.shift()
+  const lines = getLines(raw, commentChar)
+  if (lines.length === 0) return commit
 
-  // msg parts
-  const mergeParts = {}
-  const mergeMatch = merge.match(mergePattern)
+  // parse header
+  commit.header = lines.shift()
+  const mergeMatch = commit.header.match(mergePattern)
   if (mergeMatch && mergePattern) {
-    merge = mergeMatch[0]
-
-    header = lines.shift()
-    while (header !== undefined && !header.trim()) {
-      header = lines.shift()
-    }
-    if (!header) header = ''
-
-    for (let i = 0; i < mergeCorrespondence.length; ++i) {
-      const partName = mergeCorrespondence[i]
-      mergeParts[partName] = mergeMatch[i + 1] || null
-    }
+    let header = lines.shift()
+    while (header !== undefined && !header.trim()) header = lines.shift()
+    commit.header = header || ''
+    commit.merge = mergeMatch[0]
+    Object.assign(commit, getParts(mergeMatch, mergeCorrespondence))
   } else {
-    header = merge
-    merge = null
-
-    for (let i = 0; i < mergeCorrespondence.length; ++i) {
-      const partName = mergeCorrespondence[i]
-      mergeParts[partName] = null
-    }
+    for (const partName of mergeCorrespondence) commit[partName] = null
   }
 
-  const headerParts = {}
-  const headerMatch = header.match(headerPattern)
-  for (let i = 0; i < headerCorrespondence.length; ++i) {
-    const partName = headerCorrespondence[i]
-    headerParts[partName] = (headerMatch && headerMatch[i + 1]) || null
-  }
+  const headerMatch = commit.header.match(headerPattern)
+  if (headerMatch)
+    Object.assign(commit, getParts(headerMatch, headerCorrespondence))
+  else for (const partName of headerCorrespondence) commit[partName] = null
 
-  const references = getReferences(header, regex)
+  commit.references = getReferences(commit.header, regex)
 
-  // body or footer
+  // parse body & footer
   const body = []
   const footer = []
-  const notes = []
 
+  let currentField = null
   let continueNote = false
   let isBody = true
 
-  lines.forEach(line => {
+  for (const line of lines) {
     if (fieldPattern) {
       const fieldMatch = fieldPattern.exec(line)
-
       if (fieldMatch) {
-        currentProcessedField = fieldMatch[1]
-
-        return
+        currentField = fieldMatch[1]
+        continue
       }
 
-      if (currentProcessedField) {
-        otherFields[currentProcessedField] = append(
-          otherFields[currentProcessedField],
-          line
-        )
-
-        return
+      if (currentField) {
+        commit[currentField] = append(commit[currentField], line)
+        continue
       }
     }
-
-    let referenceMatched
 
     // this is a new important note
     const notesMatch = line.match(regex.notes)
@@ -175,80 +141,54 @@ function parser(
         title: notesMatch[1],
         text: notesMatch[2]
       }
-      notes.push(note)
-      return
+      commit.notes.push(note)
+      continue
     }
 
     const lineReferences = getReferences(line, regex)
     if (lineReferences.length > 0) {
       isBody = false
-      referenceMatched = true
       continueNote = false
-      Array.prototype.push.apply(references, lineReferences)
-    }
-
-    if (referenceMatched) {
+      Array.prototype.push.apply(commit.references, lineReferences)
       footer.push(line)
-      return
+      continue
     }
 
     if (continueNote) {
-      notes[notes.length - 1].text = append(notes[notes.length - 1].text, line)
+      const lastNote = commit.notes[commit.notes.length - 1]
+      lastNote.text = append(lastNote.text, line)
       footer.push(line)
-      return
+      continue
     }
 
     if (isBody) body.push(line)
     else footer.push(line)
-  })
+  }
 
-  if (breakingHeaderPattern && notes.length === 0) {
-    const breakingHeader = header.match(breakingHeaderPattern)
+  if (breakingHeaderPattern && commit.notes.length === 0) {
+    const breakingHeader = commit.header.match(breakingHeaderPattern)
     if (breakingHeader) {
-      const noteText = breakingHeader[3] // the description of the change.
-      notes.push({
-        title: 'BREAKING CHANGE',
-        text: noteText
-      })
+      commit.notes = [
+        {
+          title: 'BREAKING CHANGE',
+          text: breakingHeader[3] // the description of the change.
+        }
+      ]
     }
   }
 
-  const mentions = []
-  let mentionsMatch
-  while ((mentionsMatch = regex.mentions.exec(raw))) {
-    mentions.push(mentionsMatch[1])
-  }
+  if (body.length > 0) commit.body = trimOffNewlines(body.join('\n'))
+  if (footer.length > 0) commit.footer = trimOffNewlines(footer.join('\n'))
+  for (const note of commit.notes) note.text = trimOffNewlines(note.text)
+
+  for (const [, mention] of raw.matchAll(regex.mentions))
+    commit.mentions.push(mention)
 
   // does this commit revert any other commit?
-  let revert = null
   const revertMatch = raw.match(revertPattern)
-  if (revertMatch) {
-    revert = {}
-    for (let i = 0; i < revertCorrespondence.length; ++i) {
-      const partName = revertCorrespondence[i]
-      revert[partName] = revertMatch[i + 1] || null
-    }
-  }
+  if (revertMatch) commit.revert = getParts(revertMatch, revertCorrespondence)
 
-  for (const note of notes) note.text = trimOffNewlines(note.text)
-
-  const msg = Object.assign(
-    headerParts,
-    mergeParts,
-    {
-      merge,
-      header,
-      body: body.length > 0 ? trimOffNewlines(body.join('\n')) : null,
-      footer: footer.length > 0 ? trimOffNewlines(footer.join('\n')) : null,
-      notes,
-      references,
-      mentions,
-      revert
-    },
-    otherFields
-  )
-
-  return msg
+  return commit
 }
 
 module.exports = parser

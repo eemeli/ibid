@@ -530,13 +530,13 @@ describe('parser', function () {
       expect(msg.subject).to.equal('my subject')
     })
 
-    it('should be `undefined` if it is missing in `options.headerCorrespondence`', function () {
+    it('should be `null` if it is missing in `options.headerCorrespondence`', function () {
       msg = parse('scope(my subject): fix this', {
         headerPattern: /^(\w*)(?:\(([\w$.\-* ]*)\))?: (.*)$/,
         headerCorrespondence: ['scop', 'subject']
       })
 
-      expect(msg.scope).to.equal(undefined)
+      expect(msg.scope).to.equal(null)
     })
 
     it('should reference an issue with an owner', function () {
