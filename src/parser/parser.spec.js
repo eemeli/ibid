@@ -5,12 +5,10 @@ const describe = mocha.describe
 const it = mocha.it
 const beforeEach = mocha.beforeEach
 const _ = require('lodash')
-const parser = require('./parser')
-const regex = require('./regex')
+const parse = require('./index')
 
 describe('parser', function () {
   let options
-  let reg
   let msg
   let simpleMsg
   let longNoteMsg
@@ -35,9 +33,7 @@ describe('parser', function () {
       ]
     }
 
-    reg = regex(options)
-
-    msg = parser(
+    msg = parse(
       'feat(scope): broadcast $destroy event on scope destruction\n' +
         'perf testing shows that in chrome this change adds 5-15% overhead\n' +
         'when destroying 10k nested scopes where each scope has a $destroy listener\n' +
@@ -46,11 +42,10 @@ describe('parser', function () {
         'killed #25\n' +
         'handle #33, Closes #100, Handled #3 kills repo#77\n' +
         'kills stevemao/conventional-commits-parser#1',
-      options,
-      reg
+      options
     )
 
-    longNoteMsg = parser(
+    longNoteMsg = parse(
       'feat(scope): broadcast $destroy event on scope destruction\n' +
         'perf testing shows that in chrome this change adds 5-15% overhead\n' +
         'when destroying 10k nested scopes where each scope has a $destroy listener\n' +
@@ -60,18 +55,17 @@ describe('parser', function () {
         'Kills #1, #123\n' +
         'killed #25\n' +
         'handle #33, Closes #100, Handled #3',
-      options,
-      reg
+      options
     )
 
-    simpleMsg = parser('chore: some chore\n', options, reg)
+    simpleMsg = parse('chore: some chore\n', options)
 
-    headerOnlyMsg = parser('header', options, reg)
+    headerOnlyMsg = parse('header', options)
   })
 
   it('should trim extra newlines', function () {
     expect(
-      parser(
+      parse(
         '\n\n\n\n\n\n\nfeat(scope): broadcast $destroy event on scope destruction\n\n\n' +
           '\n\n\nperf testing shows that in chrome this change adds 5-15% overhead\n' +
           '\n\n\nwhen destroying 10k nested scopes where each scope has a $destroy listener\n\n' +
@@ -79,8 +73,7 @@ describe('parser', function () {
           '\n\n\n\nBREAKING AMEND: An awesome breaking change\n\n\n```\ncode here\n```' +
           '\n\nKills #1\n' +
           '\n\n\nkilled #25\n\n\n\n\n',
-        options,
-        reg
+        options
       )
     ).to.eql({
       merge: null,
@@ -127,15 +120,14 @@ describe('parser', function () {
 
   it('should keep spaces', function () {
     expect(
-      parser(
+      parse(
         ' feat(scope): broadcast $destroy event on scope destruction \n' +
           ' perf testing shows that in chrome this change adds 5-15% overhead \n\n' +
           ' when destroying 10k nested scopes where each scope has a $destroy listener \n' +
           '         BREAKING AMEND: some breaking change         \n\n' +
           '   BREAKING AMEND: An awesome breaking change\n\n\n```\ncode here\n```' +
           '\n\n    Kills   #1\n',
-        options,
-        reg
+        options
       )
     ).to.eql({
       merge: null,
@@ -174,7 +166,7 @@ describe('parser', function () {
 
   it('should ignore gpg signature lines', function () {
     expect(
-      parser(
+      parse(
         'gpg: Signature made Thu Oct 22 12:19:30 2020 EDT\n' +
           'gpg:                using RSA key ABCDEF1234567890\n' +
           'gpg: Good signature from "Author <author@example.com>" [ultimate]\n' +
@@ -183,8 +175,7 @@ describe('parser', function () {
           'when destroying 10k nested scopes where each scope has a $destroy listener\n' +
           'BREAKING AMEND: some breaking change\n' +
           'Kills #1\n',
-        options,
-        reg
+        options
       )
     ).to.eql({
       merge: null,
@@ -219,7 +210,7 @@ describe('parser', function () {
   it('should ignore comments according to commentChar', function () {
     const commentOptions = _.assign({}, options, { commentChar: '#' })
 
-    expect(parser('# comment', commentOptions, reg)).to.eql({
+    expect(parse('# comment', commentOptions)).to.eql({
       merge: null,
       header: null,
       body: null,
@@ -233,7 +224,7 @@ describe('parser', function () {
       type: null
     })
 
-    expect(parser(' # non-comment', commentOptions, reg)).to.eql({
+    expect(parse(' # non-comment', commentOptions)).to.eql({
       merge: null,
       header: ' # non-comment',
       body: null,
@@ -247,7 +238,7 @@ describe('parser', function () {
       type: null
     })
 
-    expect(parser('header\n# comment\n\nbody', commentOptions, reg)).to.eql({
+    expect(parse('header\n# comment\n\nbody', commentOptions)).to.eql({
       merge: null,
       header: 'header',
       body: 'body',
@@ -265,7 +256,7 @@ describe('parser', function () {
   it('should respect commentChar config', function () {
     const commentOptions = _.assign({}, options, { commentChar: '*' })
 
-    expect(parser('* comment', commentOptions, reg)).to.eql({
+    expect(parse('* comment', commentOptions)).to.eql({
       merge: null,
       header: null,
       body: null,
@@ -279,7 +270,7 @@ describe('parser', function () {
       type: null
     })
 
-    expect(parser('# non-comment', commentOptions, reg)).to.eql({
+    expect(parse('# non-comment', commentOptions)).to.eql({
       merge: null,
       header: '# non-comment',
       body: null,
@@ -293,7 +284,7 @@ describe('parser', function () {
       type: null
     })
 
-    expect(parser(' * non-comment', commentOptions, reg)).to.eql({
+    expect(parse(' * non-comment', commentOptions)).to.eql({
       merge: null,
       header: ' * non-comment',
       body: null,
@@ -307,7 +298,7 @@ describe('parser', function () {
       type: null
     })
 
-    expect(parser('header\n* comment\n\nbody', commentOptions, reg)).to.eql({
+    expect(parse('header\n* comment\n\nbody', commentOptions)).to.eql({
       merge: null,
       header: 'header',
       body: 'body',
@@ -323,35 +314,32 @@ describe('parser', function () {
   })
 
   it('should truncate from scissors line', function () {
-    const msg = parser(
+    const msg = parse(
       'this is some header before a scissors-line\n' +
         '# ------------------------ >8 ------------------------\n' +
         'this is a line that should be truncated\n',
-      options,
-      reg
+      options
     )
     expect(msg.body).to.equal(null)
   })
 
   it('should keep header before scissor line', function () {
-    const msg = parser(
+    const msg = parse(
       'this is some header before a scissors-line\n' +
         '# ------------------------ >8 ------------------------\n' +
         'this is a line that should be truncated\n',
-      options,
-      reg
+      options
     )
     expect(msg.header).to.equal('this is some header before a scissors-line')
   })
 
   it('should keep body before scissor line', function () {
-    const msg = parser(
+    const msg = parse(
       'this is some subject before a scissors-line\n' +
         'this is some body before a scissors-line\n' +
         '# ------------------------ >8 ------------------------\n' +
         'this is a line that should be truncated\n',
-      options,
-      reg
+      options
     )
     expect(msg.body).to.equal('this is some body before a scissors-line')
   })
@@ -365,16 +353,13 @@ describe('parser', function () {
         mergeCorrespondence: ['issueId', 'source']
       }
 
-      const reg = regex(options)
-
-      const msg = parser(
+      const msg = parse(
         '@Steve\n' +
           '@conventional-changelog @someone' +
           '\n' +
           'perf testing shows that in chrome this change adds 5-15% overhead\n' +
           '@this is',
-        options,
-        reg
+        options
       )
 
       expect(msg.mentions).to.eql([
@@ -394,13 +379,7 @@ describe('parser', function () {
       mergeCorrespondence: ['source', 'issueId']
     }
 
-    const mergeRegex = regex(mergeOptions)
-
-    const mergeMsg = parser(
-      "Merge branch 'feature'\nHEADER",
-      mergeOptions,
-      mergeRegex
-    )
+    const mergeMsg = parse("Merge branch 'feature'\nHEADER", mergeOptions)
 
     it('should parse merge header in merge commit', function () {
       expect(mergeMsg.source).to.equal('feature')
@@ -414,17 +393,14 @@ describe('parser', function () {
       mergeCorrespondence: ['issueId', 'source']
     }
 
-    const githubRegex = regex(githubOptions)
-
-    const githubMsg = parser(
+    const githubMsg = parse(
       'Merge pull request #1 from user/feature/feature-name\n' +
         '\n' +
         'feat(scope): broadcast $destroy event on scope destruction\n' +
         '\n' +
         'perf testing shows that in chrome this change adds 5-15% overhead\n' +
         'when destroying 10k nested scopes where each scope has a $destroy listener',
-      githubOptions,
-      githubRegex
+      githubOptions
     )
 
     it('should parse header in GitHub like pull request', function () {
@@ -456,9 +432,7 @@ describe('parser', function () {
       mergeCorrespondence: ['source']
     }
 
-    const gitLabRegex = regex(gitLabOptions)
-
-    const gitlabMsg = parser(
+    const gitlabMsg = parse(
       "Merge branch 'feature/feature-name' into 'master'\r\n" +
         '\r\n' +
         'feat(scope): broadcast $destroy event on scope destruction\r\n' +
@@ -467,8 +441,7 @@ describe('parser', function () {
         'when destroying 10k nested scopes where each scope has a $destroy listener\r\n' +
         '\r\n' +
         'See merge request !1',
-      gitLabOptions,
-      gitLabRegex
+      gitLabOptions
     )
 
     it('should parse header in GitLab like merge request', function () {
@@ -493,10 +466,9 @@ describe('parser', function () {
     })
 
     it('Should parse header if merge header is missing', function () {
-      const msgWithoutmergeHeader = parser(
+      const msgWithoutmergeHeader = parse(
         'feat(scope): broadcast $destroy event on scope destruction',
-        githubOptions,
-        githubRegex
+        githubOptions
       )
 
       expect(msgWithoutmergeHeader.merge).to.equal(null)
@@ -507,11 +479,10 @@ describe('parser', function () {
     })
 
     it('Should not parse conventional header if pull request header present and mergePattern is not set', function () {
-      const msgWithmergeHeaderWithoutmergePattern = parser(
+      const msgWithmergeHeaderWithoutmergePattern = parse(
         'Merge pull request #1 from user/feature/feature-name\n' +
           'feat(scope): broadcast $destroy event on scope destruction',
-        options,
-        reg
+        options
       )
       expect(msgWithmergeHeaderWithoutmergePattern.type).to.equal(null)
       expect(msgWithmergeHeaderWithoutmergePattern.scope).to.equal(null)
@@ -519,20 +490,16 @@ describe('parser', function () {
     })
 
     it('does not throw if merge commit has no header', () => {
-      parser("Merge branch 'feature'", mergeOptions, mergeRegex)
+      parse("Merge branch 'feature'", mergeOptions)
     })
   })
 
   describe('header', function () {
     it('should allow ":" in scope', function () {
-      const msg = parser(
-        'feat(ng:list): Allow custom separator',
-        {
-          headerPattern: /^(\w*)(?:\(([:\w$.\-* ]*)\))?: (.*)$/,
-          headerCorrespondence: ['type', 'scope', 'subject']
-        },
-        reg
-      )
+      const msg = parse('feat(ng:list): Allow custom separator', {
+        headerPattern: /^(\w*)(?:\(([:\w$.\-* ]*)\))?: (.*)$/,
+        headerCorrespondence: ['type', 'scope', 'subject']
+      })
       expect(msg.scope).to.equal('ng:list')
     })
 
@@ -557,14 +524,10 @@ describe('parser', function () {
     })
 
     it('should allow correspondence to be changed', function () {
-      const msg = parser(
-        'scope(my subject): fix this',
-        {
-          headerPattern: /^(\w*)(?:\(([\w$.\-* ]*)\))?: (.*)$/,
-          headerCorrespondence: ['scope', 'subject', 'type']
-        },
-        reg
-      )
+      const msg = parse('scope(my subject): fix this', {
+        headerPattern: /^(\w*)(?:\(([\w$.\-* ]*)\))?: (.*)$/,
+        headerCorrespondence: ['scope', 'subject', 'type']
+      })
 
       expect(msg.type).to.equal('fix this')
       expect(msg.scope).to.equal('scope')
@@ -572,20 +535,16 @@ describe('parser', function () {
     })
 
     it('should be `undefined` if it is missing in `options.headerCorrespondence`', function () {
-      msg = parser(
-        'scope(my subject): fix this',
-        {
-          headerPattern: /^(\w*)(?:\(([\w$.\-* ]*)\))?: (.*)$/,
-          headerCorrespondence: ['scop', 'subject']
-        },
-        reg
-      )
+      msg = parse('scope(my subject): fix this', {
+        headerPattern: /^(\w*)(?:\(([\w$.\-* ]*)\))?: (.*)$/,
+        headerCorrespondence: ['scop', 'subject']
+      })
 
       expect(msg.scope).to.equal(undefined)
     })
 
     it('should reference an issue with an owner', function () {
-      const msg = parser('handled angular/angular.js#1', options, reg)
+      const msg = parse('handled angular/angular.js#1', options)
       expect(msg.references).to.eql([
         {
           action: 'handled',
@@ -599,7 +558,7 @@ describe('parser', function () {
     })
 
     it('should reference an issue with a repository', function () {
-      const msg = parser('handled angular.js#1', options, reg)
+      const msg = parse('handled angular.js#1', options)
       expect(msg.references).to.eql([
         {
           action: 'handled',
@@ -613,7 +572,7 @@ describe('parser', function () {
     })
 
     it('should reference an issue without both', function () {
-      const msg = parser('handled gh-1', options, reg)
+      const msg = parse('handled gh-1', options)
       expect(msg.references).to.eql([
         {
           action: 'handled',
@@ -637,9 +596,7 @@ describe('parser', function () {
         issuePrefixes: ['#', 'gh-']
       }
 
-      const reg = regex(options)
-
-      const msg = parser('This is gh-1', options, reg)
+      const msg = parse('This is gh-1', options)
       expect(msg.references).to.eql([
         {
           action: null,
@@ -708,8 +665,7 @@ describe('parser', function () {
         'nesting elements or using `<template>` tags explicitly.'
       const text = expectedText + '\n' + 'Closes #9462'
       options.noteKeywords = ['BREAKING CHANGE']
-      reg = regex(options)
-      const msg = parser(
+      const msg = parse(
         'fix(core): report duplicate template bindings in templates\n' +
           '\n' +
           'Fixes #7315\n' +
@@ -717,8 +673,7 @@ describe('parser', function () {
           '* BREAKING CHANGE:\n' +
           '\n' +
           text,
-        options,
-        reg
+        options
       )
       const expected = {
         title: 'BREAKING CHANGE',
@@ -734,8 +689,7 @@ describe('parser', function () {
 
     it('should not treat it as important notes if there are texts after `noteKeywords`', function () {
       options.noteKeywords = ['BREAKING CHANGE']
-      reg = regex(options)
-      const msg = parser(
+      const msg = parse(
         'fix(core): report duplicate template bindings in templates\n' +
           '\n' +
           'Fixes #7315\n' +
@@ -749,8 +703,7 @@ describe('parser', function () {
           'nesting elements or using `<template>` tags explicitly.\n' +
           '\n' +
           'Closes #9462',
-        options,
-        reg
+        options
       )
 
       expect(msg.notes).to.eql([])
@@ -840,9 +793,7 @@ describe('parser', function () {
         issuePrefixes: ['#', 'gh-']
       }
 
-      const reg = regex(options)
-
-      const msg = parser(
+      const msg = parse(
         'feat(scope): broadcast $destroy event on scope destruction\n' +
           'perf testing shows that in chrome this change adds 5-15% overhead\n' +
           'when destroying 10k nested scopes where each scope has a $destroy listener\n' +
@@ -850,8 +801,7 @@ describe('parser', function () {
           'what\n' +
           '* #25\n' +
           '* #33, maybe gh-100, not sure about #3\n',
-        options,
-        reg
+        options
       )
 
       expect(msg.references).to.eql([
@@ -907,7 +857,7 @@ describe('parser', function () {
     })
 
     it('should put everything after references in footer', function () {
-      const msg = parser(
+      const msg = parse(
         'feat(scope): broadcast $destroy event on scope destruction\n' +
           'perf testing shows that in chrome this change adds 5-15% overhead\n' +
           'when destroying 10k nested scopes where each scope has a $destroy listener\n' +
@@ -916,8 +866,7 @@ describe('parser', function () {
           'killed #25\n' +
           'handle #33, Closes #100, Handled #3\n' +
           'other',
-        options,
-        reg
+        options
       )
 
       expect(msg.footer).to.equal(
@@ -926,14 +875,13 @@ describe('parser', function () {
     })
 
     it('should parse properly if important notes comes after references', function () {
-      const msg = parser(
+      const msg = parse(
         'feat(scope): broadcast $destroy event on scope destruction\n' +
           'perf testing shows that in chrome this change adds 5-15% overhead\n' +
           'when destroying 10k nested scopes where each scope has a $destroy listener\n' +
           'Kills #1, #123\n' +
           'BREAKING AMEND: some breaking change\n',
-        options,
-        reg
+        options
       )
       expect(msg.notes[0]).to.eql({
         title: 'BREAKING AMEND',
@@ -963,14 +911,13 @@ describe('parser', function () {
     })
 
     it('should parse properly if important notes comes with more than one paragraphs after references', function () {
-      const msg = parser(
+      const msg = parse(
         'feat(scope): broadcast $destroy event on scope destruction\n' +
           'perf testing shows that in chrome this change adds 5-15% overhead\n' +
           'when destroying 10k nested scopes where each scope has a $destroy listener\n' +
           'Kills #1, #123\n' +
           'BREAKING AMEND: some breaking change\nsome other breaking change',
-        options,
-        reg
+        options
       )
       expect(msg.notes[0]).to.eql({
         title: 'BREAKING AMEND',
@@ -1000,15 +947,14 @@ describe('parser', function () {
     })
 
     it('should parse properly if important notes comes after references', function () {
-      const msg = parser(
+      const msg = parse(
         'feat(scope): broadcast $destroy event on scope destruction\n' +
           'perf testing shows that in chrome this change adds 5-15% overhead\n' +
           'when destroying 10k nested scopes where each scope has a $destroy listener\n' +
           'Kills gh-1, #123\n' +
           'other\n' +
           'BREAKING AMEND: some breaking change\n',
-        options,
-        reg
+        options
       )
       expect(msg.notes[0]).to.eql({
         title: 'BREAKING AMEND',
@@ -1043,7 +989,7 @@ describe('parser', function () {
         breakingHeaderPattern: /^(\w*)(?:\((.*)\))?!: (.*)$/,
         headerCorrespondence: ['type', 'scope', 'subject']
       }
-      const msg = parser('feat!: breaking change feature', options, reg)
+      const msg = parse('feat!: breaking change feature', options)
       expect(msg.notes[0]).to.eql({
         title: 'BREAKING CHANGE',
         text: 'breaking change feature'
@@ -1057,10 +1003,9 @@ describe('parser', function () {
         headerCorrespondence: ['type', 'scope', 'subject'],
         noteKeywords: ['BREAKING AMEND']
       }
-      const msg = parser(
+      const msg = parse(
         'feat!: breaking change feature\nBREAKING AMEND: some breaking change',
-        options,
-        reg
+        options
       )
       expect(msg.notes[0]).to.eql({
         title: 'BREAKING AMEND',
@@ -1072,26 +1017,24 @@ describe('parser', function () {
 
   describe('others', function () {
     it('should parse hash', function () {
-      msg = parser(
+      msg = parse(
         'My commit message\n' +
           '-hash-\n' +
           '9b1aff905b638aa274a5fc8f88662df446d374bd',
-        options,
-        reg
+        options
       )
 
       expect(msg.hash).to.equal('9b1aff905b638aa274a5fc8f88662df446d374bd')
     })
 
     it('should parse sideNotes', function () {
-      msg = parser(
+      msg = parse(
         'My commit message\n' +
           '-sideNotes-\n' +
           'It should warn the correct unfound file names.\n' +
           'Also it should continue if one file cannot be found.\n' +
           'Tests are added for these',
-        options,
-        reg
+        options
       )
 
       expect(msg.sideNotes).to.equal(
@@ -1102,14 +1045,13 @@ describe('parser', function () {
     })
 
     it('should parse committer name and email', function () {
-      msg = parser(
+      msg = parse(
         'My commit message\n' +
           '-committerName-\n' +
           'Steve Mao\n' +
           '- committerEmail-\n' +
           'test@github.com',
-        options,
-        reg
+        options
       )
 
       expect(msg.committerName).to.equal('Steve Mao')
@@ -1119,11 +1061,10 @@ describe('parser', function () {
 
   describe('revert', function () {
     it('should parse revert', function () {
-      msg = parser(
+      msg = parse(
         'Revert "throw an error if a callback is passed to animate methods"\n\n' +
           'This reverts commit 9bb4d6ccbe80b7704c6b7f53317ca8146bc103ca.',
-        options,
-        reg
+        options
       )
 
       expect(msg.revert).to.eql({
@@ -1133,7 +1074,7 @@ describe('parser', function () {
     })
 
     it('should parse revert even if a field is missing', function () {
-      msg = parser('Revert ""\n\n' + 'This reverts commit .', options, reg)
+      msg = parse('Revert ""\n\n' + 'This reverts commit .', options)
 
       expect(msg.revert).to.eql({
         header: null,
