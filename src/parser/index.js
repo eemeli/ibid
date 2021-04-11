@@ -2,7 +2,6 @@
 
 const parser = require('./parser')
 const regex = require('./regex')
-const through = require('through2')
 const _ = require('lodash')
 
 function assignOpts(options) {
@@ -26,7 +25,6 @@ function assignOpts(options) {
       fieldPattern: /^-(.*?)-$/,
       revertPattern: /^Revert\s"([\s\S]*)"\s*This reverts commit (\w*)\./,
       revertCorrespondence: ['header', 'hash'],
-      warn: function () {},
       mergePattern: null,
       mergeCorrespondence: null
     },
@@ -72,33 +70,11 @@ function assignOpts(options) {
   return options
 }
 
-function conventionalCommitsParser(options) {
-  options = assignOpts(options)
-  const reg = regex(options)
-
-  return through.obj(function (data, enc, cb) {
-    let commit
-
-    try {
-      commit = parser(data.toString(), options, reg)
-      cb(null, commit)
-    } catch (err) {
-      if (options.warn === true) {
-        cb(err)
-      } else {
-        options.warn(err.toString())
-        cb(null, '')
-      }
-    }
-  })
-}
-
-function sync(commit, options) {
+function parse(commit, options) {
   options = assignOpts(options)
   const reg = regex(options)
 
   return parser(commit, options, reg)
 }
 
-module.exports = conventionalCommitsParser
-module.exports.sync = sync
+module.exports = parse
