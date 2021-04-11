@@ -1,75 +1,51 @@
-'use strict'
+const matchNone = /(?!.*)/
+const matchAll = /()(.+)/g
 
-const reNomatch = /(?!.*)/
-
-function join(array, joiner) {
-  return array
-    .map(function (val) {
-      return val.trim()
-    })
-    .filter(function (val) {
-      return val.length
-    })
-    .join(joiner)
-}
+const join = array =>
+  array
+    .map(val => val.trim())
+    .filter(Boolean)
+    .join('|')
 
 function getNotesRegex(noteKeywords, notesPattern) {
-  if (!noteKeywords) {
-    return reNomatch
-  }
-
-  const noteKeywordsSelection = join(noteKeywords, '|')
-
-  if (!notesPattern) {
-    return new RegExp(
-      '^[\\s|*]*(' + noteKeywordsSelection + ')[:\\s]+(.*)',
-      'i'
-    )
-  }
-
-  return notesPattern(noteKeywordsSelection)
+  if (!noteKeywords) return matchNone
+  const noteKeywordsSelection = join(noteKeywords)
+  return notesPattern
+    ? notesPattern(noteKeywordsSelection)
+    : new RegExp('^[\\s|*]*(' + noteKeywordsSelection + ')[:\\s]+(.*)', 'i')
 }
 
 function getReferencePartsRegex(issuePrefixes, issuePrefixesCaseSensitive) {
-  if (!issuePrefixes) {
-    return reNomatch
-  }
-
-  const flags = issuePrefixesCaseSensitive ? 'g' : 'gi'
+  if (!issuePrefixes) return matchNone
   return new RegExp(
-    '(?:.*?)??\\s*([\\w-\\.\\/]*?)??(' +
-      join(issuePrefixes, '|') +
-      ')([\\w-]*\\d+)',
-    flags
+    '(?:.*?)??\\s*([\\w-\\.\\/]*?)??(' + join(issuePrefixes) + ')([\\w-]*\\d+)',
+    issuePrefixesCaseSensitive ? 'g' : 'gi'
   )
 }
 
 function getReferencesRegex(referenceActions) {
-  if (!referenceActions) {
-    // matches everything
-    return /()(.+)/gi
-  }
-
-  const joinedKeywords = join(referenceActions, '|')
+  if (!referenceActions) return matchAll
+  const joinedKeywords = join(referenceActions)
   return new RegExp(
     '(' + joinedKeywords + ')(?:\\s+(.*?))(?=(?:' + joinedKeywords + ')|$)',
     'gi'
   )
 }
 
-module.exports = function (options) {
-  options = options || {}
-  const reNotes = getNotesRegex(options.noteKeywords, options.notesPattern)
-  const reReferenceParts = getReferencePartsRegex(
-    options.issuePrefixes,
-    options.issuePrefixesCaseSensitive
-  )
-  const reReferences = getReferencesRegex(options.referenceActions)
+const regex = ({
+  issuePrefixes,
+  issuePrefixesCaseSensitive,
+  noteKeywords,
+  notesPattern,
+  referenceActions
+} = {}) => ({
+  mentions: /@([\w-]+)/g,
+  notes: getNotesRegex(noteKeywords, notesPattern),
+  referenceParts: getReferencePartsRegex(
+    issuePrefixes,
+    issuePrefixesCaseSensitive
+  ),
+  references: getReferencesRegex(referenceActions)
+})
 
-  return {
-    notes: reNotes,
-    referenceParts: reReferenceParts,
-    references: reReferences,
-    mentions: /@([\w-]+)/g
-  }
-}
+module.exports = regex
