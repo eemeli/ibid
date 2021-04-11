@@ -1,10 +1,13 @@
 'use strict'
-const trimOffNewlines = require('trim-off-newlines')
 
 const CATCH_ALL = /()(.+)/gi
 const SCISSOR = '# ------------------------ >8 ------------------------'
 
 const append = (src, line) => (src ? src + '\n' + line : line)
+
+// Based on trim-off-newlines@1.0.1 by Steve Mao<maochenyan@gmail.com>
+// license: MIT
+const trimOffNewlines = str => str.replace(/^(\r?\n)+|(\r?\n)+$/g, '')
 
 const getCommentFilter = commentChar =>
   commentChar ? line => line[0] !== commentChar : () => true
@@ -181,7 +184,7 @@ function parser(
       isBody = false
       referenceMatched = true
       continueNote = false
-    Array.prototype.push.apply(references, lineReferences)
+      Array.prototype.push.apply(references, lineReferences)
     }
 
     if (referenceMatched) {

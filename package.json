@@ -23,9 +23,6 @@
     "singleQuote": true,
     "trailingComma": "none"
   },
-  "dependencies": {
-    "trim-off-newlines": "^1.0.1"
-  },
   "devDependencies": {
     "chai": "^4.3.4",
     "eslint": "^7.24.0",
