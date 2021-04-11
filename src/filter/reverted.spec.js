@@ -1,18 +1,14 @@
 'use strict'
-const conventionalCommitsFilter = require('./reverted')
-const mocha = require('mocha')
-const describe = mocha.describe
-const it = mocha.it
 const assert = require('assert')
+const { describe, it } = require('mocha')
+const filterReverted = require('./reverted')
 
-describe('conventional-commits-filter', function () {
-  it('should error if `commits` is not `array`', function () {
-    assert.throws(function () {
-      conventionalCommitsFilter()
-    })
+describe('filterReverted()', () => {
+  it('should error if `commits` is not `array`', () => {
+    assert.throws(filterReverted)
   })
 
-  it('should filter reverted commits that exist in the commits array', function () {
+  it('should filter reverted commits that exist in the commits array', () => {
     let commits = [
       {
         type: 'revert',
@@ -154,7 +150,7 @@ describe('conventional-commits-filter', function () {
       }
     ]
 
-    commits = conventionalCommitsFilter(commits)
+    commits = filterReverted(commits)
 
     assert.strictEqual(commits.length, 3)
 
@@ -243,7 +239,7 @@ describe('conventional-commits-filter', function () {
     ])
   })
 
-  it('should fall back on commit if raw is undefined', function () {
+  it('should fall back on commit if raw is undefined', () => {
     let commits = [
       {
         type: 'revert',
@@ -323,7 +319,7 @@ describe('conventional-commits-filter', function () {
       }
     ]
 
-    commits = conventionalCommitsFilter(commits)
+    commits = filterReverted(commits)
 
     assert.strictEqual(commits.length, 2)
 

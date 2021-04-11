@@ -1,61 +1,30 @@
 'use strict'
 
-const isMatch = require('lodash/isMatch')
-const modifyValues = require('modify-values')
+function filterReverted(commits) {
+  if (!Array.isArray(commits)) throw new TypeError('Expected an array')
 
-function modifyValue(val) {
-  if (typeof val === 'string') {
-    return val.trim()
-  }
-
-  return val
-}
-
-function conventionalCommitsFilter(commits) {
-  if (!Array.isArray(commits)) {
-    throw new TypeError('Expected an array')
-  }
-
-  let ret = []
-  const ignores = []
+  const revertCommits = commits.filter(commit => commit.revert)
   const remove = []
-  commits.forEach(function (commit) {
-    if (commit.revert) {
-      ignores.push(commit)
-    }
 
-    ret.push(commit)
-  })
+  for (const commit of commits) {
+    const _commit = commit.raw || commit
 
-  // Filter out reverted commits
-  ret = ret.filter(function (commit) {
-    let ignoreThis = false
+    // All revert fields must match
+    const revertCommit = revertCommits.find(revertCommit =>
+      Object.entries(revertCommit.revert).every(([key, v0]) => {
+        const v1 = _commit[key]
+        return (
+          typeof v0 === typeof v1 &&
+          (typeof v0 === 'string' ? v0.trim() === v1.trim() : v0 === v1)
+        )
+      })
+    )
 
-    commit = commit.raw
-      ? modifyValues(commit.raw, modifyValue)
-      : modifyValues(commit, modifyValue)
+    // Filter out both this commit and the one that reverted it
+    if (revertCommit) remove.push(commit.hash, revertCommit.hash)
+  }
 
-    ignores.some(function (ignoreCommit) {
-      const ignore = modifyValues(ignoreCommit.revert, modifyValue)
-
-      ignoreThis = isMatch(commit, ignore)
-
-      if (ignoreThis) {
-        remove.push(ignoreCommit.hash)
-      }
-
-      return ignoreThis
-    })
-
-    return !ignoreThis
-  })
-
-  // Filter out the commits that reverted something otherwise keep the revert commits
-  ret = ret.filter(function (commit) {
-    return remove.indexOf(commit.hash) !== 0
-  })
-
-  return ret
+  return commits.filter(commit => !remove.includes(commit.hash))
 }
 
-module.exports = conventionalCommitsFilter
+module.exports = filterReverted
