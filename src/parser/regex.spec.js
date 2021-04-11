@@ -21,9 +21,14 @@ describe('regex', function () {
     it('should match notes with customized pattern', function () {
       const reNotes = regex({
         noteKeywords: ['BREAKING CHANGE'],
-        notesPattern: (noteKeywords) => new RegExp('^[\\s|*]*(' + noteKeywords + ')[:\\s]+(?:\\[.*\\] )(.*)', 'i')
+        notesPattern: noteKeywords =>
+          new RegExp(
+            '^[\\s|*]*(' + noteKeywords + ')[:\\s]+(?:\\[.*\\] )(.*)',
+            'i'
+          )
       }).notes
-      const notes = 'BREAKING CHANGE: [Do not match this prefix.] This is so important.'
+      const notes =
+        'BREAKING CHANGE: [Do not match this prefix.] This is so important.'
       const match = notes.match(reNotes)
       expect(match[0]).to.equal(notes)
       expect(match[1]).to.equal('BREAKING CHANGE')
@@ -42,7 +47,13 @@ describe('regex', function () {
 
     it('should ignore whitespace', function () {
       const reNotes = regex({
-        noteKeywords: [' Breaking News', 'Breaking Change ', '', ' Breaking SOLUTION ', '  '],
+        noteKeywords: [
+          ' Breaking News',
+          'Breaking Change ',
+          '',
+          ' Breaking SOLUTION ',
+          '  '
+        ],
         issuePrefixes: ['#']
       }).notes
       const match = 'Breaking News: This is so important.'.match(reNotes)
@@ -134,7 +145,8 @@ describe('regex', function () {
       const reReferences = regex({
         referenceActions: ['Closes', 'amends']
       }).references
-      const string = 'Closes #JIRA-123 amends #MY-OTHER-PROJECT-123; closes bug #4'
+      const string =
+        'Closes #JIRA-123 amends #MY-OTHER-PROJECT-123; closes bug #4'
       let match = reReferences.exec(string)
       expect(match[0]).to.equal('Closes #JIRA-123 ')
       expect(match[1]).to.equal('Closes')
@@ -196,7 +208,9 @@ describe('regex', function () {
       expect(match[3]).to.equal('27')
 
       match = reReferenceParts.exec(string)
-      expect(match[0]).to.equal('), pinned shelljs to version that works with nyc (#30')
+      expect(match[0]).to.equal(
+        '), pinned shelljs to version that works with nyc (#30'
+      )
       expect(match[1]).to.equal(undefined)
       expect(match[2]).to.equal('#')
       expect(match[3]).to.equal('30')

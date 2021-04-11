@@ -5,7 +5,7 @@ const _ = require('lodash')
 const CATCH_ALL = /()(.+)/gi
 const SCISSOR = '# ------------------------ >8 ------------------------'
 
-function append (src, line) {
+function append(src, line) {
   if (src) {
     src += '\n' + line
   } else {
@@ -15,13 +15,13 @@ function append (src, line) {
   return src
 }
 
-function getCommentFilter (char) {
+function getCommentFilter(char) {
   return function (line) {
     return line.charAt(0) !== char
   }
 }
 
-function truncateToScissor (lines) {
+function truncateToScissor(lines) {
   const scissorIndex = lines.indexOf(SCISSOR)
 
   if (scissorIndex === -1) {
@@ -31,14 +31,13 @@ function truncateToScissor (lines) {
   return lines.slice(0, scissorIndex)
 }
 
-function getReferences (input, regex) {
+function getReferences(input, regex) {
   const references = []
   let referenceSentences
   let referenceMatch
 
-  const reApplicable = input.match(regex.references) !== null
-    ? regex.references
-    : CATCH_ALL
+  const reApplicable =
+    input.match(regex.references) !== null ? regex.references : CATCH_ALL
 
   while ((referenceSentences = reApplicable.exec(input))) {
     const action = referenceSentences[1] || null
@@ -70,11 +69,11 @@ function getReferences (input, regex) {
   return references
 }
 
-function passTrough () {
+function passTrough() {
   return true
 }
 
-function parser (raw, options, regex) {
+function parser(raw, options, regex) {
   if (!raw || !raw.trim()) {
     throw new TypeError('Expected a raw commit')
   }
@@ -90,25 +89,37 @@ function parser (raw, options, regex) {
   let currentProcessedField
   let mentionsMatch
   const otherFields = {}
-  const commentFilter = typeof options.commentChar === 'string'
-    ? getCommentFilter(options.commentChar)
-    : passTrough
+  const commentFilter =
+    typeof options.commentChar === 'string'
+      ? getCommentFilter(options.commentChar)
+      : passTrough
   const gpgFilter = line => !line.match(/^\s*gpg:/)
 
   const rawLines = trimOffNewlines(raw).split(/\r?\n/)
-  const lines = truncateToScissor(rawLines).filter(commentFilter).filter(gpgFilter)
+  const lines = truncateToScissor(rawLines)
+    .filter(commentFilter)
+    .filter(gpgFilter)
 
   let continueNote = false
   let isBody = true
-  const headerCorrespondence = _.map(options.headerCorrespondence, function (part) {
-    return part.trim()
-  })
-  const revertCorrespondence = _.map(options.revertCorrespondence, function (field) {
-    return field.trim()
-  })
-  const mergeCorrespondence = _.map(options.mergeCorrespondence, function (field) {
-    return field.trim()
-  })
+  const headerCorrespondence = _.map(
+    options.headerCorrespondence,
+    function (part) {
+      return part.trim()
+    }
+  )
+  const revertCorrespondence = _.map(
+    options.revertCorrespondence,
+    function (field) {
+      return field.trim()
+    }
+  )
+  const mergeCorrespondence = _.map(
+    options.mergeCorrespondence,
+    function (field) {
+      return field.trim()
+    }
+  )
 
   let body = null
   let footer = null
@@ -179,10 +190,13 @@ function parser (raw, options, regex) {
     })
   }
 
-  Array.prototype.push.apply(references, getReferences(header, {
-    references: regex.references,
-    referenceParts: regex.referenceParts
-  }))
+  Array.prototype.push.apply(
+    references,
+    getReferences(header, {
+      references: regex.references,
+      referenceParts: regex.referenceParts
+    })
+  )
 
   // body or footer
   _.forEach(lines, function (line) {
@@ -196,7 +210,10 @@ function parser (raw, options, regex) {
       }
 
       if (currentProcessedField) {
-        otherFields[currentProcessedField] = append(otherFields[currentProcessedField], line)
+        otherFields[currentProcessedField] = append(
+          otherFields[currentProcessedField],
+          line
+        )
 
         return
       }
@@ -287,16 +304,21 @@ function parser (raw, options, regex) {
     return note
   })
 
-  const msg = _.merge(headerParts, mergeParts, {
-    merge: merge,
-    header: header,
-    body: body ? trimOffNewlines(body) : null,
-    footer: footer ? trimOffNewlines(footer) : null,
-    notes: notes,
-    references: references,
-    mentions: mentions,
-    revert: revert
-  }, otherFields)
+  const msg = _.merge(
+    headerParts,
+    mergeParts,
+    {
+      merge: merge,
+      header: header,
+      body: body ? trimOffNewlines(body) : null,
+      footer: footer ? trimOffNewlines(footer) : null,
+      notes: notes,
+      references: references,
+      mentions: mentions,
+      revert: revert
+    },
+    otherFields
+  )
 
   return msg
 }

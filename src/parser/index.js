@@ -5,30 +5,33 @@ const regex = require('./regex')
 const through = require('through2')
 const _ = require('lodash')
 
-function assignOpts (options) {
-  options = _.extend({
-    headerPattern: /^(\w*)(?:\(([\w$.\-*/ ]*)\))?: (.*)$/,
-    headerCorrespondence: ['type', 'scope', 'subject'],
-    referenceActions: [
-      'close',
-      'closes',
-      'closed',
-      'fix',
-      'fixes',
-      'fixed',
-      'resolve',
-      'resolves',
-      'resolved'
-    ],
-    issuePrefixes: ['#'],
-    noteKeywords: ['BREAKING CHANGE'],
-    fieldPattern: /^-(.*?)-$/,
-    revertPattern: /^Revert\s"([\s\S]*)"\s*This reverts commit (\w*)\./,
-    revertCorrespondence: ['header', 'hash'],
-    warn: function () {},
-    mergePattern: null,
-    mergeCorrespondence: null
-  }, options)
+function assignOpts(options) {
+  options = _.extend(
+    {
+      headerPattern: /^(\w*)(?:\(([\w$.\-*/ ]*)\))?: (.*)$/,
+      headerCorrespondence: ['type', 'scope', 'subject'],
+      referenceActions: [
+        'close',
+        'closes',
+        'closed',
+        'fix',
+        'fixes',
+        'fixed',
+        'resolve',
+        'resolves',
+        'resolved'
+      ],
+      issuePrefixes: ['#'],
+      noteKeywords: ['BREAKING CHANGE'],
+      fieldPattern: /^-(.*?)-$/,
+      revertPattern: /^Revert\s"([\s\S]*)"\s*This reverts commit (\w*)\./,
+      revertCorrespondence: ['header', 'hash'],
+      warn: function () {},
+      mergePattern: null,
+      mergeCorrespondence: null
+    },
+    options
+  )
 
   if (typeof options.headerPattern === 'string') {
     options.headerPattern = new RegExp(options.headerPattern)
@@ -69,7 +72,7 @@ function assignOpts (options) {
   return options
 }
 
-function conventionalCommitsParser (options) {
+function conventionalCommitsParser(options) {
   options = assignOpts(options)
   const reg = regex(options)
 
@@ -90,7 +93,7 @@ function conventionalCommitsParser (options) {
   })
 }
 
-function sync (commit, options) {
+function sync(commit, options) {
   options = assignOpts(options)
   const reg = regex(options)
 
