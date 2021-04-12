@@ -1,11 +1,10 @@
 'use strict'
-const conventionalChangelogPresetLoader = require('conventional-changelog-preset-loader')
 const { promisify } = require('util')
 
 const filterReverted = require('../commit-filter/reverted')
 const gitLog = require('../git/git-log')
 const parseMessage = require('../message-parser/index')
-const presetResolver = require('./preset-resolver')
+const getConfig = require('./get-config')
 
 const gitSemverTags = promisify(require('git-semver-tags'))
 
@@ -19,25 +18,7 @@ async function conventionalRecommendedBump(
     throw new Error("The 'options' argument must be an object.")
 
   const options = Object.assign({ ignoreReverted: true }, optionsArgument)
-
-  let presetPackage = options.config || {}
-  if (options.preset) {
-    try {
-      presetPackage = conventionalChangelogPresetLoader(options.preset)
-    } catch (err) {
-      if (err.message === 'does not exist') {
-        const preset =
-          typeof options.preset === 'object'
-            ? options.preset.name
-            : options.preset
-        throw new Error(
-          `Unable to load the "${preset}" preset package. Please make sure it's installed.`
-        )
-      } else throw err
-    }
-  }
-
-  const config = await presetResolver(presetPackage)
+  const config = await getConfig(options)
 
   const whatBump =
     options.whatBump ||

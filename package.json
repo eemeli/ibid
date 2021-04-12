@@ -21,7 +21,6 @@
   "dependencies": {
     "conventional-changelog-preset-loader": "^2.3.4",
     "git-semver-tags": "^4.1.1",
-    "q": "^1.5.1",
     "tiny-glob": "^0.2.8",
     "yargs-parser": "^20.2.4"
   },
