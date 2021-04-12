@@ -11,7 +11,10 @@ describe('preset-resolver', () => {
     const result = presetResolver('invalid preset package')
 
     return result.catch(error => {
-      assert.strictEqual(error.message, 'preset package must be a promise, function, or object')
+      assert.strictEqual(
+        error.message,
+        'preset package must be a promise, function, or object'
+      )
     })
   })
 

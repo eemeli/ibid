@@ -4,7 +4,7 @@ const Q = require('q')
 
 module.exports = presetResolver
 
-function presetResolver (presetPackage) {
+function presetResolver(presetPackage) {
   // start the chain as a Q.Promise
   return Q.resolve().then(() => {
     // handle traditional node-style callbacks

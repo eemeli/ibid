@@ -11,14 +11,19 @@ const VERSIONS = ['major', 'minor', 'patch']
 
 module.exports = conventionalRecommendedBump
 
-function conventionalRecommendedBump (optionsArgument, parserOptsArgument, cbArgument) {
+function conventionalRecommendedBump(
+  optionsArgument,
+  parserOptsArgument,
+  cbArgument
+) {
   if (typeof optionsArgument !== 'object') {
-    throw new Error('The \'options\' argument must be an object.')
+    throw new Error("The 'options' argument must be an object.")
   }
 
   const options = Object.assign({ ignoreReverted: true }, optionsArgument)
 
-  const cb = typeof parserOptsArgument === 'function' ? parserOptsArgument : cbArgument
+  const cb =
+    typeof parserOptsArgument === 'function' ? parserOptsArgument : cbArgument
 
   if (typeof cb !== 'function') {
     throw new Error('You must provide a callback function.')
@@ -30,71 +35,91 @@ function conventionalRecommendedBump (optionsArgument, parserOptsArgument, cbArg
       presetPackage = conventionalChangelogPresetLoader(options.preset)
     } catch (err) {
       if (err.message === 'does not exist') {
-        const preset = typeof options.preset === 'object' ? options.preset.name : options.preset
-        return cb(new Error(`Unable to load the "${preset}" preset package. Please make sure it's installed.`))
+        const preset =
+          typeof options.preset === 'object'
+            ? options.preset.name
+            : options.preset
+        return cb(
+          new Error(
+            `Unable to load the "${preset}" preset package. Please make sure it's installed.`
+          )
+        )
       } else {
         return cb(err)
       }
     }
   }
 
-  presetResolver(presetPackage).then(config => {
-    const whatBump = options.whatBump ||
-      ((config.recommendedBumpOpts && config.recommendedBumpOpts.whatBump)
-        ? config.recommendedBumpOpts.whatBump
-        : noop)
+  presetResolver(presetPackage)
+    .then(config => {
+      const whatBump =
+        options.whatBump ||
+        (config.recommendedBumpOpts && config.recommendedBumpOpts.whatBump
+          ? config.recommendedBumpOpts.whatBump
+          : noop)
 
-    if (typeof whatBump !== 'function') {
-      throw Error('whatBump must be a function')
-    }
-
-    // TODO: For now we defer to `config.recommendedBumpOpts.parserOpts` if it exists, as our initial refactor
-    // efforts created a `parserOpts` object under the `recommendedBumpOpts` object in each preset package.
-    // In the future we want to merge differences found in `recommendedBumpOpts.parserOpts` into the top-level
-    // `parserOpts` object and remove `recommendedBumpOpts.parserOpts` from each preset package if it exists.
-    const parserOpts = Object.assign({},
-      config.recommendedBumpOpts && config.recommendedBumpOpts.parserOpts
-        ? config.recommendedBumpOpts.parserOpts
-        : config.parserOpts,
-      parserOptsArgument)
-
-    const warn = typeof parserOpts.warn === 'function' ? parserOpts.warn : noop
-
-    gitSemverTags({
-      lernaTags: !!options.lernaPackage,
-      package: options.lernaPackage,
-      tagPrefix: options.tagPrefix,
-      skipUnstable: options.skipUnstable
-    }, (err, tags) => {
-      if (err) {
-        return cb(err)
+      if (typeof whatBump !== 'function') {
+        throw Error('whatBump must be a function')
       }
 
-      gitRawCommits({
-        format: '%B%n-hash-%n%H',
-        from: tags[0] || '',
-        path: options.path
-      })
-        .pipe(conventionalCommitsParser(parserOpts))
-        .pipe(concat(data => {
-          const commits = options.ignoreReverted ? conventionalCommitsFilter(data) : data
+      // TODO: For now we defer to `config.recommendedBumpOpts.parserOpts` if it exists, as our initial refactor
+      // efforts created a `parserOpts` object under the `recommendedBumpOpts` object in each preset package.
+      // In the future we want to merge differences found in `recommendedBumpOpts.parserOpts` into the top-level
+      // `parserOpts` object and remove `recommendedBumpOpts.parserOpts` from each preset package if it exists.
+      const parserOpts = Object.assign(
+        {},
+        config.recommendedBumpOpts && config.recommendedBumpOpts.parserOpts
+          ? config.recommendedBumpOpts.parserOpts
+          : config.parserOpts,
+        parserOptsArgument
+      )
 
-          if (!commits || !commits.length) {
-            warn('No commits since last release')
+      const warn =
+        typeof parserOpts.warn === 'function' ? parserOpts.warn : noop
+
+      gitSemverTags(
+        {
+          lernaTags: !!options.lernaPackage,
+          package: options.lernaPackage,
+          tagPrefix: options.tagPrefix,
+          skipUnstable: options.skipUnstable
+        },
+        (err, tags) => {
+          if (err) {
+            return cb(err)
           }
 
-          let result = whatBump(commits, options)
+          gitRawCommits({
+            format: '%B%n-hash-%n%H',
+            from: tags[0] || '',
+            path: options.path
+          })
+            .pipe(conventionalCommitsParser(parserOpts))
+            .pipe(
+              concat(data => {
+                const commits = options.ignoreReverted
+                  ? conventionalCommitsFilter(data)
+                  : data
 
-          if (result && result.level != null) {
-            result.releaseType = VERSIONS[result.level]
-          } else if (result == null) {
-            result = {}
-          }
+                if (!commits || !commits.length) {
+                  warn('No commits since last release')
+                }
 
-          cb(null, result)
-        }))
+                let result = whatBump(commits, options)
+
+                if (result && result.level != null) {
+                  result.releaseType = VERSIONS[result.level]
+                } else if (result == null) {
+                  result = {}
+                }
+
+                cb(null, result)
+              })
+            )
+        }
+      )
     })
-  }).catch(err => cb(err))
+    .catch(err => cb(err))
 }
 
-function noop () {}
+function noop() {}
