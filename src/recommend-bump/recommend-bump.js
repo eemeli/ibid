@@ -1,10 +1,10 @@
 'use strict'
-const concat = require('concat-stream')
-const conventionalCommitsFilter = require('conventional-commits-filter')
-const conventionalCommitsParser = require('conventional-commits-parser')
 const conventionalChangelogPresetLoader = require('conventional-changelog-preset-loader')
 const gitSemverTags = require('git-semver-tags')
-const gitRawCommits = require('git-raw-commits')
+
+const filterReverted = require('../commit-filter/reverted')
+const gitLog = require('../git/git-log')
+const parseMessage = require('../message-parser/index')
 const presetResolver = require('./preset-resolver')
 
 const VERSIONS = ['major', 'minor', 'patch']
@@ -84,38 +84,23 @@ function conventionalRecommendedBump(
           tagPrefix: options.tagPrefix,
           skipUnstable: options.skipUnstable
         },
-        (err, tags) => {
-          if (err) {
-            return cb(err)
-          }
+        async (err, tags) => {
+          if (err) return cb(err)
 
-          gitRawCommits({
-            format: '%B%n-hash-%n%H',
-            from: tags[0] || '',
-            path: options.path
-          })
-            .pipe(conventionalCommitsParser(parserOpts))
-            .pipe(
-              concat(data => {
-                const commits = options.ignoreReverted
-                  ? conventionalCommitsFilter(data)
-                  : data
+          const rawCommits = await gitLog(tags[0], null, { path: options.path })
+          let commits = rawCommits.map(commit =>
+            Object.assign(commit, parseMessage(commit.message, parserOpts))
+          )
+          if (options.ignoreReverted) commits = filterReverted(commits)
 
-                if (!commits || !commits.length) {
-                  warn('No commits since last release')
-                }
+          if (!commits || !commits.length) warn('No commits since last release')
 
-                let result = whatBump(commits, options)
+          let result = whatBump(commits, options)
+          if (result && result.level != null)
+            result.releaseType = VERSIONS[result.level]
+          else if (result == null) result = {}
 
-                if (result && result.level != null) {
-                  result.releaseType = VERSIONS[result.level]
-                } else if (result == null) {
-                  result = {}
-                }
-
-                cb(null, result)
-              })
-            )
+          cb(null, result)
         }
       )
     })

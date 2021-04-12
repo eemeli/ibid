@@ -19,11 +19,7 @@
   },
   "homepage": "https://github.com/eemeli/version#readme",
   "dependencies": {
-    "concat-stream": "^2.0.0",
     "conventional-changelog-preset-loader": "^2.3.4",
-    "conventional-commits-filter": "^2.0.7",
-    "conventional-commits-parser": "^3.2.1",
-    "git-raw-commits": "^2.0.10",
     "git-semver-tags": "^4.1.1",
     "q": "^1.5.1",
     "tiny-glob": "^0.2.8",
