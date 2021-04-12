@@ -1,33 +1,24 @@
 'use strict'
 const conventionalChangelogPresetLoader = require('conventional-changelog-preset-loader')
-const gitSemverTags = require('git-semver-tags')
+const { promisify } = require('util')
 
 const filterReverted = require('../commit-filter/reverted')
 const gitLog = require('../git/git-log')
 const parseMessage = require('../message-parser/index')
 const presetResolver = require('./preset-resolver')
 
+const gitSemverTags = promisify(require('git-semver-tags'))
+
 const VERSIONS = ['major', 'minor', 'patch']
 
-module.exports = conventionalRecommendedBump
-
-function conventionalRecommendedBump(
+async function conventionalRecommendedBump(
   optionsArgument,
-  parserOptsArgument,
-  cbArgument
+  parserOptsArgument
 ) {
-  if (typeof optionsArgument !== 'object') {
+  if (typeof optionsArgument !== 'object')
     throw new Error("The 'options' argument must be an object.")
-  }
 
   const options = Object.assign({ ignoreReverted: true }, optionsArgument)
-
-  const cb =
-    typeof parserOptsArgument === 'function' ? parserOptsArgument : cbArgument
-
-  if (typeof cb !== 'function') {
-    throw new Error('You must provide a callback function.')
-  }
 
   let presetPackage = options.config || {}
   if (options.preset) {
@@ -39,64 +30,46 @@ function conventionalRecommendedBump(
           typeof options.preset === 'object'
             ? options.preset.name
             : options.preset
-        return cb(
-          new Error(
-            `Unable to load the "${preset}" preset package. Please make sure it's installed.`
-          )
+        throw new Error(
+          `Unable to load the "${preset}" preset package. Please make sure it's installed.`
         )
-      } else {
-        return cb(err)
-      }
+      } else throw err
     }
   }
 
-  presetResolver(presetPackage)
-    .then(config => {
-      const whatBump =
-        options.whatBump ||
-        (config.recommendedBumpOpts && config.recommendedBumpOpts.whatBump) ||
-        noop
+  const config = await presetResolver(presetPackage)
 
-      if (typeof whatBump !== 'function')
-        throw Error('whatBump must be a function')
+  const whatBump =
+    options.whatBump ||
+    (config.recommendedBumpOpts && config.recommendedBumpOpts.whatBump)
 
-      const parserOpts = Object.assign(
-        {},
-        config.parserOpts,
-        parserOptsArgument
-      )
+  if (whatBump && typeof whatBump !== 'function')
+    throw Error('whatBump must be a function')
 
-      const warn =
-        typeof parserOpts.warn === 'function' ? parserOpts.warn : noop
+  const tags = await gitSemverTags({
+    lernaTags: !!options.lernaPackage,
+    package: options.lernaPackage,
+    tagPrefix: options.tagPrefix,
+    skipUnstable: options.skipUnstable
+  })
 
-      gitSemverTags(
-        {
-          lernaTags: !!options.lernaPackage,
-          package: options.lernaPackage,
-          tagPrefix: options.tagPrefix,
-          skipUnstable: options.skipUnstable
-        },
-        async (err, tags) => {
-          if (err) return cb(err)
+  const rawCommits = await gitLog(tags[0], null, { path: options.path })
 
-          const rawCommits = await gitLog(tags[0], null, { path: options.path })
-          let commits = rawCommits.map(commit =>
-            Object.assign(commit, parseMessage(commit.message, parserOpts))
-          )
-          if (options.ignoreReverted) commits = filterReverted(commits)
+  const parserOpts = Object.assign({}, config.parserOpts, parserOptsArgument)
+  let commits = rawCommits.map(commit =>
+    Object.assign(commit, parseMessage(commit.message, parserOpts))
+  )
+  if (options.ignoreReverted) commits = filterReverted(commits)
 
-          if (!commits || !commits.length) warn('No commits since last release')
+  if ((!commits || !commits.length) && typeof parserOpts.warn === 'function')
+    parserOpts.warn('No commits since last release')
 
-          let result = whatBump(commits, options)
-          if (result && result.level != null)
-            result.releaseType = VERSIONS[result.level]
-          else if (result == null) result = {}
-
-          cb(null, result)
-        }
-      )
-    })
-    .catch(err => cb(err))
+  if (!whatBump) return {}
+  let result = whatBump(commits, options)
+  if (result == null) return {}
+  if (result && result.level != null)
+    result.releaseType = VERSIONS[result.level]
+  return result
 }
 
-function noop() {}
+module.exports = conventionalRecommendedBump

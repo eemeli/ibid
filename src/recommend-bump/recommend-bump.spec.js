@@ -2,13 +2,12 @@
 
 const assert = require('assert')
 const betterThanBefore = require('better-than-before')()
-const conventionalRecommendedBump = require('./recommend-bump')
-const mocha = require('mocha')
-const describe = mocha.describe
-const it = mocha.it
 const gitDummyCommit = require('git-dummy-commit')
+const { describe, it } = require('mocha')
 const shell = require('shelljs')
 const temp = require('temp')
+
+const conventionalRecommendedBump = require('./recommend-bump')
 
 const preparing = betterThanBefore.preparing
 shell.config.silent = true
@@ -57,371 +56,250 @@ betterThanBefore.setups([
 
 describe('conventional-recommended-bump API', () => {
   describe('options object', () => {
-    it("should throw an error if an 'options' object is not provided", done => {
-      assert.throws(() => conventionalRecommendedBump())
-      assert.throws(() => conventionalRecommendedBump('invalid options object'))
-      done()
+    it("should throw an error if an 'options' object is not provided", async () => {
+      await assert.rejects(() => conventionalRecommendedBump())
+      await assert.rejects(() =>
+        conventionalRecommendedBump('invalid options object')
+      )
     })
   })
 
-  describe('callback', () => {
-    it('should throw an error if no, or an invalid, callback function is provided', done => {
-      assert.throws(() => conventionalRecommendedBump({}))
-      assert.throws(() => conventionalRecommendedBump({}, {}))
-      assert.throws(() => conventionalRecommendedBump({}, {}, {}))
-      done()
-    })
-
-    it("should allow callback function in the 'parserOpts' argument spot", done => {
-      preparing(1)
-
-      conventionalRecommendedBump({}, err => {
-        assert.ok(err)
-        done()
-      })
-    })
-  })
-
-  it('should return an error if there are no commits in the repository', done => {
+  it('should throw an error if there are no commits in the repository', async () => {
     preparing(1)
-
-    conventionalRecommendedBump({}, {}, err => {
-      assert.ok(err)
-      done()
-    })
+    await assert.rejects(
+      () => conventionalRecommendedBump({ whatBump: () => {} }),
+      /does not have any commits/
+    )
   })
 
   describe('conventionalcommits ! in isolation', () => {
-    it('recommends major if ! is used in isolation', done => {
+    it('recommends major if ! is used in isolation', async () => {
       preparing(2)
 
-      conventionalRecommendedBump(
-        {
-          preset: {
-            name: 'conventionalcommits'
-          }
-        },
-        {},
-        (_, recommendation) => {
-          assert.notStrictEqual(recommendation.reason.indexOf('1 BREAKING'), -1)
-          assert.strictEqual(recommendation.releaseType, 'major')
-          done()
-        }
-      )
+      const recommendation = await conventionalRecommendedBump({
+        preset: { name: 'conventionalcommits' }
+      })
+      assert.notStrictEqual(recommendation.reason.indexOf('1 BREAKING'), -1)
+      assert.strictEqual(recommendation.releaseType, 'major')
     })
   })
 
   describe("optional 'whatBump'", () => {
-    it("should throw an error if 'whatBump' is defined but not a function", done => {
+    it("should throw an error if 'whatBump' is defined but not a function", async () => {
       preparing(2)
 
-      conventionalRecommendedBump(
-        {
-          whatBump: 'invalid'
-        },
-        {},
-        err => {
-          assert.ok(err)
-          assert.strictEqual(err.message, 'whatBump must be a function')
-          done()
-        }
+      await assert.rejects(
+        () => conventionalRecommendedBump({ whatBump: 'invalid' }, {}),
+        { message: 'whatBump must be a function' }
       )
     })
 
-    it("should return '{}' if no 'whatBump'", done => {
+    it("should return '{}' if no 'whatBump'", async () => {
       preparing(2)
 
-      conventionalRecommendedBump({}, {}, (err, recommendation) => {
-        if (err) done(err)
-        assert.deepStrictEqual(recommendation, {})
-        done()
+      const recommendation = await conventionalRecommendedBump({}, {})
+      assert.deepStrictEqual(recommendation, {})
+    })
+
+    it("should return '{}' if 'whatBump' returns 'null'", async () => {
+      preparing(2)
+
+      const recommendation = await conventionalRecommendedBump({
+        whatBump: () => null
       })
+      assert.deepStrictEqual(recommendation, {})
     })
 
-    it("should return '{}' if 'whatBump' returns 'null'", done => {
+    it("should return '{}' if 'whatBump' returns 'undefined'", async () => {
       preparing(2)
 
-      conventionalRecommendedBump(
-        {
-          whatBump: () => {
-            return null
-          }
-        },
-        (err, recommendation) => {
-          if (err) done(err)
-          assert.deepStrictEqual(recommendation, {})
-          done()
-        }
-      )
+      const recommendation = await conventionalRecommendedBump({
+        whatBump: () => undefined
+      })
+      assert.deepStrictEqual(recommendation, {})
     })
 
-    it("should return '{}' if 'whatBump' returns 'undefined'", done => {
+    it("should return what is returned by 'whatBump'", async () => {
       preparing(2)
 
-      conventionalRecommendedBump(
-        {
-          whatBump: () => {
-            return undefined
-          }
-        },
-        (err, recommendation) => {
-          if (err) done(err)
-          assert.deepStrictEqual(recommendation, {})
-          done()
-        }
-      )
+      const recommendation = await conventionalRecommendedBump({
+        whatBump: () => ({ test: 'test' })
+      })
+      assert.deepStrictEqual(recommendation, { test: 'test' })
     })
 
-    it("should return what is returned by 'whatBump'", done => {
+    it("should send options to 'whatBump'", async () => {
       preparing(2)
 
-      conventionalRecommendedBump(
-        {
-          whatBump: () => {
-            return { test: 'test' }
-          }
-        },
-        (err, recommendation) => {
-          if (err) done(err)
-          assert.deepStrictEqual(recommendation, { test: 'test' })
-          done()
-        }
-      )
+      const recommendation = await conventionalRecommendedBump({
+        lernaPackage: 'test',
+        whatBump: (commits, options) => options.lernaPackage
+      })
+      assert.deepStrictEqual(recommendation, 'test')
     })
 
-    it("should send options to 'whatBump'", done => {
+    it("should return 'releaseType' as undefined if 'level' is not valid", async () => {
       preparing(2)
 
-      conventionalRecommendedBump(
-        {
-          lernaPackage: 'test',
-          whatBump: (commits, options) => {
-            return options.lernaPackage
-          }
-        },
-        (err, recommendation) => {
-          if (err) done(err)
-          assert.deepStrictEqual(recommendation, 'test')
-          done()
-        }
-      )
-    })
-
-    it("should return 'releaseType' as undefined if 'level' is not valid", done => {
-      preparing(2)
-
-      conventionalRecommendedBump(
-        {
-          whatBump: () => {
-            return { level: 'test' }
-          }
-        },
-        (err, recommendation) => {
-          if (err) done(err)
-          assert.deepStrictEqual(recommendation, {
-            level: 'test',
-            releaseType: undefined
-          })
-          done()
-        }
-      )
+      const recommendation = await conventionalRecommendedBump({
+        whatBump: () => ({ level: 'test' })
+      })
+      assert.deepStrictEqual(recommendation, {
+        level: 'test',
+        releaseType: undefined
+      })
     })
   })
 
   describe('warn logging', () => {
-    it("will ignore 'warn' option if it's not a function", done => {
+    it("will ignore 'warn' option if it's not a function", async () => {
       preparing(3)
 
-      conventionalRecommendedBump({}, { warn: 'invalid' }, done)
+      await conventionalRecommendedBump({}, { warn: 'invalid' })
     })
 
-    it('should warn if there is no new commits since last release', done => {
+    it('should warn if there is no new commits since last release', async () => {
       preparing(3)
 
-      conventionalRecommendedBump(
+      let called = 0
+      await conventionalRecommendedBump(
         {},
         {
           warn: warning => {
             assert.strictEqual(warning, 'No commits since last release')
-            done()
+            ++called
           }
-        },
-        () => {}
+        }
       )
+      assert.strictEqual(called, 1)
     })
   })
 
   describe('loading a preset package', () => {
-    it('recommends a patch release for a feature when preMajor=true', done => {
+    it('recommends a patch release for a feature when preMajor=true', async () => {
       preparing(4)
 
-      conventionalRecommendedBump(
-        {
-          preset: {
-            name: 'conventionalcommits',
-            preMajor: true
-          }
-        },
-        {},
-        (_, recommendation) => {
-          assert.notStrictEqual(recommendation.reason.indexOf('1 features'), -1)
-          assert.strictEqual(recommendation.releaseType, 'patch')
-          done()
-        }
-      )
+      const recommendation = await conventionalRecommendedBump({
+        preset: { name: 'conventionalcommits', preMajor: true }
+      })
+      assert.notStrictEqual(recommendation.reason.indexOf('1 features'), -1)
+      assert.strictEqual(recommendation.releaseType, 'patch')
     })
 
-    it('recommends a minor release for a feature when preMajor=false', done => {
+    it('recommends a minor release for a feature when preMajor=false', async () => {
       preparing(4)
 
-      conventionalRecommendedBump(
-        {
-          preset: {
-            name: 'conventionalcommits'
-          }
-        },
-        {},
-        (_, recommendation) => {
-          assert.notStrictEqual(recommendation.reason.indexOf('1 features'), -1)
-          assert.strictEqual(recommendation.releaseType, 'minor')
-          done()
+      const recommendation = await conventionalRecommendedBump({
+        preset: { name: 'conventionalcommits' }
+      })
+      assert.notStrictEqual(recommendation.reason.indexOf('1 features'), -1)
+      assert.strictEqual(recommendation.releaseType, 'minor')
+    })
+
+    it('should ignore reverted commits', async () => {
+      preparing(5)
+
+      let called = 0
+      await conventionalRecommendedBump({
+        whatBump: commits => {
+          assert.strictEqual(commits.length, 0)
+          ++called
         }
-      )
+      })
+      assert.strictEqual(called, 1)
     })
 
-    it('should ignore reverted commits', done => {
+    it('should include reverted commits', async () => {
       preparing(5)
 
-      conventionalRecommendedBump(
-        {
-          whatBump: commits => {
-            assert.strictEqual(commits.length, 0)
-            done()
-          }
-        },
-        () => {}
-      )
+      let called = 0
+      await conventionalRecommendedBump({
+        ignoreReverted: false,
+        whatBump: commits => {
+          assert.strictEqual(commits.length, 2)
+          ++called
+        }
+      })
+      assert.strictEqual(called, 1)
     })
 
-    it('should include reverted commits', done => {
-      preparing(5)
-
-      conventionalRecommendedBump(
-        {
-          ignoreReverted: false,
-          whatBump: commits => {
-            assert.strictEqual(commits.length, 2)
-            done()
-          }
-        },
-        () => {}
-      )
-    })
-
-    it('throws an error if unable to load a preset package', done => {
+    it('throws an error if unable to load a preset package', async () => {
       preparing(6)
 
-      conventionalRecommendedBump(
+      await assert.rejects(
+        () => conventionalRecommendedBump({ preset: 'does-not-exist' }, {}),
         {
-          preset: 'does-not-exist'
-        },
-        {},
-        err => {
-          assert.ok(err)
-          assert.strictEqual(
-            err.message,
+          message:
             'Unable to load the "does-not-exist" preset package. Please make sure it\'s installed.'
-          )
-          done()
         }
       )
     })
 
-    it('recommends a minor release for a breaking change when preMajor=true', done => {
+    it('recommends a minor release for a breaking change when preMajor=true', async () => {
       preparing(6)
 
-      conventionalRecommendedBump(
-        {
-          preset: {
-            name: 'conventionalcommits',
-            preMajor: true
-          }
-        },
-        {},
-        (_, recommendation) => {
-          assert.notStrictEqual(recommendation.reason.indexOf('1 BREAKING'), -1)
-          assert.strictEqual(recommendation.releaseType, 'minor')
-          done()
-        }
-      )
+      const recommendation = await conventionalRecommendedBump({
+        preset: { name: 'conventionalcommits', preMajor: true }
+      })
+      assert.notStrictEqual(recommendation.reason.indexOf('1 BREAKING'), -1)
+      assert.strictEqual(recommendation.releaseType, 'minor')
     })
 
-    it('recommends a major release for a breaking change when preMajor=false', done => {
+    it('recommends a major release for a breaking change when preMajor=false', async () => {
       preparing(6)
 
-      conventionalRecommendedBump(
-        {
-          preset: {
-            name: 'conventionalcommits'
-          }
-        },
-        {},
-        (_, recommendation) => {
-          assert.notStrictEqual(recommendation.reason.indexOf('1 BREAKING'), -1)
-          assert.strictEqual(recommendation.releaseType, 'major')
-          done()
-        }
-      )
+      const recommendation = await conventionalRecommendedBump({
+        preset: { name: 'conventionalcommits' }
+      })
+      assert.notStrictEqual(recommendation.reason.indexOf('1 BREAKING'), -1)
+      assert.strictEqual(recommendation.releaseType, 'major')
     })
   })
 
   describe('repository with custom tag prefix', () => {
-    it('should recommends a minor release if appropriate', done => {
+    it('should recommends a minor release if appropriate', async () => {
       preparing(6)
 
-      conventionalRecommendedBump(
-        {
-          tagPrefix: 'ms/',
-          whatBump: commits => {
-            assert.strictEqual(commits.length, 1)
-            assert.strictEqual(commits[0].type, 'feat')
-            done()
-          }
-        },
-        () => {}
-      )
+      let called = 0
+      await conventionalRecommendedBump({
+        tagPrefix: 'ms/',
+        whatBump: commits => {
+          assert.strictEqual(commits.length, 1)
+          assert.strictEqual(commits[0].type, 'feat')
+          ++called
+        }
+      })
+      assert.strictEqual(called, 1)
     })
   })
 
   describe('repository with lerna tags', () => {
-    it("should recommend 'major' version bump when not using lerna tags", done => {
+    it("should recommend 'major' version bump when not using lerna tags", async () => {
       preparing(7)
 
-      conventionalRecommendedBump(
-        {
-          whatBump: commits => {
-            assert.strictEqual(commits.length, 3)
-            done()
-          }
-        },
-        () => {}
-      )
+      let called = 0
+      await conventionalRecommendedBump({
+        whatBump: commits => {
+          assert.strictEqual(commits.length, 3)
+          ++called
+        }
+      })
+      assert.strictEqual(called, 1)
     })
 
-    it("should recommend 'minor' version bump when lerna tag option is enabled", done => {
+    it("should recommend 'minor' version bump when lerna tag option is enabled", async () => {
       preparing(7)
 
-      conventionalRecommendedBump(
-        {
-          lernaPackage: 'my-package',
-          whatBump: commits => {
-            assert.strictEqual(commits.length, 1)
-            assert.strictEqual(commits[0].type, 'feat')
-            done()
-          }
-        },
-        () => {}
-      )
+      let called = 0
+      await conventionalRecommendedBump({
+        lernaPackage: 'my-package',
+        whatBump: commits => {
+          assert.strictEqual(commits.length, 1)
+          assert.strictEqual(commits[0].type, 'feat')
+          ++called
+        }
+      })
+      assert.strictEqual(called, 1)
     })
   })
 })
