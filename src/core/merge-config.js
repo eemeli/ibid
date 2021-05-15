@@ -19,19 +19,27 @@ const _ = require('lodash')
 
 const rhosts = /github|bitbucket|gitlab/i
 
-function semverTagsPromise (options) {
+function semverTagsPromise(options) {
   return Q.Promise(function (resolve, reject) {
-    gitSemverTags({ lernaTags: !!options.lernaPackage, package: options.lernaPackage, tagPrefix: options.tagPrefix, skipUnstable: options.skipUnstable }, function (err, result) {
-      if (err) {
-        reject(err)
-      } else {
-        resolve(result)
+    gitSemverTags(
+      {
+        lernaTags: !!options.lernaPackage,
+        package: options.lernaPackage,
+        tagPrefix: options.tagPrefix,
+        skipUnstable: options.skipUnstable
+      },
+      function (err, result) {
+        if (err) {
+          reject(err)
+        } else {
+          resolve(result)
+        }
       }
-    })
+    )
   })
 }
 
-function guessNextTag (previousTag, version) {
+function guessNextTag(previousTag, version) {
   if (previousTag) {
     if (previousTag[0] === 'v' && version[0] !== 'v') {
       return 'v' + version
@@ -51,7 +59,14 @@ function guessNextTag (previousTag, version) {
   return version
 }
 
-function mergeConfig (options, context, gitRawCommitsOpts, parserOpts, writerOpts, gitRawExecOpts) {
+function mergeConfig(
+  options,
+  context,
+  gitRawCommitsOpts,
+  parserOpts,
+  writerOpts,
+  gitRawExecOpts
+) {
   let configPromise
   let pkgPromise
 
@@ -59,36 +74,46 @@ function mergeConfig (options, context, gitRawCommitsOpts, parserOpts, writerOpt
   gitRawCommitsOpts = gitRawCommitsOpts || {}
   gitRawExecOpts = gitRawExecOpts || {}
 
-  const rtag = options && options.tagPrefix ? new RegExp(`tag:\\s*[=]?${options.tagPrefix}(.+?)[,)]`, 'gi') : /tag:\s*[v=]?(.+?)[,)]/gi
+  const rtag =
+    options && options.tagPrefix
+      ? new RegExp(`tag:\\s*[=]?${options.tagPrefix}(.+?)[,)]`, 'gi')
+      : /tag:\s*[v=]?(.+?)[,)]/gi
 
-  options = _.merge({
-    pkg: {
-      transform: function (pkg) {
-        return pkg
-      }
-    },
-    append: false,
-    releaseCount: 1,
-    skipUnstable: false,
-    debug: function () {},
-    transform: function (commit, cb) {
-      if (_.isString(commit.gitTags)) {
-        const match = rtag.exec(commit.gitTags)
-        rtag.lastIndex = 0
-
-        if (match) {
-          commit.version = match[1]
+  options = _.merge(
+    {
+      pkg: {
+        transform: function (pkg) {
+          return pkg
         }
-      }
+      },
+      append: false,
+      releaseCount: 1,
+      skipUnstable: false,
+      debug: function () {},
+      transform: function (commit, cb) {
+        if (_.isString(commit.gitTags)) {
+          const match = rtag.exec(commit.gitTags)
+          rtag.lastIndex = 0
 
-      if (commit.committerDate) {
-        commit.committerDate = dateFormat(commit.committerDate, 'yyyy-mm-dd', true)
-      }
+          if (match) {
+            commit.version = match[1]
+          }
+        }
 
-      cb(null, commit)
+        if (commit.committerDate) {
+          commit.committerDate = dateFormat(
+            commit.committerDate,
+            'yyyy-mm-dd',
+            true
+          )
+        }
+
+        cb(null, commit)
+      },
+      lernaPackage: null
     },
-    lernaPackage: null
-  }, options)
+    options
+  )
 
   options.warn = options.warn || options.debug
 
@@ -110,134 +135,151 @@ function mergeConfig (options, context, gitRawCommitsOpts, parserOpts, writerOpt
 
   const gitRemoteOriginUrlPromise = Q(gitRemoteOriginUrl())
 
-  return Q.allSettled([configPromise, pkgPromise, semverTagsPromise(options), gitRemoteOriginUrlPromise])
-    .spread(function (configObj, pkgObj, tagsObj, gitRemoteOriginUrlObj) {
-      let config
-      let pkg
-      let fromTag
-      let repo
+  return Q.allSettled([
+    configPromise,
+    pkgPromise,
+    semverTagsPromise(options),
+    gitRemoteOriginUrlPromise
+  ]).spread(function (configObj, pkgObj, tagsObj, gitRemoteOriginUrlObj) {
+    let config
+    let pkg
+    let fromTag
+    let repo
 
-      let hostOpts
+    let hostOpts
 
-      let gitSemverTags = []
+    let gitSemverTags = []
 
-      if (configPromise) {
-        if (configObj.state === 'fulfilled') {
-          config = configObj.value
-        } else {
-          options.warn('Error in config' + configObj.reason.toString())
-          config = {}
-        }
+    if (configPromise) {
+      if (configObj.state === 'fulfilled') {
+        config = configObj.value
       } else {
+        options.warn('Error in config' + configObj.reason.toString())
         config = {}
       }
+    } else {
+      config = {}
+    }
 
-      context = _.assign(context, config.context)
+    context = _.assign(context, config.context)
 
-      if (options.pkg) {
-        if (pkgObj.state === 'fulfilled') {
-          if (options.pkg.path) {
-            pkg = pkgObj.value
-          } else {
-            pkg = pkgObj.value.pkg || {}
-          }
-
-          pkg = options.pkg.transform(pkg)
-        } else if (options.pkg.path) {
-          options.warn(pkgObj.reason.toString())
-        }
-      }
-
-      if ((!pkg || !pkg.repository || !pkg.repository.url) && gitRemoteOriginUrlObj.state === 'fulfilled') {
-        pkg = pkg || {}
-        pkg.repository = pkg.repository || {}
-        pkg.repository.url = gitRemoteOriginUrlObj.value
-        normalizePackageData(pkg)
-      }
-
-      if (pkg) {
-        context.version = context.version || pkg.version
-
-        try {
-          repo = getPkgRepo(pkg)
-        } catch (err) {
-          repo = {}
+    if (options.pkg) {
+      if (pkgObj.state === 'fulfilled') {
+        if (options.pkg.path) {
+          pkg = pkgObj.value
+        } else {
+          pkg = pkgObj.value.pkg || {}
         }
 
-        if (repo.browse) {
-          const browse = repo.browse()
-          if (!context.host) {
-            if (repo.domain) {
-              const parsedBrowse = new URL(browse)
-              if (parsedBrowse.origin.indexOf('//') !== -1) {
-                context.host = parsedBrowse.protocol + '//' + repo.domain
-              } else {
-                context.host = parsedBrowse.protocol + repo.domain
-              }
+        pkg = options.pkg.transform(pkg)
+      } else if (options.pkg.path) {
+        options.warn(pkgObj.reason.toString())
+      }
+    }
+
+    if (
+      (!pkg || !pkg.repository || !pkg.repository.url) &&
+      gitRemoteOriginUrlObj.state === 'fulfilled'
+    ) {
+      pkg = pkg || {}
+      pkg.repository = pkg.repository || {}
+      pkg.repository.url = gitRemoteOriginUrlObj.value
+      normalizePackageData(pkg)
+    }
+
+    if (pkg) {
+      context.version = context.version || pkg.version
+
+      try {
+        repo = getPkgRepo(pkg)
+      } catch (err) {
+        repo = {}
+      }
+
+      if (repo.browse) {
+        const browse = repo.browse()
+        if (!context.host) {
+          if (repo.domain) {
+            const parsedBrowse = new URL(browse)
+            if (parsedBrowse.origin.indexOf('//') !== -1) {
+              context.host = parsedBrowse.protocol + '//' + repo.domain
             } else {
-              context.host = null
+              context.host = parsedBrowse.protocol + repo.domain
             }
-          }
-          context.owner = context.owner || repo.user || ''
-          context.repository = context.repository || repo.project
-          context.repoUrl = browse
-        }
-
-        context.packageData = pkg
-      }
-
-      context.version = context.version || ''
-
-      if (tagsObj.state === 'fulfilled') {
-        gitSemverTags = context.gitSemverTags = tagsObj.value
-        fromTag = gitSemverTags[options.releaseCount - 1]
-        const lastTag = gitSemverTags[0]
-
-        if (lastTag === context.version || lastTag === 'v' + context.version) {
-          if (options.outputUnreleased) {
-            context.version = 'Unreleased'
           } else {
-            options.outputUnreleased = false
+            context.host = null
           }
         }
+        context.owner = context.owner || repo.user || ''
+        context.repository = context.repository || repo.project
+        context.repoUrl = browse
       }
 
-      if (!_.isBoolean(options.outputUnreleased)) {
-        options.outputUnreleased = true
-      }
+      context.packageData = pkg
+    }
 
-      if (context.host && (!context.issue || !context.commit || !parserOpts || !parserOpts.referenceActions)) {
-        let type
+    context.version = context.version || ''
 
-        if (context.host) {
-          const match = context.host.match(rhosts)
-          if (match) {
-            type = match[0]
-          }
-        } else if (repo && repo.type) {
-          type = repo.type
+    if (tagsObj.state === 'fulfilled') {
+      gitSemverTags = context.gitSemverTags = tagsObj.value
+      fromTag = gitSemverTags[options.releaseCount - 1]
+      const lastTag = gitSemverTags[0]
+
+      if (lastTag === context.version || lastTag === 'v' + context.version) {
+        if (options.outputUnreleased) {
+          context.version = 'Unreleased'
+        } else {
+          options.outputUnreleased = false
         }
+      }
+    }
 
-        if (type) {
-          hostOpts = require('./hosts/' + type)
+    if (!_.isBoolean(options.outputUnreleased)) {
+      options.outputUnreleased = true
+    }
 
-          context = _.assign({
+    if (
+      context.host &&
+      (!context.issue ||
+        !context.commit ||
+        !parserOpts ||
+        !parserOpts.referenceActions)
+    ) {
+      let type
+
+      if (context.host) {
+        const match = context.host.match(rhosts)
+        if (match) {
+          type = match[0]
+        }
+      } else if (repo && repo.type) {
+        type = repo.type
+      }
+
+      if (type) {
+        hostOpts = require('./hosts/' + type)
+
+        context = _.assign(
+          {
             issue: hostOpts.issue,
             commit: hostOpts.commit
-          }, context)
-        } else {
-          options.warn('Host: "' + context.host + '" does not exist')
-          hostOpts = {}
-        }
+          },
+          context
+        )
       } else {
+        options.warn('Host: "' + context.host + '" does not exist')
         hostOpts = {}
       }
+    } else {
+      hostOpts = {}
+    }
 
-      if (context.resetChangelog) {
-        fromTag = null
-      }
+    if (context.resetChangelog) {
+      fromTag = null
+    }
 
-      gitRawCommitsOpts = _.assign({
+    gitRawCommitsOpts = _.assign(
+      {
         format: '%B%n-hash-%n%H%n-gitTags-%n%d%n-committerDate-%n%ci',
         from: fromTag,
         merges: false,
@@ -245,28 +287,38 @@ function mergeConfig (options, context, gitRawCommitsOpts, parserOpts, writerOpt
       },
       config.gitRawCommitsOpts,
       gitRawCommitsOpts
-      )
+    )
 
-      if (options.append) {
-        gitRawCommitsOpts.reverse = gitRawCommitsOpts.reverse || true
-      }
+    if (options.append) {
+      gitRawCommitsOpts.reverse = gitRawCommitsOpts.reverse || true
+    }
 
-      parserOpts = _.assign(
-        {}, config.parserOpts, {
-          warn: options.warn
-        },
-        parserOpts)
+    parserOpts = _.assign(
+      {},
+      config.parserOpts,
+      {
+        warn: options.warn
+      },
+      parserOpts
+    )
 
-      if (hostOpts.referenceActions && parserOpts) {
-        parserOpts.referenceActions = hostOpts.referenceActions
-      }
+    if (hostOpts.referenceActions && parserOpts) {
+      parserOpts.referenceActions = hostOpts.referenceActions
+    }
 
-      if (_.isEmpty(parserOpts.issuePrefixes) && hostOpts.issuePrefixes) {
-        parserOpts.issuePrefixes = hostOpts.issuePrefixes
-      }
+    if (_.isEmpty(parserOpts.issuePrefixes) && hostOpts.issuePrefixes) {
+      parserOpts.issuePrefixes = hostOpts.issuePrefixes
+    }
 
-      writerOpts = _.assign({
-        finalizeContext: function (context, writerOpts, filteredCommits, keyCommit, originalCommits) {
+    writerOpts = _.assign(
+      {
+        finalizeContext: function (
+          context,
+          writerOpts,
+          filteredCommits,
+          keyCommit,
+          originalCommits
+        ) {
           const firstCommit = originalCommits[0]
           const lastCommit = originalCommits[originalCommits.length - 1]
           const firstCommitHash = firstCommit ? firstCommit.hash : null
@@ -282,7 +334,8 @@ function mergeConfig (options, context, gitRawCommitsOpts, parserOpts, writerOpt
             if (index === -1) {
               context.currentTag = currentTag || null
             } else {
-              const previousTag = context.previousTag = gitSemverTags[index + 1]
+              const previousTag = (context.previousTag =
+                gitSemverTags[index + 1])
 
               if (!previousTag) {
                 if (options.append) {
@@ -303,16 +356,24 @@ function mergeConfig (options, context, gitRawCommitsOpts, parserOpts, writerOpt
               }
             } else if (!context.currentTag) {
               if (options.lernaPackage) {
-                context.currentTag = options.lernaPackage + '@' + context.version
+                context.currentTag =
+                  options.lernaPackage + '@' + context.version
               } else if (options.tagPrefix) {
                 context.currentTag = options.tagPrefix + context.version
               } else {
-                context.currentTag = guessNextTag(gitSemverTags[0], context.version)
+                context.currentTag = guessNextTag(
+                  gitSemverTags[0],
+                  context.version
+                )
               }
             }
           }
 
-          if (!_.isBoolean(context.linkCompare) && context.previousTag && context.currentTag) {
+          if (
+            !_.isBoolean(context.linkCompare) &&
+            context.previousTag &&
+            context.currentTag
+          ) {
             context.linkCompare = true
           }
 
@@ -320,22 +381,23 @@ function mergeConfig (options, context, gitRawCommitsOpts, parserOpts, writerOpt
         },
         debug: options.debug
       },
-      config.writerOpts, {
+      config.writerOpts,
+      {
         reverse: options.append,
         doFlush: options.outputUnreleased
       },
       writerOpts
-      )
+    )
 
-      return {
-        options: options,
-        context: context,
-        gitRawCommitsOpts: gitRawCommitsOpts,
-        parserOpts: parserOpts,
-        writerOpts: writerOpts,
-        gitRawExecOpts: gitRawExecOpts
-      }
-    })
+    return {
+      options: options,
+      context: context,
+      gitRawCommitsOpts: gitRawCommitsOpts,
+      parserOpts: parserOpts,
+      writerOpts: writerOpts,
+      gitRawExecOpts: gitRawExecOpts
+    }
+  })
 }
 
 module.exports = mergeConfig

@@ -1,7 +1,7 @@
 'use strict'
 
 module.exports = function getParserOpts(config) {
-  const issuePrefixes = config && config.issuePrefixes || ['#']
+  const issuePrefixes = (config && config.issuePrefixes) || ['#']
   return {
     headerPattern: /^(\w*)(?:\((.*)\))?!?: (.*)$/,
     breakingHeaderPattern: /^(\w*)(?:\((.*)\))?!: (.*)$/,

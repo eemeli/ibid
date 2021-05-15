@@ -10,35 +10,50 @@ const through = require('through2')
 const execFileSync = require('child_process').execFileSync
 const mergeConfig = require('./merge-config')
 
-function conventionalChangelog (options, context, gitRawCommitsOpts, parserOpts, writerOpts, gitRawExecOpts) {
+function conventionalChangelog(
+  options,
+  context,
+  gitRawCommitsOpts,
+  parserOpts,
+  writerOpts,
+  gitRawExecOpts
+) {
   writerOpts = writerOpts || {}
 
   const readable = new stream.Readable({
     objectMode: writerOpts.includeDetails
   })
-  readable._read = function () { }
+  readable._read = function () {}
 
   let commitsErrorThrown = false
 
   let commitsStream = new stream.Readable({
     objectMode: true
   })
-  commitsStream._read = function () { }
+  commitsStream._read = function () {}
 
-  function commitsRange (from, to) {
-    return gitRawCommits(_.merge({}, gitRawCommitsOpts, {
-      from: from,
-      to: to
-    }))
-      .on('error', function (err) {
-        if (!commitsErrorThrown) {
-          setImmediate(commitsStream.emit.bind(commitsStream), 'error', err)
-          commitsErrorThrown = true
-        }
+  function commitsRange(from, to) {
+    return gitRawCommits(
+      _.merge({}, gitRawCommitsOpts, {
+        from: from,
+        to: to
       })
+    ).on('error', function (err) {
+      if (!commitsErrorThrown) {
+        setImmediate(commitsStream.emit.bind(commitsStream), 'error', err)
+        commitsErrorThrown = true
+      }
+    })
   }
 
-  mergeConfig(options, context, gitRawCommitsOpts, parserOpts, writerOpts, gitRawExecOpts)
+  mergeConfig(
+    options,
+    context,
+    gitRawCommitsOpts,
+    parserOpts,
+    writerOpts,
+    gitRawExecOpts
+  )
     .then(function (data) {
       options = data.options
       context = data.context
@@ -56,16 +71,16 @@ function conventionalChangelog (options, context, gitRawCommitsOpts, parserOpts,
 
         if (gitRawCommitsOpts.from) {
           if (reverseTags.indexOf(gitRawCommitsOpts.from) !== -1) {
-            reverseTags = reverseTags.slice(reverseTags.indexOf(gitRawCommitsOpts.from))
+            reverseTags = reverseTags.slice(
+              reverseTags.indexOf(gitRawCommitsOpts.from)
+            )
           } else {
             reverseTags = [gitRawCommitsOpts.from, 'HEAD']
           }
         }
 
         let streams = reverseTags.map((to, i) => {
-          const from = i > 0
-            ? reverseTags[i - 1]
-            : ''
+          const from = i > 0 ? reverseTags[i - 1] : ''
           return commitsRange(from, to)
         })
 
@@ -77,7 +92,8 @@ function conventionalChangelog (options, context, gitRawCommitsOpts, parserOpts,
           streams.reverse()
         }
 
-        streams.reduce((prev, next) => next.pipe(addStream(prev)))
+        streams
+          .reduce((prev, next) => next.pipe(addStream(prev)))
           .on('data', function (data) {
             setImmediate(commitsStream.emit.bind(commitsStream), 'data', data)
           })
@@ -100,13 +116,15 @@ function conventionalChangelog (options, context, gitRawCommitsOpts, parserOpts,
         })
         // it would be better if `gitRawCommits` could spit out better formatted data
         // so we don't need to transform here
-        .pipe(through.obj(function (chunk, enc, cb) {
-          try {
-            options.transform.call(this, chunk, cb)
-          } catch (err) {
-            cb(err)
-          }
-        }))
+        .pipe(
+          through.obj(function (chunk, enc, cb) {
+            try {
+              options.transform.call(this, chunk, cb)
+            } catch (err) {
+              cb(err)
+            }
+          })
+        )
         .on('error', function (err) {
           err.message = 'Error in options.transform: ' + err.message
           setImmediate(readable.emit.bind(readable), 'error', err)
@@ -116,23 +134,29 @@ function conventionalChangelog (options, context, gitRawCommitsOpts, parserOpts,
           err.message = 'Error in conventional-changelog-writer: ' + err.message
           setImmediate(readable.emit.bind(readable), 'error', err)
         })
-        .pipe(through({
-          objectMode: writerOpts.includeDetails
-        }, function (chunk, enc, cb) {
-          try {
-            readable.push(chunk)
-          } catch (err) {
-            setImmediate(function () {
-              throw err
-            })
-          }
+        .pipe(
+          through(
+            {
+              objectMode: writerOpts.includeDetails
+            },
+            function (chunk, enc, cb) {
+              try {
+                readable.push(chunk)
+              } catch (err) {
+                setImmediate(function () {
+                  throw err
+                })
+              }
 
-          cb()
-        }, function (cb) {
-          readable.push(null)
+              cb()
+            },
+            function (cb) {
+              readable.push(null)
 
-          cb()
-        }))
+              cb()
+            }
+          )
+        )
     })
     .catch(function (err) {
       setImmediate(readable.emit.bind(readable), 'error', err)
