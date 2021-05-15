@@ -17,22 +17,37 @@ module.exports = function (parameter) {
       parserOpts(config),
       recommendedBumpOpts(config),
       writerOpts(config)
-    ]).spread((conventionalChangelog, parserOpts, recommendedBumpOpts, writerOpts) => {
-      parameter(null, { gitRawCommitsOpts: { noMerges: null }, conventionalChangelog, parserOpts, recommendedBumpOpts, writerOpts })
-    })
+    ]).spread(
+      (conventionalChangelog, parserOpts, recommendedBumpOpts, writerOpts) => {
+        parameter(null, {
+          gitRawCommitsOpts: { noMerges: null },
+          conventionalChangelog,
+          parserOpts,
+          recommendedBumpOpts,
+          writerOpts
+        })
+      }
+    )
   } else {
     const config = parameter || {}
     return presetOpts(config)
   }
 }
 
-function presetOpts (config) {
+function presetOpts(config) {
   return Q.all([
     conventionalChangelog(config),
     parserOpts(config),
     recommendedBumpOpts(config),
     writerOpts(config)
-  ]).spread((conventionalChangelog, parserOpts, recommendedBumpOpts, writerOpts) => {
-    return { conventionalChangelog, parserOpts, recommendedBumpOpts, writerOpts }
-  })
+  ]).spread(
+    (conventionalChangelog, parserOpts, recommendedBumpOpts, writerOpts) => {
+      return {
+        conventionalChangelog,
+        parserOpts,
+        recommendedBumpOpts,
+        writerOpts
+      }
+    }
+  )
 }

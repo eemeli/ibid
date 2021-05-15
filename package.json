@@ -5,7 +5,7 @@
   "bin": "./version",
   "scripts": {
     "lint": "eslint src/",
-    "prettier": "prettier . --write",
+    "prettier": "prettier . --ignore-unknown --write",
     "test": "mocha 'src/**/*.spec.js'"
   },
   "repository": {

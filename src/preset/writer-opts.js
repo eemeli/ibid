@@ -11,7 +11,8 @@ const resolve = require('path').resolve
  */
 const owner = '{{#if this.owner}}{{~this.owner}}{{else}}{{~@root.owner}}{{/if}}'
 const host = '{{~@root.host}}'
-const repository = '{{#if this.repository}}{{~this.repository}}{{else}}{{~@root.repository}}{{/if}}'
+const repository =
+  '{{#if this.repository}}{{~this.repository}}{{else}}{{~@root.repository}}{{/if}}'
 
 module.exports = function (config) {
   config = defaultConfig(config)
@@ -38,25 +39,26 @@ module.exports = function (config) {
     readFile(resolve(__dirname, './templates/header.hbs'), 'utf-8'),
     readFile(resolve(__dirname, './templates/commit.hbs'), 'utf-8'),
     readFile(resolve(__dirname, './templates/footer.hbs'), 'utf-8')
-  ])
-    .spread((template, header, commit, footer) => {
-      const writerOpts = getWriterOpts(config)
+  ]).spread((template, header, commit, footer) => {
+    const writerOpts = getWriterOpts(config)
 
-      writerOpts.mainTemplate = template
-      writerOpts.headerPartial = header
-        .replace(/{{compareUrlFormat}}/g, compareUrlFormat)
-      writerOpts.commitPartial = commit
-        .replace(/{{commitUrlFormat}}/g, commitUrlFormat)
-        .replace(/{{issueUrlFormat}}/g, issueUrlFormat)
-      writerOpts.footerPartial = footer
+    writerOpts.mainTemplate = template
+    writerOpts.headerPartial = header.replace(
+      /{{compareUrlFormat}}/g,
+      compareUrlFormat
+    )
+    writerOpts.commitPartial = commit
+      .replace(/{{commitUrlFormat}}/g, commitUrlFormat)
+      .replace(/{{issueUrlFormat}}/g, issueUrlFormat)
+    writerOpts.footerPartial = footer
 
-      return writerOpts
-    })
+    return writerOpts
+  })
 }
 
-function findTypeEntry (types, commit) {
-  const typeKey = (commit.revert ? 'revert' : (commit.type || '')).toLowerCase()
-  return types.find((entry) => {
+function findTypeEntry(types, commit) {
+  const typeKey = (commit.revert ? 'revert' : commit.type || '').toLowerCase()
+  return types.find(entry => {
     if (entry.type !== typeKey) {
       return false
     }
@@ -67,7 +69,7 @@ function findTypeEntry (types, commit) {
   })
 }
 
-function getWriterOpts (config) {
+function getWriterOpts(config) {
   config = defaultConfig(config)
 
   return {
@@ -87,8 +89,7 @@ function getWriterOpts (config) {
       })
 
       // breaking changes attached to any type are still displayed.
-      if (discard && (entry === undefined ||
-          entry.hidden)) return
+      if (discard && (entry === undefined || entry.hidden)) return
 
       if (entry) commit.type = entry.section
 
@@ -103,7 +104,8 @@ function getWriterOpts (config) {
       if (typeof commit.subject === 'string') {
         // Issue URLs.
         config.issuePrefixes.join('|')
-        const issueRegEx = '(' + config.issuePrefixes.join('|') + ')' + '([0-9]+)'
+        const issueRegEx =
+          '(' + config.issuePrefixes.join('|') + ')' + '([0-9]+)'
         const re = new RegExp(issueRegEx, 'g')
 
         commit.subject = commit.subject.replace(re, (_, prefix, issue) => {
@@ -118,21 +120,24 @@ function getWriterOpts (config) {
           return `[${prefix}${issue}](${url})`
         })
         // User URLs.
-        commit.subject = commit.subject.replace(/\B@([a-z0-9](?:-?[a-z0-9/]){0,38})/g, (_, user) => {
-          // TODO: investigate why this code exists.
-          if (user.includes('/')) {
-            return `@${user}`
+        commit.subject = commit.subject.replace(
+          /\B@([a-z0-9](?:-?[a-z0-9/]){0,38})/g,
+          (_, user) => {
+            // TODO: investigate why this code exists.
+            if (user.includes('/')) {
+              return `@${user}`
+            }
+
+            const usernameUrl = expandTemplate(config.userUrlFormat, {
+              host: context.host,
+              owner: context.owner,
+              repository: context.repository,
+              user: user
+            })
+
+            return `[@${user}](${usernameUrl})`
           }
-
-          const usernameUrl = expandTemplate(config.userUrlFormat, {
-            host: context.host,
-            owner: context.owner,
-            repository: context.repository,
-            user: user
-          })
-
-          return `[@${user}](${usernameUrl})`
-        })
+        )
       }
 
       // remove references that already appear in the subject
@@ -150,7 +155,12 @@ function getWriterOpts (config) {
     // the groupings of commit messages, e.g., Features vs., Bug Fixes, are
     // sorted based on their probable importance:
     commitGroupsSort: (a, b) => {
-      const commitGroupOrder = ['Reverts', 'Performance Improvements', 'Bug Fixes', 'Features']
+      const commitGroupOrder = [
+        'Reverts',
+        'Performance Improvements',
+        'Bug Fixes',
+        'Features'
+      ]
       const gRankA = commitGroupOrder.indexOf(a.title)
       const gRankB = commitGroupOrder.indexOf(b.title)
       if (gRankA >= gRankB) {
@@ -166,7 +176,7 @@ function getWriterOpts (config) {
 }
 
 // merge user set configuration with default configuration.
-function defaultConfig (config) {
+function defaultConfig(config) {
   config = config || {}
   config.types = config.types || [
     { type: 'feat', section: 'Features' },
@@ -182,14 +192,15 @@ function defaultConfig (config) {
     { type: 'build', section: 'Build System', hidden: true },
     { type: 'ci', section: 'Continuous Integration', hidden: true }
   ]
-  config.issueUrlFormat = config.issueUrlFormat ||
-    '{{host}}/{{owner}}/{{repository}}/issues/{{id}}'
-  config.commitUrlFormat = config.commitUrlFormat ||
+  config.issueUrlFormat =
+    config.issueUrlFormat || '{{host}}/{{owner}}/{{repository}}/issues/{{id}}'
+  config.commitUrlFormat =
+    config.commitUrlFormat ||
     '{{host}}/{{owner}}/{{repository}}/commit/{{hash}}'
-  config.compareUrlFormat = config.compareUrlFormat ||
+  config.compareUrlFormat =
+    config.compareUrlFormat ||
     '{{host}}/{{owner}}/{{repository}}/compare/{{previousTag}}...{{currentTag}}'
-  config.userUrlFormat = config.userUrlFormat ||
-    '{{host}}/{{user}}'
+  config.userUrlFormat = config.userUrlFormat || '{{host}}/{{user}}'
   config.issuePrefixes = config.issuePrefixes || ['#']
 
   return config
@@ -197,7 +208,7 @@ function defaultConfig (config) {
 
 // expand on the simple mustache-style templates supported in
 // configuration (we may eventually want to use handlebars for this).
-function expandTemplate (template, context) {
+function expandTemplate(template, context) {
   let expanded = template
   Object.keys(context).forEach(key => {
     expanded = expanded.replace(new RegExp(`{{${key}}}`, 'g'), context[key])
