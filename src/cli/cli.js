@@ -6,6 +6,8 @@ const yargsParser = require('yargs-parser')
 const gitLog = require('../git/git-log')
 const gitTagList = require('../git/git-tag-list')
 const parseMessage = require('../message-parser/index')
+const getConfig = require('../recommend-bump/get-config')
+const recommendBump = require('../recommend-bump/recommend-bump')
 
 async function findPackages(patterns) {
   const res = {}
@@ -25,18 +27,26 @@ async function findPackages(patterns) {
 }
 
 ;(async function main() {
-  const argv = yargsParser(process.argv.slice(2))
+  const argv = yargsParser(process.argv.slice(2), {
+    alias: { preset: ['p'] },
+    narg: { preset: 1 },
+    string: ['preset']
+  })
+  const preset = argv.preset || 'conventionalcommits'
+  const config = await getConfig({ preset })
   const packages = await findPackages(argv._)
   if (packages.length === 0)
     throw new Error(`No packages found in: ${argv._.join(' ')}`)
   const tags = await gitTagList()
   for (const pkg of packages) {
     const tag = `${pkg.name}@${pkg.version}`
-    if (tags.includes(tag)) {
-      pkg.changes = await gitLog(tag, null, { path: pkg.root })
-      for (const commit of pkg.changes)
-        commit.parsed = parseMessage(commit.message)
-    } else throw new Error(`Current version tag not found: ${tag}`)
+    if (!tags.includes(tag))
+      throw new Error(`Current version tag not found: ${tag}`)
+    pkg.changes = await gitLog(tag, null, { path: pkg.root })
+    for (const commit of pkg.changes)
+      Object.assign(commit, parseMessage(commit.message, config.parserOpts))
+    const bump = await recommendBump(config.recommendedBumpOpts, pkg.changes)
+    console.log(tag, bump)
   }
-  console.dir(packages, { depth: null })
+  //console.dir(packages, { depth: null })
 })()
