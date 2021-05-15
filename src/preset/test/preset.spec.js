@@ -1,6 +1,6 @@
 'use strict'
 const conventionalChangelogCore = require('conventional-changelog-core')
-const getPreset = require('..')
+const getPreset = require('../preset')
 const preset = getPreset()
 const expect = require('chai').expect
 const mocha = require('mocha')
@@ -129,12 +129,8 @@ describe('conventionalcommits.org preset', function () {
   it('should work if there is no semver tag', function (done) {
     preparing(1)
 
-    conventionalChangelogCore({
-      config: preset
-    })
-      .on('error', function (err) {
-        done(err)
-      })
+    conventionalChangelogCore({ config: preset })
+      .on('error', done)
       .pipe(
         through(function (chunk) {
           chunk = chunk.toString()
@@ -186,12 +182,8 @@ describe('conventionalcommits.org preset', function () {
   it('should not list breaking change twice if ! is used', function (done) {
     preparing(1)
 
-    conventionalChangelogCore({
-      config: preset
-    })
-      .on('error', function (err) {
-        done(err)
-      })
+    conventionalChangelogCore({ config: preset })
+      .on('error', done)
       .pipe(
         through(function (chunk) {
           chunk = chunk.toString()
@@ -203,14 +195,8 @@ describe('conventionalcommits.org preset', function () {
 
   it('should allow alternative "types" configuration to be provided', function (done) {
     preparing(1)
-    conventionalChangelogCore({
-      config: require('..')({
-        types: []
-      })
-    })
-      .on('error', function (err) {
-        done(err)
-      })
+    conventionalChangelogCore({ config: require('../preset')({ types: [] }) })
+      .on('error', done)
       .pipe(
         through(function (chunk) {
           chunk = chunk.toString()
@@ -232,13 +218,11 @@ describe('conventionalcommits.org preset', function () {
   it('should allow matching "scope" to configuration', function (done) {
     preparing(1)
     conventionalChangelogCore({
-      config: require('..')({
+      config: require('../preset')({
         types: [{ type: 'chore', scope: 'deps', section: 'Dependencies' }]
       })
     })
-      .on('error', function (err) {
-        done(err)
-      })
+      .on('error', done)
       .pipe(
         through(function (chunk) {
           chunk = chunk.toString()
@@ -254,12 +238,8 @@ describe('conventionalcommits.org preset', function () {
 
   it('should properly format external repository issues', function (done) {
     preparing(1)
-    conventionalChangelogCore({
-      config: preset
-    })
-      .on('error', function (err) {
-        done(err)
-      })
+    conventionalChangelogCore({ config: preset })
+      .on('error', done)
       .pipe(
         through(function (chunk) {
           chunk = chunk.toString()
@@ -282,9 +262,7 @@ describe('conventionalcommits.org preset', function () {
         issueUrlFormat: 'issues://{{repository}}/issues/{{id}}'
       })
     })
-      .on('error', function (err) {
-        done(err)
-      })
+      .on('error', done)
       .pipe(
         through(function (chunk) {
           chunk = chunk.toString()
@@ -306,9 +284,7 @@ describe('conventionalcommits.org preset', function () {
         issuePrefixes: ['EXAMPLE-']
       })
     })
-      .on('error', function (err) {
-        done(err)
-      })
+      .on('error', done)
       .pipe(
         through(function (chunk) {
           chunk = chunk.toString()
@@ -323,12 +299,8 @@ describe('conventionalcommits.org preset', function () {
   it('should replace #[0-9]+ with GitHub format issue URL by default', function (done) {
     preparing(2)
 
-    conventionalChangelogCore({
-      config: preset
-    })
-      .on('error', function (err) {
-        done(err)
-      })
+    conventionalChangelogCore({ config: preset })
+      .on('error', done)
       .pipe(
         through(function (chunk) {
           chunk = chunk.toString()
@@ -343,12 +315,8 @@ describe('conventionalcommits.org preset', function () {
   it('should remove the issues that already appear in the subject', function (done) {
     preparing(3)
 
-    conventionalChangelogCore({
-      config: preset
-    })
-      .on('error', function (err) {
-        done(err)
-      })
+    conventionalChangelogCore({ config: preset })
+      .on('error', done)
       .pipe(
         through(function (chunk) {
           chunk = chunk.toString()
@@ -367,13 +335,9 @@ describe('conventionalcommits.org preset', function () {
     preparing(4)
 
     conventionalChangelogCore({
-      config: require('..')({
-        userUrlFormat: 'https://foo/{{user}}'
-      })
+      config: require('../preset')({ userUrlFormat: 'https://foo/{{user}}' })
     })
-      .on('error', function (err) {
-        done(err)
-      })
+      .on('error', done)
       .pipe(
         through(function (chunk) {
           chunk = chunk.toString()
@@ -386,12 +350,8 @@ describe('conventionalcommits.org preset', function () {
   it('should not discard commit if there is BREAKING CHANGE', function (done) {
     preparing(5)
 
-    conventionalChangelogCore({
-      config: preset
-    })
-      .on('error', function (err) {
-        done(err)
-      })
+    conventionalChangelogCore({ config: preset })
+      .on('error', done)
       .pipe(
         through(function (chunk) {
           chunk = chunk.toString()
@@ -411,12 +371,8 @@ describe('conventionalcommits.org preset', function () {
   it('should omit optional ! in breaking commit', function (done) {
     preparing(5)
 
-    conventionalChangelogCore({
-      config: preset
-    })
-      .on('error', function (err) {
-        done(err)
-      })
+    conventionalChangelogCore({ config: preset })
+      .on('error', done)
       .pipe(
         through(function (chunk) {
           chunk = chunk.toString()
@@ -433,13 +389,8 @@ describe('conventionalcommits.org preset', function () {
     preparing(6)
     let i = 0
 
-    conventionalChangelogCore({
-      config: preset,
-      outputUnreleased: true
-    })
-      .on('error', function (err) {
-        done(err)
-      })
+    conventionalChangelogCore({ config: preset, outputUnreleased: true })
+      .on('error', done)
       .pipe(
         through(
           function (chunk, enc, cb) {
@@ -463,13 +414,8 @@ describe('conventionalcommits.org preset', function () {
     preparing(7)
     let i = 0
 
-    conventionalChangelogCore({
-      config: preset,
-      outputUnreleased: true
-    })
-      .on('error', function (err) {
-        done(err)
-      })
+    conventionalChangelogCore({ config: preset, outputUnreleased: true })
+      .on('error', done)
       .pipe(
         through(
           function (chunk, enc, cb) {
@@ -494,18 +440,14 @@ describe('conventionalcommits.org preset', function () {
     let i = 0
 
     conventionalChangelogCore({
-      config: require('..')({
+      config: require('../preset')({
         commitUrlFormat: 'http://unknown/commit/{{hash}}',
         compareUrlFormat:
           'http://unknown/compare/{{previousTag}}...{{currentTag}}'
       }),
-      pkg: {
-        path: path.join(__dirname, 'fixtures/_unknown-host.json')
-      }
+      pkg: { path: path.join(__dirname, 'fixtures/_unknown-host.json') }
     })
-      .on('error', function (err) {
-        done(err)
-      })
+      .on('error', done)
       .pipe(
         through(
           function (chunk, enc, cb) {
@@ -531,13 +473,9 @@ describe('conventionalcommits.org preset', function () {
 
     conventionalChangelogCore({
       config: preset,
-      pkg: {
-        path: path.join(__dirname, 'fixtures/_known-host.json')
-      }
+      pkg: { path: path.join(__dirname, 'fixtures/_known-host.json') }
     })
-      .on('error', function (err) {
-        done(err)
-      })
+      .on('error', done)
       .pipe(
         through(
           function (chunk, enc, cb) {
@@ -568,13 +506,8 @@ describe('conventionalcommits.org preset', function () {
     preparing(8)
     let i = 0
 
-    conventionalChangelogCore({
-      config: preset
-    })
-      .on('error', function (err) {
-        console.info(err)
-        done(err)
-      })
+    conventionalChangelogCore({ config: preset })
+      .on('error', done)
       .pipe(
         through(
           function (chunk, enc, cb) {
@@ -606,13 +539,9 @@ describe('conventionalcommits.org preset', function () {
 
     conventionalChangelogCore({
       config: preset,
-      pkg: {
-        path: path.join(__dirname, 'fixtures/_ghe-host.json')
-      }
+      pkg: { path: path.join(__dirname, 'fixtures/_ghe-host.json') }
     })
-      .on('error', function (err) {
-        done(err)
-      })
+      .on('error', done)
       .pipe(
         through(function (chunk) {
           chunk = chunk.toString()
@@ -639,12 +568,8 @@ describe('conventionalcommits.org preset', function () {
   it('should only replace with link to user if it is an username', function (done) {
     preparing(9)
 
-    conventionalChangelogCore({
-      config: preset
-    })
-      .on('error', function (err) {
-        done(err)
-      })
+    conventionalChangelogCore({ config: preset })
+      .on('error', done)
       .pipe(
         through(function (chunk) {
           chunk = chunk.toString()
@@ -664,12 +589,8 @@ describe('conventionalcommits.org preset', function () {
   it('supports multiple lines of footer information', function (done) {
     preparing(9)
 
-    conventionalChangelogCore({
-      config: preset
-    })
-      .on('error', function (err) {
-        done(err)
-      })
+    conventionalChangelogCore({ config: preset })
+      .on('error', done)
       .pipe(
         through(function (chunk) {
           chunk = chunk.toString()
@@ -684,12 +605,8 @@ describe('conventionalcommits.org preset', function () {
   it('does not require that types are case sensitive', function (done) {
     preparing(9)
 
-    conventionalChangelogCore({
-      config: preset
-    })
-      .on('error', function (err) {
-        done(err)
-      })
+    conventionalChangelogCore({ config: preset })
+      .on('error', done)
       .pipe(
         through(function (chunk) {
           chunk = chunk.toString()
@@ -702,12 +619,8 @@ describe('conventionalcommits.org preset', function () {
   it('populates breaking change if ! is present', function (done) {
     preparing(9)
 
-    conventionalChangelogCore({
-      config: preset
-    })
-      .on('error', function (err) {
-        done(err)
-      })
+    conventionalChangelogCore({ config: preset })
+      .on('error', done)
       .pipe(
         through(function (chunk) {
           chunk = chunk.toString()
@@ -720,12 +633,8 @@ describe('conventionalcommits.org preset', function () {
   it('parses both default (Revert "<subject>") and custom (revert: <subject>) revert commits', function (done) {
     preparing(10)
 
-    conventionalChangelogCore({
-      config: preset
-    })
-      .on('error', function (err) {
-        done(err)
-      })
+    conventionalChangelogCore({ config: preset })
+      .on('error', done)
       .pipe(
         through(function (chunk) {
           chunk = chunk.toString()
