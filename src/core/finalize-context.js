@@ -30,17 +30,13 @@ const getFinalizeContext = (options, tags) =>
       const index = tags.indexOf(context.currentTag)
 
       // if `keyCommit.gitTags` is not a semver
-      if (index === -1) {
-        context.currentTag = currentTag || null
-      } else {
-        context.previousTag =
-          tags[index + 1] || (options.append ? firstCommitHash : lastCommitHash)
-      }
+      if (index === -1) context.currentTag = currentTag || null
+      else context.previousTag = tags[index + 1] || lastCommitHash
     } else {
       if (!context.previousTag) context.previousTag = tags[0]
       if (!context.currentTag) {
         if (context.version === 'Unreleased')
-          context.currentTag = options.append ? lastCommitHash : firstCommitHash
+          context.currentTag = firstCommitHash
         else if (options.lernaPackage)
           context.currentTag = options.lernaPackage + '@' + context.version
         else if (options.tagPrefix)
