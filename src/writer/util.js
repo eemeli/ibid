@@ -1,166 +1,102 @@
 'use strict'
-const conventionalCommitsFilter = require('conventional-commits-filter')
 const Handlebars = require('handlebars')
 const semver = require('semver')
 const _ = require('lodash')
 const stringify = require('json-stringify-safe')
 
-function compileTemplates(templates) {
-  const main = templates.mainTemplate
-  const headerPartial = templates.headerPartial
-  const commitPartial = templates.commitPartial
-  const footerPartial = templates.footerPartial
-  const partials = templates.partials
+const filterReverted = require('../commit-filter/reverted')
 
-  if (_.isString(headerPartial)) {
+function compileTemplates({
+  mainTemplate,
+  headerPartial,
+  commitPartial,
+  footerPartial,
+  partials
+}) {
+  if (typeof headerPartial === 'string')
     Handlebars.registerPartial('header', headerPartial)
-  }
-
-  if (_.isString(commitPartial)) {
+  if (typeof commitPartial === 'string')
     Handlebars.registerPartial('commit', commitPartial)
-  }
-
-  if (_.isString(footerPartial)) {
+  if (typeof footerPartial === 'string')
     Handlebars.registerPartial('footer', footerPartial)
-  }
-
-  _.forEach(partials, function (partial, name) {
-    if (_.isString(partial)) {
+  if (partials)
+    for (const [name, partial] of Object.entries(partials))
       Handlebars.registerPartial(name, partial)
-    }
-  })
-
-  return Handlebars.compile(main, {
-    noEscape: true
-  })
+  return Handlebars.compile(mainTemplate, { noEscape: true })
 }
 
 function functionify(strOrArr) {
-  if (strOrArr && !_.isFunction(strOrArr)) {
+  if (!strOrArr || typeof strOrArr === 'function') return strOrArr
+  if (Array.isArray(strOrArr))
     return (a, b) => {
       let str1 = ''
       let str2 = ''
-      if (Array.isArray(strOrArr)) {
-        for (const key of strOrArr) {
-          str1 += a[key] || ''
-          str2 += b[key] || ''
-        }
-      } else {
-        str1 += a[strOrArr]
-        str2 += b[strOrArr]
+      for (const key of strOrArr) {
+        str1 += a[key] || ''
+        str2 += b[key] || ''
       }
       return str1.localeCompare(str2)
     }
-  } else {
-    return strOrArr
-  }
+  return (a, b) => a[strOrArr].localeCompare(b[strOrArr])
 }
 
 function getCommitGroups(groupBy, commits, groupsSort, commitsSort) {
-  const commitGroups = []
-  const commitGroupsObj = _.groupBy(commits, function (commit) {
-    return commit[groupBy] || ''
-  })
-
-  _.forEach(commitGroupsObj, function (commits, title) {
-    if (title === '') {
-      title = false
-    }
-
-    if (commitsSort) {
-      commits.sort(commitsSort)
-    }
-
-    commitGroups.push({
-      title: title,
-      commits: commits
+  const commitGroupsObj = _.groupBy(commits, commit => commit[groupBy] || '')
+  const commitGroups = Object.entries(commitGroupsObj).map(
+    ([title, commits]) => ({
+      title: title === '' ? false : title,
+      commits: commitsSort ? commits.sort(commitsSort) : commits
     })
-  })
-
-  if (groupsSort) {
-    commitGroups.sort(groupsSort)
-  }
-
+  )
+  if (groupsSort) commitGroups.sort(groupsSort)
   return commitGroups
 }
 
 function getNoteGroups(notes, noteGroupsSort, notesSort) {
   const retGroups = []
-
-  _.forEach(notes, function (note) {
+  for (const note of notes) {
     const title = note.title
     let titleExists = false
-
-    _.forEach(retGroups, function (group) {
+    for (const group of retGroups) {
       if (group.title === title) {
         titleExists = true
         group.notes.push(note)
-        return false
+        break
       }
-    })
-
-    if (!titleExists) {
-      retGroups.push({
-        title: title,
-        notes: [note]
-      })
     }
-  })
-
-  if (noteGroupsSort) {
-    retGroups.sort(noteGroupsSort)
+    if (!titleExists) retGroups.push({ title, notes: [note] })
   }
-
-  if (notesSort) {
-    _.forEach(retGroups, function (group) {
-      group.notes.sort(notesSort)
-    })
-  }
-
+  if (noteGroupsSort) retGroups.sort(noteGroupsSort)
+  if (notesSort) for (const group of retGroups) group.notes.sort(notesSort)
   return retGroups
 }
 
 function processCommit(chunk, transform, context) {
-  let commit
-
   try {
     chunk = JSON.parse(chunk)
-  } catch (e) {}
-
-  commit = _.cloneDeep(chunk)
-
-  if (_.isFunction(transform)) {
-    commit = transform(commit, context)
-
-    if (commit) {
-      commit.raw = chunk
-    }
-
-    return commit
+  } catch (e) {
+    // ignore any error
   }
 
-  _.forEach(transform, function (el, path) {
-    let value = _.get(commit, path)
-
-    if (_.isFunction(el)) {
-      value = el(value, path)
-    } else {
-      value = el
+  const commit = _.cloneDeep(chunk)
+  if (typeof transform === 'function') {
+    const tc = transform(commit, context)
+    if (tc) tc.raw = chunk
+    return tc
+  }
+  if (transform)
+    for (const [path, el] of Object.entries(transform)) {
+      const value =
+        typeof el === 'function' ? el(_.get(commit, path), path) : el
+      _.set(commit, path, value)
     }
-
-    _.set(commit, path, value)
-  })
-
   commit.raw = chunk
-
   return commit
 }
 
 function getExtraContext(commits, notes, options) {
-  const context = {}
-
   // group `commits` by `options.groupBy`
-  context.commitGroups = getCommitGroups(
+  const commitGroups = getCommitGroups(
     options.groupBy,
     commits,
     options.commitGroupsSort,
@@ -168,35 +104,27 @@ function getExtraContext(commits, notes, options) {
   )
 
   // group `notes` for footer
-  context.noteGroups = getNoteGroups(
+  const noteGroups = getNoteGroups(
     notes,
     options.noteGroupsSort,
     options.notesSort
   )
 
-  return context
+  return { commitGroups, noteGroups }
 }
 
 function generate(options, commits, context, keyCommit) {
   let notes = []
-  let filteredCommits
   const compiled = compileTemplates(options)
 
-  if (options.ignoreReverted) {
-    filteredCommits = conventionalCommitsFilter(commits)
-  } else {
-    filteredCommits = _.clone(commits)
-  }
+  const filteredCommits = options.ignoreReverted
+    ? filterReverted(commits)
+    : _.clone(commits)
 
-  _.forEach(filteredCommits, function (commit) {
-    _.map(commit.notes, function (note) {
-      note.commit = commit
-
-      return note
-    })
-
+  for (const commit of filteredCommits) {
+    for (const note of commit.notes) note.commit = commit
     notes = notes.concat(commit.notes)
-  })
+  }
 
   context = _.merge(
     {},
@@ -205,14 +133,10 @@ function generate(options, commits, context, keyCommit) {
     getExtraContext(filteredCommits, notes, options)
   )
 
-  if (keyCommit && keyCommit.committerDate) {
+  if (keyCommit && keyCommit.committerDate)
     context.date = keyCommit.committerDate
-  }
-
-  if (context.version && semver.valid(context.version)) {
+  if (context.version && semver.valid(context.version))
     context.isPatch = context.isPatch || semver.patch(context.version) !== 0
-  }
-
   context = options.finalizeContext(
     context,
     options,
@@ -221,16 +145,16 @@ function generate(options, commits, context, keyCommit) {
     commits
   )
   options.debug('Your final context is:\n' + stringify(context, null, 2))
-
   return compiled(context)
 }
 
 module.exports = {
-  compileTemplates: compileTemplates,
-  functionify: functionify,
-  getCommitGroups: getCommitGroups,
-  getNoteGroups: getNoteGroups,
-  processCommit: processCommit,
-  getExtraContext: getExtraContext,
-  generate: generate
+  functionify,
+  generate,
+  processCommit,
+
+  compileTemplates,
+  getCommitGroups,
+  getNoteGroups,
+  getExtraContext
 }

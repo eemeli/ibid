@@ -955,25 +955,6 @@ describe('conventionalChangelogCore', function () {
     })
   })
 
-  it('should be object mode if `writerOpts.includeDetails` is `true`', function (done) {
-    preparing(8)
-
-    conventionalChangelogCore(
-      {},
-      {},
-      {},
-      {},
-      {
-        includeDetails: true
-      }
-    ).pipe(
-      through.obj(function (chunk) {
-        expect(chunk).to.be.an('object')
-        done()
-      })
-    )
-  })
-
   it('should pass `parserOpts` to conventional-commits-parser', function (done) {
     preparing(9)
 

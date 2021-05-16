@@ -20,7 +20,7 @@ function conventionalChangelog(
 ) {
   writerOpts = writerOpts || {}
 
-  const readable = new Readable({ objectMode: writerOpts.includeDetails })
+  const readable = new Readable({ objectMode: false })
   readable._read = function () {}
 
   let commitsStream = new Readable({ objectMode: true })
@@ -122,7 +122,7 @@ function conventionalChangelog(
         })
         .pipe(
           through(
-            { objectMode: writerOpts.includeDetails },
+            { objectMode: false },
             function (chunk, enc, cb) {
               try {
                 readable.push(chunk)
