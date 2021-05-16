@@ -5,7 +5,7 @@ const semver = require('semver')
 const _ = require('lodash')
 const stringify = require('json-stringify-safe')
 
-function compileTemplates (templates) {
+function compileTemplates(templates) {
   const main = templates.mainTemplate
   const headerPartial = templates.headerPartial
   const commitPartial = templates.commitPartial
@@ -35,7 +35,7 @@ function compileTemplates (templates) {
   })
 }
 
-function functionify (strOrArr) {
+function functionify(strOrArr) {
   if (strOrArr && !_.isFunction(strOrArr)) {
     return (a, b) => {
       let str1 = ''
@@ -56,7 +56,7 @@ function functionify (strOrArr) {
   }
 }
 
-function getCommitGroups (groupBy, commits, groupsSort, commitsSort) {
+function getCommitGroups(groupBy, commits, groupsSort, commitsSort) {
   const commitGroups = []
   const commitGroupsObj = _.groupBy(commits, function (commit) {
     return commit[groupBy] || ''
@@ -84,7 +84,7 @@ function getCommitGroups (groupBy, commits, groupsSort, commitsSort) {
   return commitGroups
 }
 
-function getNoteGroups (notes, noteGroupsSort, notesSort) {
+function getNoteGroups(notes, noteGroupsSort, notesSort) {
   const retGroups = []
 
   _.forEach(notes, function (note) {
@@ -120,7 +120,7 @@ function getNoteGroups (notes, noteGroupsSort, notesSort) {
   return retGroups
 }
 
-function processCommit (chunk, transform, context) {
+function processCommit(chunk, transform, context) {
   let commit
 
   try {
@@ -156,19 +156,28 @@ function processCommit (chunk, transform, context) {
   return commit
 }
 
-function getExtraContext (commits, notes, options) {
+function getExtraContext(commits, notes, options) {
   const context = {}
 
   // group `commits` by `options.groupBy`
-  context.commitGroups = getCommitGroups(options.groupBy, commits, options.commitGroupsSort, options.commitsSort)
+  context.commitGroups = getCommitGroups(
+    options.groupBy,
+    commits,
+    options.commitGroupsSort,
+    options.commitsSort
+  )
 
   // group `notes` for footer
-  context.noteGroups = getNoteGroups(notes, options.noteGroupsSort, options.notesSort)
+  context.noteGroups = getNoteGroups(
+    notes,
+    options.noteGroupsSort,
+    options.notesSort
+  )
 
   return context
 }
 
-function generate (options, commits, context, keyCommit) {
+function generate(options, commits, context, keyCommit) {
   let notes = []
   let filteredCommits
   const compiled = compileTemplates(options)
@@ -189,7 +198,12 @@ function generate (options, commits, context, keyCommit) {
     notes = notes.concat(commit.notes)
   })
 
-  context = _.merge({}, context, keyCommit, getExtraContext(filteredCommits, notes, options))
+  context = _.merge(
+    {},
+    context,
+    keyCommit,
+    getExtraContext(filteredCommits, notes, options)
+  )
 
   if (keyCommit && keyCommit.committerDate) {
     context.date = keyCommit.committerDate
@@ -199,7 +213,13 @@ function generate (options, commits, context, keyCommit) {
     context.isPatch = context.isPatch || semver.patch(context.version) !== 0
   }
 
-  context = options.finalizeContext(context, options, filteredCommits, keyCommit, commits)
+  context = options.finalizeContext(
+    context,
+    options,
+    filteredCommits,
+    keyCommit,
+    commits
+  )
   options.debug('Your final context is:\n' + stringify(context, null, 2))
 
   return compiled(context)

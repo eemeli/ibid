@@ -29,9 +29,11 @@ beforeEach(function () {
 
 describe('template', function () {
   it('should generate template', function () {
-    templateContext.commitGroups = [{
-      commits: [1, 2]
-    }]
+    templateContext.commitGroups = [
+      {
+        commits: [1, 2]
+      }
+    ]
     const log = Handlebars.compile(template)(templateContext)
 
     expect(log).to.equal('my header\n\nmy commit\nmy commit\n\nmy footer\n\n\n')

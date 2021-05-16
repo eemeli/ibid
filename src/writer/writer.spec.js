@@ -15,36 +15,44 @@ const commits = [
     header: 'feat(scope): broadcast $destroy event on scope destruction',
     body: null,
     footer: 'Closes #1',
-    notes: [{
-      title: 'BREAKING NEWS',
-      text: 'breaking news'
-    }],
-    references: [{
-      action: 'Closes',
-      repository: null,
-      issue: '1',
-      raw: '#1'
-    }, {
-      action: 'Closes',
-      repository: null,
-      issue: '2',
-      raw: '#2'
-    }, {
-      action: 'Closes',
-      repository: null,
-      issue: '3',
-      raw: '#3'
-    }]
+    notes: [
+      {
+        title: 'BREAKING NEWS',
+        text: 'breaking news'
+      }
+    ],
+    references: [
+      {
+        action: 'Closes',
+        repository: null,
+        issue: '1',
+        raw: '#1'
+      },
+      {
+        action: 'Closes',
+        repository: null,
+        issue: '2',
+        raw: '#2'
+      },
+      {
+        action: 'Closes',
+        repository: null,
+        issue: '3',
+        raw: '#3'
+      }
+    ]
   },
   {
     hash: '13f31602f396bc269076ab4d389cfd8ca94b20ba',
     header: 'fix(ng-list): Allow custom separator',
     body: 'bla bla bla',
     footer: 'BREAKING CHANGE: some breaking change',
-    notes: [{
-      title: 'BREAKING CHANGE',
-      text: 'some breaking change'
-    }],
+    notes: [
+      {
+        title: 'BREAKING CHANGE',
+        text: 'some breaking change'
+      }
+    ],
     references: []
   },
   {
@@ -57,7 +65,8 @@ const commits = [
   },
   {
     hash: '5f241416b79994096527d319395f654a8972591a',
-    header: 'refactor(name): rename this module to conventional-changelog-writer',
+    header:
+      'refactor(name): rename this module to conventional-changelog-writer',
     body: '',
     footer: '',
     notes: [],
@@ -66,7 +75,7 @@ const commits = [
 ]
 
 describe('conventionalChangelogWriter', function () {
-  function getStream () {
+  function getStream() {
     const upstream = through.obj()
     for (const commit of commits) {
       upstream.write(commit)
@@ -80,17 +89,20 @@ describe('conventionalChangelogWriter', function () {
       let i = 0
       const upstream = through.obj()
       upstream.end()
-      upstream
-        .pipe(conventionalChangelogWriter())
-        .pipe(through(function (chunk, enc, cb) {
-          expect(chunk.toString()).to.equal('##  (' + today + ')\n\n\n\n\n')
+      upstream.pipe(conventionalChangelogWriter()).pipe(
+        through(
+          function (chunk, enc, cb) {
+            expect(chunk.toString()).to.equal('##  (' + today + ')\n\n\n\n\n')
 
-          i++
-          cb(null)
-        }, function () {
-          expect(i).to.equal(1)
-          done()
-        }))
+            i++
+            cb(null)
+          },
+          function () {
+            expect(i).to.equal(1)
+            done()
+          }
+        )
+      )
     })
   })
 
@@ -107,14 +119,21 @@ describe('conventionalChangelogWriter', function () {
       expect(changelog).to.include('https://github.com/a/b/commits/13f3160')
       getStream()
         .pipe(conventionalChangelogWriter(context))
-        .pipe(through(function (chunk, enc, cb) {
-          expect(chunk.toString()).to.include('https://github.com/a/b/commits/13f3160')
-          i++
-          cb(null)
-        }, function () {
-          expect(i).to.equal(1)
-          done()
-        }))
+        .pipe(
+          through(
+            function (chunk, enc, cb) {
+              expect(chunk.toString()).to.include(
+                'https://github.com/a/b/commits/13f3160'
+              )
+              i++
+              cb(null)
+            },
+            function () {
+              expect(i).to.equal(1)
+              done()
+            }
+          )
+        )
     })
 
     it('should auto link if `context.repoUrl`, `context.commit` and `context.issue` are truthy', function (done) {
@@ -128,15 +147,22 @@ describe('conventionalChangelogWriter', function () {
       expect(changelog).to.include('https://github.com/a/b/commits/13f3160')
       getStream()
         .pipe(conventionalChangelogWriter(context))
-        .pipe(through(function (chunk, enc, cb) {
-          expect(chunk.toString()).to.include('https://github.com/a/b/commits/13f3160')
+        .pipe(
+          through(
+            function (chunk, enc, cb) {
+              expect(chunk.toString()).to.include(
+                'https://github.com/a/b/commits/13f3160'
+              )
 
-          i++
-          cb(null)
-        }, function () {
-          expect(i).to.equal(1)
-          done()
-        }))
+              i++
+              cb(null)
+            },
+            function () {
+              expect(i).to.equal(1)
+              done()
+            }
+          )
+        )
     })
 
     it('should not auto link', function (done) {
@@ -145,15 +171,22 @@ describe('conventionalChangelogWriter', function () {
       expect(changelog).to.not.include('https://github.com/a/b/commits/13f3160')
       getStream()
         .pipe(conventionalChangelogWriter())
-        .pipe(through(function (chunk, enc, cb) {
-          expect(chunk.toString()).to.not.include('https://github.com/a/b/commits/13f3160')
+        .pipe(
+          through(
+            function (chunk, enc, cb) {
+              expect(chunk.toString()).to.not.include(
+                'https://github.com/a/b/commits/13f3160'
+              )
 
-          i++
-          cb(null)
-        }, function () {
-          expect(i).to.equal(1)
-          done()
-        }))
+              i++
+              cb(null)
+            },
+            function () {
+              expect(i).to.equal(1)
+              done()
+            }
+          )
+        )
     })
 
     it('should not link references', function (done) {
@@ -169,15 +202,22 @@ describe('conventionalChangelogWriter', function () {
       expect(changelog).to.not.include('https://github.com/a/b/commits/13f3160')
       getStream()
         .pipe(conventionalChangelogWriter(context))
-        .pipe(through(function (chunk, enc, cb) {
-          expect(chunk.toString()).to.not.include('https://github.com/a/b/commits/13f3160')
+        .pipe(
+          through(
+            function (chunk, enc, cb) {
+              expect(chunk.toString()).to.not.include(
+                'https://github.com/a/b/commits/13f3160'
+              )
 
-          i++
-          cb(null)
-        }, function () {
-          expect(i).to.equal(1)
-          done()
-        }))
+              i++
+              cb(null)
+            },
+            function () {
+              expect(i).to.equal(1)
+              done()
+            }
+          )
+        )
     })
   })
 
@@ -185,61 +225,59 @@ describe('conventionalChangelogWriter', function () {
     it('should transform the commit with context', function (done) {
       let i = 0
       let called = false
-      conventionalChangelogWriter.parseArray(commits, {}, {
-        transform: function (commit, context) {
-          expect(context).to.eql({
-            commit: 'commits',
-            issue: 'issues',
-            date: today
-          })
-          called = true
-          return commit
-        }
-      })
-      expect(called).to.equal(true)
-      getStream()
-        .pipe(conventionalChangelogWriter({}, {
+      conventionalChangelogWriter.parseArray(
+        commits,
+        {},
+        {
           transform: function (commit, context) {
             expect(context).to.eql({
               commit: 'commits',
               issue: 'issues',
               date: today
             })
-
+            called = true
             return commit
           }
-        }))
-        .pipe(through(function (chunk, enc, cb) {
-          i++
-          cb(null)
-        }, function () {
-          expect(i).to.equal(1)
-          done()
-        }))
+        }
+      )
+      expect(called).to.equal(true)
+      getStream()
+        .pipe(
+          conventionalChangelogWriter(
+            {},
+            {
+              transform: function (commit, context) {
+                expect(context).to.eql({
+                  commit: 'commits',
+                  issue: 'issues',
+                  date: today
+                })
+
+                return commit
+              }
+            }
+          )
+        )
+        .pipe(
+          through(
+            function (chunk, enc, cb) {
+              i++
+              cb(null)
+            },
+            function () {
+              expect(i).to.equal(1)
+              done()
+            }
+          )
+        )
     })
 
     it('should merge with the provided transform object', function (done) {
       let i = 0
-      const changelog = conventionalChangelogWriter.parseArray(commits, {}, {
-        transform: {
-          notes: function (notes) {
-            map(notes, function (note) {
-              if (note.title === 'BREAKING CHANGE') {
-                note.title = 'BREAKING CHANGES'
-              }
-
-              return note
-            })
-
-            return notes
-          }
-        }
-      })
-      expect(changelog).to.include('13f3160')
-      expect(changelog).to.include('BREAKING CHANGES')
-      expect(changelog).to.not.include('13f31602f396bc269076ab4d389cfd8ca94b20ba')
-      getStream()
-        .pipe(conventionalChangelogWriter({}, {
+      const changelog = conventionalChangelogWriter.parseArray(
+        commits,
+        {},
+        {
           transform: {
             notes: function (notes) {
               map(notes, function (note) {
@@ -253,45 +291,93 @@ describe('conventionalChangelogWriter', function () {
               return notes
             }
           }
-        }))
-        .pipe(through(function (chunk, enc, cb) {
-          chunk = chunk.toString()
+        }
+      )
+      expect(changelog).to.include('13f3160')
+      expect(changelog).to.include('BREAKING CHANGES')
+      expect(changelog).to.not.include(
+        '13f31602f396bc269076ab4d389cfd8ca94b20ba'
+      )
+      getStream()
+        .pipe(
+          conventionalChangelogWriter(
+            {},
+            {
+              transform: {
+                notes: function (notes) {
+                  map(notes, function (note) {
+                    if (note.title === 'BREAKING CHANGE') {
+                      note.title = 'BREAKING CHANGES'
+                    }
 
-          expect(chunk).to.include('13f3160')
-          expect(chunk).to.include('BREAKING CHANGES')
-          expect(chunk).to.not.include('13f31602f396bc269076ab4d389cfd8ca94b20ba')
+                    return note
+                  })
 
-          i++
-          cb(null)
-        }, function () {
-          expect(i).to.equal(1)
-          done()
-        }))
+                  return notes
+                }
+              }
+            }
+          )
+        )
+        .pipe(
+          through(
+            function (chunk, enc, cb) {
+              chunk = chunk.toString()
+
+              expect(chunk).to.include('13f3160')
+              expect(chunk).to.include('BREAKING CHANGES')
+              expect(chunk).to.not.include(
+                '13f31602f396bc269076ab4d389cfd8ca94b20ba'
+              )
+
+              i++
+              cb(null)
+            },
+            function () {
+              expect(i).to.equal(1)
+              done()
+            }
+          )
+        )
     })
 
     it('should ignore the commit if tranform returns `null`', function (done) {
       let i = 0
-      const changelog = conventionalChangelogWriter.parseArray(commits, {}, {
-        transform: function () {
-          return false
-        }
-      })
-      expect(changelog).to.equal('##  (' + today + ')\n\n\n\n\n')
-      getStream()
-        .pipe(conventionalChangelogWriter({}, {
+      const changelog = conventionalChangelogWriter.parseArray(
+        commits,
+        {},
+        {
           transform: function () {
             return false
           }
-        }))
-        .pipe(through(function (chunk, enc, cb) {
-          expect(chunk.toString()).to.equal('##  (' + today + ')\n\n\n\n\n')
+        }
+      )
+      expect(changelog).to.equal('##  (' + today + ')\n\n\n\n\n')
+      getStream()
+        .pipe(
+          conventionalChangelogWriter(
+            {},
+            {
+              transform: function () {
+                return false
+              }
+            }
+          )
+        )
+        .pipe(
+          through(
+            function (chunk, enc, cb) {
+              expect(chunk.toString()).to.equal('##  (' + today + ')\n\n\n\n\n')
 
-          i++
-          cb(null)
-        }, function () {
-          expect(i).to.equal(1)
-          done()
-        }))
+              i++
+              cb(null)
+            },
+            function () {
+              expect(i).to.equal(1)
+              done()
+            }
+          )
+        )
     })
   })
 
@@ -323,7 +409,8 @@ describe('conventionalChangelogWriter', function () {
         committerDate: '2015-04-07 15:01:30 +1000'
       },
       {
-        header: 'refactor(name): rename this module to conventional-changelog-writer',
+        header:
+          'refactor(name): rename this module to conventional-changelog-writer',
         body: null,
         footer: null,
         notes: [],
@@ -332,7 +419,7 @@ describe('conventionalChangelogWriter', function () {
       }
     ]
 
-    function getStream () {
+    function getStream() {
       const upstream = through.obj()
       for (const commit of commits) {
         upstream.write(commit)
@@ -344,37 +431,51 @@ describe('conventionalChangelogWriter', function () {
 
     it('should generate on the transformed commit', function (done) {
       let i = 0
-      const changelog = conventionalChangelogWriter.parseArray(commits, {
-        version: '1.0.0'
-      }, {
-        transform: function (commit) {
-          commit.version = '1.0.0'
-          return commit
-        }
-      })
-      expect(changelog).to.contain('# 1.0.0 ')
-      getStream()
-        .pipe(conventionalChangelogWriter({
+      const changelog = conventionalChangelogWriter.parseArray(
+        commits,
+        {
           version: '1.0.0'
-        }, {
+        },
+        {
           transform: function (commit) {
             commit.version = '1.0.0'
             return commit
           }
-        }))
-        .pipe(through(function (chunk, enc, cb) {
-          expect(chunk.toString()).to.contain('# 1.0.0 ')
+        }
+      )
+      expect(changelog).to.contain('# 1.0.0 ')
+      getStream()
+        .pipe(
+          conventionalChangelogWriter(
+            {
+              version: '1.0.0'
+            },
+            {
+              transform: function (commit) {
+                commit.version = '1.0.0'
+                return commit
+              }
+            }
+          )
+        )
+        .pipe(
+          through(
+            function (chunk, enc, cb) {
+              expect(chunk.toString()).to.contain('# 1.0.0 ')
 
-          i++
-          cb(null)
-        }, function () {
-          expect(i).to.equal(5)
-          done()
-        }))
+              i++
+              cb(null)
+            },
+            function () {
+              expect(i).to.equal(5)
+              done()
+            }
+          )
+        )
     })
 
     describe('when commits are not reversed', function () {
-      it('should generate on `\'version\'` if it\'s a valid semver', function (done) {
+      it("should generate on `'version'` if it's a valid semver", function (done) {
         let i = 0
         const changelog = conventionalChangelogWriter.parseArray(commits)
         expect(changelog).to.include('##  (' + today)
@@ -385,38 +486,46 @@ describe('conventionalChangelogWriter', function () {
         expect(changelog).to.include('refactor(name): ')
         getStream()
           .pipe(conventionalChangelogWriter())
-          .pipe(through(function (chunk, enc, cb) {
-            chunk = chunk.toString()
+          .pipe(
+            through(
+              function (chunk, enc, cb) {
+                chunk = chunk.toString()
 
-            if (i === 0) {
-              expect(chunk).to.include('##  (' + today)
-              expect(chunk).to.include('feat(scope): ')
+                if (i === 0) {
+                  expect(chunk).to.include('##  (' + today)
+                  expect(chunk).to.include('feat(scope): ')
 
-              expect(chunk).to.not.include('fix(ng-list): ')
-              expect(chunk).to.not.include('perf(template): ')
-              expect(chunk).to.not.include('refactor(name): ')
-            } else {
-              expect(chunk).to.include('## <small>1.0.1 (2015-04-07)</small>')
-              expect(chunk).to.include('fix(ng-list): ')
-              expect(chunk).to.include('perf(template): ')
-              expect(chunk).to.include('refactor(name): ')
+                  expect(chunk).to.not.include('fix(ng-list): ')
+                  expect(chunk).to.not.include('perf(template): ')
+                  expect(chunk).to.not.include('refactor(name): ')
+                } else {
+                  expect(chunk).to.include(
+                    '## <small>1.0.1 (2015-04-07)</small>'
+                  )
+                  expect(chunk).to.include('fix(ng-list): ')
+                  expect(chunk).to.include('perf(template): ')
+                  expect(chunk).to.include('refactor(name): ')
 
-              expect(chunk).to.not.include('feat(scope): ')
-            }
+                  expect(chunk).to.not.include('feat(scope): ')
+                }
 
-            i++
-            cb(null)
-          }, function () {
-            expect(i).to.equal(2)
-            done()
-          }))
+                i++
+                cb(null)
+              },
+              function () {
+                expect(i).to.equal(2)
+                done()
+              }
+            )
+          )
       })
 
       it('`generateOn` could be a string', function (done) {
         let i = 0
         const commits = [
           {
-            header: 'feat(scope): broadcast $destroy event on scope destruction',
+            header:
+              'feat(scope): broadcast $destroy event on scope destruction',
             body: null,
             footer: null,
             notes: [],
@@ -442,7 +551,8 @@ describe('conventionalChangelogWriter', function () {
             committerDate: '2015-04-07 15:01:30 +1000'
           },
           {
-            header: 'refactor(name): rename this module to conventional-changelog-writer',
+            header:
+              'refactor(name): rename this module to conventional-changelog-writer',
             body: null,
             footer: null,
             notes: [],
@@ -456,93 +566,137 @@ describe('conventionalChangelogWriter', function () {
           upstream.write(commit)
         }
         upstream.end()
-        const changelog = conventionalChangelogWriter.parseArray(commits, {}, {
-          generateOn: 'version'
-        })
+        const changelog = conventionalChangelogWriter.parseArray(
+          commits,
+          {},
+          {
+            generateOn: 'version'
+          }
+        )
         expect(changelog).to.include('##  (' + today)
-        expect(changelog).to.include('feat(scope): broadcast $destroy event on scope destruction')
+        expect(changelog).to.include(
+          'feat(scope): broadcast $destroy event on scope destruction'
+        )
         expect(changelog).to.not.include('<a name=""></a>')
         expect(changelog).to.include('fix(ng-list): Allow custom separator')
         expect(changelog).to.include('perf(template): tweak')
-        expect(changelog).to.include('refactor(name): rename this module to conventional-changelog-writer')
+        expect(changelog).to.include(
+          'refactor(name): rename this module to conventional-changelog-writer'
+        )
         expect(changelog).to.include('perf(template): tweak')
         upstream
-          .pipe(conventionalChangelogWriter({}, {
-            generateOn: 'version'
-          }))
-          .pipe(through(function (chunk, enc, cb) {
-            chunk = chunk.toString()
+          .pipe(
+            conventionalChangelogWriter(
+              {},
+              {
+                generateOn: 'version'
+              }
+            )
+          )
+          .pipe(
+            through(
+              function (chunk, enc, cb) {
+                chunk = chunk.toString()
 
-            if (i === 0) {
-              expect(chunk).to.include('##  (' + today)
+                if (i === 0) {
+                  expect(chunk).to.include('##  (' + today)
 
-              expect(chunk).to.not.include('## 1.0.1 (2015-04-07)')
-            } else if (i === 1) {
-              expect(chunk).to.include('feat(scope): broadcast $destroy event on scope destruction')
-              expect(chunk).to.not.include('<a name=""></a>')
-            } else if (i === 2) {
-              expect(chunk).to.include('fix(ng-list): Allow custom separator')
-              expect(chunk).to.include('perf(template): tweak')
-            } else if (i === 3) {
-              expect(chunk).to.include('refactor(name): rename this module to conventional-changelog-writer')
-              expect(chunk).to.not.include('perf(template): tweak')
-            }
+                  expect(chunk).to.not.include('## 1.0.1 (2015-04-07)')
+                } else if (i === 1) {
+                  expect(chunk).to.include(
+                    'feat(scope): broadcast $destroy event on scope destruction'
+                  )
+                  expect(chunk).to.not.include('<a name=""></a>')
+                } else if (i === 2) {
+                  expect(chunk).to.include(
+                    'fix(ng-list): Allow custom separator'
+                  )
+                  expect(chunk).to.include('perf(template): tweak')
+                } else if (i === 3) {
+                  expect(chunk).to.include(
+                    'refactor(name): rename this module to conventional-changelog-writer'
+                  )
+                  expect(chunk).to.not.include('perf(template): tweak')
+                }
 
-            i++
-            cb(null)
-          }, function () {
-            expect(i).to.equal(4)
-            done()
-          }))
+                i++
+                cb(null)
+              },
+              function () {
+                expect(i).to.equal(4)
+                done()
+              }
+            )
+          )
       })
 
       it('`generateOn` could be a function', function (done) {
         let i = 0
 
         getStream()
-          .pipe(conventionalChangelogWriter({}, {
-            generateOn: function (commit, commits, context, options) {
-              expect(commits.length).to.be.a('number')
-              expect(context.commit).to.equal('commits')
-              expect(options.groupBy).to.equal('type')
+          .pipe(
+            conventionalChangelogWriter(
+              {},
+              {
+                generateOn: function (commit, commits, context, options) {
+                  expect(commits.length).to.be.a('number')
+                  expect(context.commit).to.equal('commits')
+                  expect(options.groupBy).to.equal('type')
 
-              return commit.version
-            }
-          }))
-          .pipe(through(function (chunk, enc, cb) {
-            chunk = chunk.toString()
+                  return commit.version
+                }
+              }
+            )
+          )
+          .pipe(
+            through(
+              function (chunk, enc, cb) {
+                chunk = chunk.toString()
 
-            if (i === 0) {
-              expect(chunk).to.include('##  (' + today)
-              expect(chunk).to.not.include('## 1.0.1 (2015-04-07)')
-            }
+                if (i === 0) {
+                  expect(chunk).to.include('##  (' + today)
+                  expect(chunk).to.not.include('## 1.0.1 (2015-04-07)')
+                }
 
-            i++
-            cb(null)
-          }, function () {
-            expect(i).to.equal(2)
-            done()
-          }))
+                i++
+                cb(null)
+              },
+              function () {
+                expect(i).to.equal(2)
+                done()
+              }
+            )
+          )
       })
 
       it('`generateOn` could be a null', function (done) {
         let i = 0
 
         getStream()
-          .pipe(conventionalChangelogWriter({}, {
-            generateOn: null
-          }))
-          .pipe(through(function (chunk, enc, cb) {
-            chunk = chunk.toString()
+          .pipe(
+            conventionalChangelogWriter(
+              {},
+              {
+                generateOn: null
+              }
+            )
+          )
+          .pipe(
+            through(
+              function (chunk, enc, cb) {
+                chunk = chunk.toString()
 
-            expect(chunk).to.include('##  (' + today)
+                expect(chunk).to.include('##  (' + today)
 
-            i++
-            cb(null)
-          }, function () {
-            expect(i).to.equal(1)
-            done()
-          }))
+                i++
+                cb(null)
+              },
+              function () {
+                expect(i).to.equal(1)
+                done()
+              }
+            )
+          )
       })
 
       it('version should fall back on `context.version` and `context.date`', function (done) {
@@ -555,80 +709,121 @@ describe('conventionalChangelogWriter', function () {
         expect(changelog).to.include('## <small>0.0.1 (2015-01-01)</small>')
         expect(changelog).to.include('## <small>1.0.1 (2015-04-07)</small>')
         getStream()
-          .pipe(conventionalChangelogWriter({
-            version: '0.0.1',
-            date: '2015-01-01'
-          }))
-          .pipe(through(function (chunk, enc, cb) {
-            chunk = chunk.toString()
+          .pipe(
+            conventionalChangelogWriter({
+              version: '0.0.1',
+              date: '2015-01-01'
+            })
+          )
+          .pipe(
+            through(
+              function (chunk, enc, cb) {
+                chunk = chunk.toString()
 
-            if (i === 0) {
-              expect(chunk).to.include('## <small>0.0.1 (2015-01-01)</small>')
-            } else {
-              expect(chunk).to.include('## <small>1.0.1 (2015-04-07)</small>')
-            }
+                if (i === 0) {
+                  expect(chunk).to.include(
+                    '## <small>0.0.1 (2015-01-01)</small>'
+                  )
+                } else {
+                  expect(chunk).to.include(
+                    '## <small>1.0.1 (2015-04-07)</small>'
+                  )
+                }
 
-            i++
-            cb(null)
-          }, function () {
-            expect(i).to.equal(2)
-            done()
-          }))
+                i++
+                cb(null)
+              },
+              function () {
+                expect(i).to.equal(2)
+                done()
+              }
+            )
+          )
       })
 
       it('should still generate a block even if the commit is ignored', function (done) {
         let i = 0
 
         getStream()
-          .pipe(conventionalChangelogWriter({}, {
-            transform: function () {
-              return false
-            }
-          }))
-          .pipe(through(function (chunk, enc, cb) {
-            chunk = chunk.toString()
+          .pipe(
+            conventionalChangelogWriter(
+              {},
+              {
+                transform: function () {
+                  return false
+                }
+              }
+            )
+          )
+          .pipe(
+            through(
+              function (chunk, enc, cb) {
+                chunk = chunk.toString()
 
-            if (i === 0) {
-              expect(chunk).to.equal('##  (' + today + ')\n\n\n\n\n')
-            } else {
-              expect(chunk).to.equal('## <small>1.0.1 (2015-04-07 15:00:44 +1000)</small>\n\n\n\n\n')
-            }
+                if (i === 0) {
+                  expect(chunk).to.equal('##  (' + today + ')\n\n\n\n\n')
+                } else {
+                  expect(chunk).to.equal(
+                    '## <small>1.0.1 (2015-04-07 15:00:44 +1000)</small>\n\n\n\n\n'
+                  )
+                }
 
-            i++
-            cb(null)
-          }, function () {
-            expect(i).to.equal(2)
-            done()
-          }))
+                i++
+                cb(null)
+              },
+              function () {
+                expect(i).to.equal(2)
+                done()
+              }
+            )
+          )
       })
 
       it('should include details', function (done) {
         let i = 0
         getStream()
-          .pipe(conventionalChangelogWriter({}, {
-            includeDetails: true
-          }))
-          .pipe(through.obj(function (chunk, enc, cb) {
-            if (i === 0) {
-              expect(chunk.log).to.include('##  (' + today + ')\n\n')
-              expect(chunk.log).to.include('feat(scope): broadcast $destroy event on scope destruction')
-              expect(chunk.keyCommit).to.eql()
-            } else {
-              expect(chunk.log).to.include('## <small>1.0.1 (2015-04-07)</small>\n\n')
-              expect(chunk.log).to.include('fix(ng-list): Allow custom separator')
-              expect(chunk.log).to.include('perf(template): tweak')
-              expect(chunk.log).to.include('refactor(name): rename this module to conventional-changelog-writer')
-              expect(chunk.keyCommit.body).to.equal('bla bla bla')
-              expect(chunk.keyCommit.committerDate).to.equal('2015-04-07')
-              expect(chunk.keyCommit.version).to.equal('1.0.1')
-            }
+          .pipe(
+            conventionalChangelogWriter(
+              {},
+              {
+                includeDetails: true
+              }
+            )
+          )
+          .pipe(
+            through.obj(
+              function (chunk, enc, cb) {
+                if (i === 0) {
+                  expect(chunk.log).to.include('##  (' + today + ')\n\n')
+                  expect(chunk.log).to.include(
+                    'feat(scope): broadcast $destroy event on scope destruction'
+                  )
+                  expect(chunk.keyCommit).to.eql()
+                } else {
+                  expect(chunk.log).to.include(
+                    '## <small>1.0.1 (2015-04-07)</small>\n\n'
+                  )
+                  expect(chunk.log).to.include(
+                    'fix(ng-list): Allow custom separator'
+                  )
+                  expect(chunk.log).to.include('perf(template): tweak')
+                  expect(chunk.log).to.include(
+                    'refactor(name): rename this module to conventional-changelog-writer'
+                  )
+                  expect(chunk.keyCommit.body).to.equal('bla bla bla')
+                  expect(chunk.keyCommit.committerDate).to.equal('2015-04-07')
+                  expect(chunk.keyCommit.version).to.equal('1.0.1')
+                }
 
-            i++
-            cb(null)
-          }, function () {
-            expect(i).to.equal(2)
-            done()
-          }))
+                i++
+                cb(null)
+              },
+              function () {
+                expect(i).to.equal(2)
+                done()
+              }
+            )
+          )
       })
 
       it('should not flush when previous release is generated', function (done) {
@@ -639,10 +834,12 @@ describe('conventionalChangelogWriter', function () {
           header: 'feat(scope): broadcast $destroy event on scope destruction',
           body: null,
           footer: null,
-          notes: [{
-            title: 'BREAKING CHANGE',
-            text: 'No backward compatibility.'
-          }],
+          notes: [
+            {
+              title: 'BREAKING CHANGE',
+              text: 'No backward compatibility.'
+            }
+          ],
           references: [],
           committerDate: '2015-04-07 14:17:05 +1000',
           version: 'v1.0.0'
@@ -651,10 +848,12 @@ describe('conventionalChangelogWriter', function () {
           header: 'feat(scope): broadcast $destroy event on scope destruction',
           body: null,
           footer: null,
-          notes: [{
-            title: 'BREAKING CHANGE',
-            text: 'No backward compatibility.'
-          }],
+          notes: [
+            {
+              title: 'BREAKING CHANGE',
+              text: 'No backward compatibility.'
+            }
+          ],
           references: [],
           committerDate: '2015-04-07 14:17:05 +1000',
           version: 'v0.1.4'
@@ -662,27 +861,37 @@ describe('conventionalChangelogWriter', function () {
         upstream.end()
 
         upstream
-          .pipe(conventionalChangelogWriter({
-            version: 'v2.0.0'
-          }, {
-            doFlush: false
-          }))
-          .pipe(through(function (chunk, enc, cb) {
-            chunk = chunk.toString()
+          .pipe(
+            conventionalChangelogWriter(
+              {
+                version: 'v2.0.0'
+              },
+              {
+                doFlush: false
+              }
+            )
+          )
+          .pipe(
+            through(
+              function (chunk, enc, cb) {
+                chunk = chunk.toString()
 
-            if (i === 0) {
-              expect(chunk).to.contain('1.0.0')
-              expect(chunk).not.to.contain('2.0.0')
-            } else {
-              expect(chunk).to.contain('0.1.4')
-            }
+                if (i === 0) {
+                  expect(chunk).to.contain('1.0.0')
+                  expect(chunk).not.to.contain('2.0.0')
+                } else {
+                  expect(chunk).to.contain('0.1.4')
+                }
 
-            i++
-            cb()
-          }, function () {
-            expect(i).to.equal(2)
-            done()
-          }))
+                i++
+                cb()
+              },
+              function () {
+                expect(i).to.equal(2)
+                done()
+              }
+            )
+          )
       })
 
       it('should not flush when it is the only potential release', function (done) {
@@ -691,35 +900,52 @@ describe('conventionalChangelogWriter', function () {
           header: 'feat(scope): broadcast $destroy event on scope destruction',
           body: null,
           footer: null,
-          notes: [{
-            title: 'BREAKING CHANGE',
-            text: 'No backward compatibility.'
-          }],
+          notes: [
+            {
+              title: 'BREAKING CHANGE',
+              text: 'No backward compatibility.'
+            }
+          ],
           references: [],
           committerDate: '2015-04-07 14:17:05 +1000'
         })
         upstream.end()
 
         upstream
-          .pipe(conventionalChangelogWriter({
-            version: 'v2.0.0'
-          }, {
-            doFlush: false
-          }))
-          .pipe(through(function () {
-            done(new Error('should not flush when it is the only potential release'))
-          }, function () {
-            done()
-          }))
+          .pipe(
+            conventionalChangelogWriter(
+              {
+                version: 'v2.0.0'
+              },
+              {
+                doFlush: false
+              }
+            )
+          )
+          .pipe(
+            through(
+              function () {
+                done(
+                  new Error(
+                    'should not flush when it is the only potential release'
+                  )
+                )
+              },
+              function () {
+                done()
+              }
+            )
+          )
       })
     })
 
     describe('when commits are reversed', function () {
-      it('should generate on `\'version\'` if it\'s a valid semver', function (done) {
+      it("should generate on `'version'` if it's a valid semver", function (done) {
         let i = 0
         const commits = [
           {
-            header: 'feat(scope): broadcast $destroy event on scope destruction',
+            header:
+              'feat(scope): broadcast $destroy event on scope destruction',
             body: null,
             footer: null,
             notes: [],
@@ -745,7 +971,8 @@ describe('conventionalChangelogWriter', function () {
             committerDate: '2015-04-07 15:01:30 +1000'
           },
           {
-            header: 'refactor(name): rename this module to conventional-changelog-writer',
+            header:
+              'refactor(name): rename this module to conventional-changelog-writer',
             body: null,
             footer: null,
             notes: [],
@@ -759,10 +986,15 @@ describe('conventionalChangelogWriter', function () {
           upstream.push(commit)
         }
         upstream.end()
-        const changelog = conventionalChangelogWriter.parseArray(commits, {}, {
-          reverse: true
-        })
-        expect(changelog.trim()).to.equal(dedent(`## <small>1.0.1 (2015-04-07)</small>
+        const changelog = conventionalChangelogWriter.parseArray(
+          commits,
+          {},
+          {
+            reverse: true
+          }
+        )
+        expect(changelog.trim()).to.equal(
+          dedent(`## <small>1.0.1 (2015-04-07)</small>
 
         * feat(scope): broadcast $destroy event on scope destruction·
 
@@ -781,96 +1013,141 @@ describe('conventionalChangelogWriter', function () {
 
 
 
-        ##  (xxxx-xx-xx)`).replace(/·/g, ' ').replace('xxxx-xx-xx', today))
+        ##  (xxxx-xx-xx)`)
+            .replace(/·/g, ' ')
+            .replace('xxxx-xx-xx', today)
+        )
         upstream
-          .pipe(conventionalChangelogWriter({}, {
-            reverse: true
-          }))
-          .pipe(through(function (chunk, enc, cb) {
-            chunk = chunk.toString()
+          .pipe(
+            conventionalChangelogWriter(
+              {},
+              {
+                reverse: true
+              }
+            )
+          )
+          .pipe(
+            through(
+              function (chunk, enc, cb) {
+                chunk = chunk.toString()
 
-            if (i === 0) {
-              expect(chunk).to.include('## <small>1.0.1 (2015-04-07)</small>')
-              expect(chunk).to.include('feat(scope): ')
+                if (i === 0) {
+                  expect(chunk).to.include(
+                    '## <small>1.0.1 (2015-04-07)</small>'
+                  )
+                  expect(chunk).to.include('feat(scope): ')
 
-              expect(chunk).to.not.include('perf(template): ')
-              expect(chunk).to.not.include('refactor(name): ')
-            } else if (i === 1) {
-              expect(chunk).to.include('## <small>2.0.1 (2015-04-07)</small>')
-              expect(chunk).to.include('fix(ng-list): ')
+                  expect(chunk).to.not.include('perf(template): ')
+                  expect(chunk).to.not.include('refactor(name): ')
+                } else if (i === 1) {
+                  expect(chunk).to.include(
+                    '## <small>2.0.1 (2015-04-07)</small>'
+                  )
+                  expect(chunk).to.include('fix(ng-list): ')
 
-              expect(chunk).to.not.include('feat(scope): ')
-            } else if (i === 2) {
-              expect(chunk).to.include('#')
-              expect(chunk).to.include('perf(template): ')
-              expect(chunk).to.include('refactor(name): ')
-            } else if (i === 3) {
-              expect(chunk).to.include('##  (' + today)
-            }
+                  expect(chunk).to.not.include('feat(scope): ')
+                } else if (i === 2) {
+                  expect(chunk).to.include('#')
+                  expect(chunk).to.include('perf(template): ')
+                  expect(chunk).to.include('refactor(name): ')
+                } else if (i === 3) {
+                  expect(chunk).to.include('##  (' + today)
+                }
 
-            i++
-            cb(null)
-          }, function () {
-            expect(i).to.equal(4)
-            done()
-          }))
+                i++
+                cb(null)
+              },
+              function () {
+                expect(i).to.equal(4)
+                done()
+              }
+            )
+          )
       })
 
       it('should still generate a block even if the commit is ignored', function (done) {
         let i = 0
 
         getStream()
-          .pipe(conventionalChangelogWriter({}, {
-            transform: function () {
-              return false
-            },
-            reverse: true
-          }))
-          .pipe(through(function (chunk, enc, cb) {
-            chunk = chunk.toString()
+          .pipe(
+            conventionalChangelogWriter(
+              {},
+              {
+                transform: function () {
+                  return false
+                },
+                reverse: true
+              }
+            )
+          )
+          .pipe(
+            through(
+              function (chunk, enc, cb) {
+                chunk = chunk.toString()
 
-            if (i === 0) {
-              expect(chunk).to.equal('## <small>1.0.1 (2015-04-07 15:00:44 +1000)</small>\n\n\n\n\n')
-            } else {
-              expect(chunk).to.equal('##  (' + today + ')\n\n\n\n\n')
-            }
+                if (i === 0) {
+                  expect(chunk).to.equal(
+                    '## <small>1.0.1 (2015-04-07 15:00:44 +1000)</small>\n\n\n\n\n'
+                  )
+                } else {
+                  expect(chunk).to.equal('##  (' + today + ')\n\n\n\n\n')
+                }
 
-            i++
-            cb(null)
-          }, function () {
-            expect(i).to.equal(2)
-            done()
-          }))
+                i++
+                cb(null)
+              },
+              function () {
+                expect(i).to.equal(2)
+                done()
+              }
+            )
+          )
       })
 
       it('should include details', function (done) {
         let i = 0
 
         getStream()
-          .pipe(conventionalChangelogWriter({}, {
-            reverse: true,
-            includeDetails: true
-          }))
-          .pipe(through.obj(function (chunk, enc, cb) {
-            if (i === 0) {
-              expect(chunk.log).to.include('## <small>1.0.1 (2015-04-07)</small>\n\n')
-              expect(chunk.log).to.include('broadcast $destroy event on scope destruction')
-              expect(chunk.log).to.include('fix(ng-list):')
-              expect(chunk.keyCommit.version).to.equal('1.0.1')
-              expect(chunk.keyCommit.committerDate).to.equal('2015-04-07')
-            } else {
-              expect(chunk.log).to.include('##  (' + today + ')\n\n')
-              expect(chunk.log).to.include('perf(template): tweak')
-              expect(chunk.log).to.include('refactor(name): rename this module to conventional-changelog-writer')
-              expect(chunk.keyCommit).to.eql()
-            }
+          .pipe(
+            conventionalChangelogWriter(
+              {},
+              {
+                reverse: true,
+                includeDetails: true
+              }
+            )
+          )
+          .pipe(
+            through.obj(
+              function (chunk, enc, cb) {
+                if (i === 0) {
+                  expect(chunk.log).to.include(
+                    '## <small>1.0.1 (2015-04-07)</small>\n\n'
+                  )
+                  expect(chunk.log).to.include(
+                    'broadcast $destroy event on scope destruction'
+                  )
+                  expect(chunk.log).to.include('fix(ng-list):')
+                  expect(chunk.keyCommit.version).to.equal('1.0.1')
+                  expect(chunk.keyCommit.committerDate).to.equal('2015-04-07')
+                } else {
+                  expect(chunk.log).to.include('##  (' + today + ')\n\n')
+                  expect(chunk.log).to.include('perf(template): tweak')
+                  expect(chunk.log).to.include(
+                    'refactor(name): rename this module to conventional-changelog-writer'
+                  )
+                  expect(chunk.keyCommit).to.eql()
+                }
 
-            i++
-            cb(null)
-          }, function () {
-            expect(i).to.equal(2)
-            done()
-          }))
+                i++
+                cb(null)
+              },
+              function () {
+                expect(i).to.equal(2)
+                done()
+              }
+            )
+          )
       })
 
       it('should not flush when previous release is generated', function (done) {
@@ -881,10 +1158,12 @@ describe('conventionalChangelogWriter', function () {
           header: 'feat(scope): broadcast $destroy event on scope destruction',
           body: null,
           footer: null,
-          notes: [{
-            title: 'BREAKING CHANGE',
-            text: 'No backward compatibility.'
-          }],
+          notes: [
+            {
+              title: 'BREAKING CHANGE',
+              text: 'No backward compatibility.'
+            }
+          ],
           references: [],
           committerDate: '2015-04-07 14:17:05 +1000',
           version: 'v1.0.0'
@@ -893,10 +1172,12 @@ describe('conventionalChangelogWriter', function () {
           header: 'feat(scope): broadcast $destroy event on scope destruction',
           body: null,
           footer: null,
-          notes: [{
-            title: 'BREAKING CHANGE',
-            text: 'No backward compatibility.'
-          }],
+          notes: [
+            {
+              title: 'BREAKING CHANGE',
+              text: 'No backward compatibility.'
+            }
+          ],
           references: [],
           committerDate: '2015-04-07 14:17:05 +1000',
           version: 'v2.0.290'
@@ -904,28 +1185,38 @@ describe('conventionalChangelogWriter', function () {
         upstream.end()
 
         upstream
-          .pipe(conventionalChangelogWriter({
-            version: 'v2.0.0'
-          }, {
-            reverse: true,
-            doFlush: false
-          }))
-          .pipe(through(function (chunk, enc, cb) {
-            chunk = chunk.toString()
+          .pipe(
+            conventionalChangelogWriter(
+              {
+                version: 'v2.0.0'
+              },
+              {
+                reverse: true,
+                doFlush: false
+              }
+            )
+          )
+          .pipe(
+            through(
+              function (chunk, enc, cb) {
+                chunk = chunk.toString()
 
-            if (i === 0) {
-              expect(chunk).to.contain('1.0.0')
-              expect(chunk).not.to.contain('2.0.0')
-            } else {
-              expect(chunk).to.contain('2.0.290')
-            }
+                if (i === 0) {
+                  expect(chunk).to.contain('1.0.0')
+                  expect(chunk).not.to.contain('2.0.0')
+                } else {
+                  expect(chunk).to.contain('2.0.290')
+                }
 
-            i++
-            cb()
-          }, function () {
-            expect(i).to.equal(2)
-            done()
-          }))
+                i++
+                cb()
+              },
+              function () {
+                expect(i).to.equal(2)
+                done()
+              }
+            )
+          )
       })
     })
 
@@ -935,31 +1226,47 @@ describe('conventionalChangelogWriter', function () {
         header: 'feat(scope): broadcast $destroy event on scope destruction',
         body: null,
         footer: null,
-        notes: [{
-          title: 'BREAKING CHANGE',
-          text: 'No backward compatibility.'
-        }],
+        notes: [
+          {
+            title: 'BREAKING CHANGE',
+            text: 'No backward compatibility.'
+          }
+        ],
         references: [],
         committerDate: '2015-04-07 14:17:05 +1000'
       })
       upstream.end()
 
       upstream
-        .pipe(conventionalChangelogWriter({
-          version: 'v2.0.0'
-        }, {
-          reverse: true,
-          doFlush: false
-        }))
-        .pipe(through(function () {
-          done(new Error('should not flush when it is the only potential release'))
-        }, function () {
-          done()
-        }))
+        .pipe(
+          conventionalChangelogWriter(
+            {
+              version: 'v2.0.0'
+            },
+            {
+              reverse: true,
+              doFlush: false
+            }
+          )
+        )
+        .pipe(
+          through(
+            function () {
+              done(
+                new Error(
+                  'should not flush when it is the only potential release'
+                )
+              )
+            },
+            function () {
+              done()
+            }
+          )
+        )
     })
   })
 
-  it('should ignore the field if it doesn\'t exist', function (done) {
+  it("should ignore the field if it doesn't exist", function (done) {
     let i = 0
 
     const upstream = through.obj()
@@ -970,17 +1277,22 @@ describe('conventionalChangelogWriter', function () {
       notes: []
     })
     upstream.end()
-    upstream
-      .pipe(conventionalChangelogWriter())
-      .pipe(through(function (chunk, enc, cb) {
-        expect(chunk.toString()).to.equal('##  (' + today + ')\n\n* bla \n\n\n\n')
+    upstream.pipe(conventionalChangelogWriter()).pipe(
+      through(
+        function (chunk, enc, cb) {
+          expect(chunk.toString()).to.equal(
+            '##  (' + today + ')\n\n* bla \n\n\n\n'
+          )
 
-        i++
-        cb(null)
-      }, function () {
-        expect(i).to.equal(1)
-        done()
-      }))
+          i++
+          cb(null)
+        },
+        function () {
+          expect(i).to.equal(1)
+          done()
+        }
+      )
+    )
   })
 
   it('should sort notes on `text` by default', function (done) {
@@ -989,10 +1301,12 @@ describe('conventionalChangelogWriter', function () {
       header: 'feat(scope): broadcast $destroy event on scope destruction',
       body: null,
       footer: null,
-      notes: [{
-        title: 'BREAKING CHANGE',
-        text: 'No backward compatibility.'
-      }],
+      notes: [
+        {
+          title: 'BREAKING CHANGE',
+          text: 'No backward compatibility.'
+        }
+      ],
       references: [],
       committerDate: '2015-04-07 14:17:05 +1000'
     })
@@ -1000,49 +1314,63 @@ describe('conventionalChangelogWriter', function () {
       header: 'fix(ng-list): Allow custom separator',
       body: 'bla bla bla',
       footer: null,
-      notes: [{
-        title: 'BREAKING CHANGE',
-        text: 'Another change.'
-      }, {
-        title: 'BREAKING CHANGE',
-        text: 'Some breaking change.'
-      }],
+      notes: [
+        {
+          title: 'BREAKING CHANGE',
+          text: 'Another change.'
+        },
+        {
+          title: 'BREAKING CHANGE',
+          text: 'Some breaking change.'
+        }
+      ],
       references: [],
       committerDate: '2015-04-07 15:00:44 +1000'
     })
     upstream.end()
 
-    upstream
-      .pipe(conventionalChangelogWriter())
-      .pipe(through(function (chunk) {
-        expect(chunk.toString()).to.match(/Another change.[\w\W]*No backward compatibility.[\w\W]*Some breaking change./)
+    upstream.pipe(conventionalChangelogWriter()).pipe(
+      through(function (chunk) {
+        expect(chunk.toString()).to.match(
+          /Another change.[\w\W]*No backward compatibility.[\w\W]*Some breaking change./
+        )
 
         done()
-      }))
+      })
+    )
   })
 
   it('should not error if version is not semver', function (done) {
     getStream()
-      .pipe(conventionalChangelogWriter({
-        version: 'a.b.c'
-      }))
+      .pipe(
+        conventionalChangelogWriter({
+          version: 'a.b.c'
+        })
+      )
       .on('error', function (err) {
         done(err)
       })
-      .pipe(through(function (chunk) {
-        expect(chunk.toString()).to.include('a.b.c')
+      .pipe(
+        through(function (chunk) {
+          expect(chunk.toString()).to.include('a.b.c')
 
-        done()
-      }))
+          done()
+        })
+      )
   })
 
   it('should callback with error on transform', function (done) {
     getStream()
-      .pipe(conventionalChangelogWriter({}, {
-        transform: function () {
-          return undefined.a
-        }
-      }))
+      .pipe(
+        conventionalChangelogWriter(
+          {},
+          {
+            transform: function () {
+              return undefined.a
+            }
+          }
+        )
+      )
       .on('error', function (err) {
         expect(err).to.be.ok // eslint-disable-line no-unused-expressions
         done()
@@ -1051,11 +1379,16 @@ describe('conventionalChangelogWriter', function () {
 
   it('should callback with error on flush', function (done) {
     getStream()
-      .pipe(conventionalChangelogWriter({}, {
-        finalizeContext: function () {
-          return undefined.a
-        }
-      }))
+      .pipe(
+        conventionalChangelogWriter(
+          {},
+          {
+            finalizeContext: function () {
+              return undefined.a
+            }
+          }
+        )
+      )
       .on('error', function (err) {
         expect(err).to.be.ok // eslint-disable-line no-unused-expressions
         done()
@@ -1063,12 +1396,16 @@ describe('conventionalChangelogWriter', function () {
   })
 
   it('should show your final context', function (done) {
-    getStream()
-      .pipe(conventionalChangelogWriter({}, {
-        debug: function (context) {
-          expect(context).to.include('Your final context is:\n')
-          done()
+    getStream().pipe(
+      conventionalChangelogWriter(
+        {},
+        {
+          debug: function (context) {
+            expect(context).to.include('Your final context is:\n')
+            done()
+          }
         }
-      }))
+      )
+    )
   })
 })
