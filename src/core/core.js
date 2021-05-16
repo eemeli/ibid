@@ -11,49 +11,39 @@ const through = require('through2')
 const mergeConfig = require('./merge-config')
 
 function conventionalChangelog(
-  options,
-  context,
-  gitRawCommitsOpts,
-  parserOpts,
-  writerOpts,
+  optionsArg,
+  contextArg,
+  gitRawCommitsOptsArg,
+  parserOptsArg,
+  writerOptsArg,
   gitRawExecOpts
 ) {
-  writerOpts = writerOpts || {}
-
   const readable = new Readable({ objectMode: false })
   readable._read = function () {}
 
-  let commitsStream = new Readable({ objectMode: true })
-  commitsStream._read = function () {}
-
-  let commitsErrorThrown = false
-  function commitsRange(from, to) {
-    return gitRawCommits(_.merge({}, gitRawCommitsOpts, { from, to })).on(
-      'error',
-      err => {
-        if (!commitsErrorThrown) {
-          setImmediate(commitsStream.emit.bind(commitsStream), 'error', err)
-          commitsErrorThrown = true
-        }
-      }
-    )
-  }
-
   mergeConfig(
-    options,
-    context,
-    gitRawCommitsOpts,
-    parserOpts,
-    writerOpts,
-    gitRawExecOpts
+    optionsArg,
+    contextArg,
+    gitRawCommitsOptsArg,
+    parserOptsArg,
+    writerOptsArg
   )
-    .then(function (data) {
-      options = data.options
-      context = data.context
-      gitRawCommitsOpts = data.gitRawCommitsOpts
-      parserOpts = data.parserOpts
-      writerOpts = data.writerOpts
-      gitRawExecOpts = data.gitRawExecOpts
+    .then(({ options, context, gitRawCommitsOpts, parserOpts, writerOpts }) => {
+      let commitsStream = new Readable({ objectMode: true })
+      commitsStream._read = function () {}
+
+      let commitsErrorThrown = false
+      function commitsRange(from, to) {
+        return gitRawCommits(_.merge({}, gitRawCommitsOpts, { from, to })).on(
+          'error',
+          err => {
+            if (!commitsErrorThrown) {
+              setImmediate(commitsStream.emit.bind(commitsStream), 'error', err)
+              commitsErrorThrown = true
+            }
+          }
+        )
+      }
 
       try {
         execFileSync('git', ['rev-parse', '--verify', 'HEAD'], {
@@ -87,7 +77,7 @@ function conventionalChangelog(
             setImmediate(commitsStream.emit.bind(commitsStream), 'end')
           })
       } catch (_e) {
-        commitsStream = gitRawCommits(gitRawCommitsOpts, gitRawExecOpts)
+        commitsStream = gitRawCommits(gitRawCommitsOpts, gitRawExecOpts || {})
       }
 
       commitsStream
@@ -123,26 +113,24 @@ function conventionalChangelog(
         .pipe(
           through(
             { objectMode: false },
-            function (chunk, enc, cb) {
+            (chunk, enc, cb) => {
               try {
                 readable.push(chunk)
               } catch (err) {
-                setImmediate(function () {
+                setImmediate(() => {
                   throw err
                 })
               }
               cb()
             },
-            function (cb) {
+            cb => {
               readable.push(null)
               cb()
             }
           )
         )
     })
-    .catch(function (err) {
-      setImmediate(readable.emit.bind(readable), 'error', err)
-    })
+    .catch(err => setImmediate(readable.emit.bind(readable), 'error', err))
 
   return readable
 }
