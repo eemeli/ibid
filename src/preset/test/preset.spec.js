@@ -1,17 +1,16 @@
 'use strict'
-const conventionalChangelogCore = require('../../core/core')
-const getPreset = require('../preset')
-const preset = getPreset()
-const expect = require('chai').expect
-const mocha = require('mocha')
-const describe = mocha.describe
-const it = mocha.it
+const { expect } = require('chai')
+const { describe, it } = require('mocha')
 const gitDummyCommit = require('git-dummy-commit')
 const shell = require('shelljs')
-const through = require('through2')
 const path = require('path')
 const betterThanBefore = require('better-than-before')()
-const preparing = betterThanBefore.preparing
+
+const core = require('../../core/core')
+const getPreset = require('../preset')
+
+const { preparing } = betterThanBefore
+const preset = getPreset()
 
 betterThanBefore.setups([
   function () {
@@ -125,321 +124,196 @@ betterThanBefore.setups([
   }
 ])
 
-describe('conventionalcommits.org preset', function () {
-  it('should work if there is no semver tag', function (done) {
+describe('conventionalcommits.org preset', () => {
+  it('should work if there is no semver tag', async () => {
     preparing(1)
 
-    conventionalChangelogCore({ config: preset })
-      .on('error', done)
-      .pipe(
-        through(function (chunk) {
-          chunk = chunk.toString()
+    const changelog = await core({ config: preset })
 
-          expect(chunk).to.include('first build setup')
-          expect(chunk).to.include('**travis:** add TravisCI pipeline')
-          expect(chunk).to.include('**travis:** Continuously integrated.')
-          expect(chunk).to.include('amazing new module')
-          expect(chunk).to.include('**compile:** avoid a bug')
-          expect(chunk).to.include('make it faster')
-          expect(chunk).to.include(
-            ', closes [#1](https://github.com/eemeli/version/issues/1) [#2](https://github.com/eemeli/version/issues/2)'
-          )
-          expect(chunk).to.include('New build system.')
-          expect(chunk).to.include('Not backward compatible.')
-          expect(chunk).to.include('**compile:** The Change is huge.')
-          expect(chunk).to.include('Build System')
-          expect(chunk).to.include('Continuous Integration')
-          expect(chunk).to.include('Features')
-          expect(chunk).to.include('Bug Fixes')
-          expect(chunk).to.include('Performance Improvements')
-          expect(chunk).to.include('Reverts')
-          expect(chunk).to.include('bad commit')
-          expect(chunk).to.include('BREAKING CHANGE')
+    expect(changelog).to.include('first build setup')
+    expect(changelog).to.include('**travis:** add TravisCI pipeline')
+    expect(changelog).to.include('**travis:** Continuously integrated.')
+    expect(changelog).to.include('amazing new module')
+    expect(changelog).to.include('**compile:** avoid a bug')
+    expect(changelog).to.include('make it faster')
+    expect(changelog).to.include(
+      ', closes [#1](https://github.com/eemeli/version/issues/1) [#2](https://github.com/eemeli/version/issues/2)'
+    )
+    expect(changelog).to.include('New build system.')
+    expect(changelog).to.include('Not backward compatible.')
+    expect(changelog).to.include('**compile:** The Change is huge.')
+    expect(changelog).to.include('Build System')
+    expect(changelog).to.include('Continuous Integration')
+    expect(changelog).to.include('Features')
+    expect(changelog).to.include('Bug Fixes')
+    expect(changelog).to.include('Performance Improvements')
+    expect(changelog).to.include('Reverts')
+    expect(changelog).to.include('bad commit')
+    expect(changelog).to.include('BREAKING CHANGE')
 
-          expect(chunk).to.not.include('ci')
-          expect(chunk).to.not.include('feat')
-          expect(chunk).to.not.include('fix')
-          expect(chunk).to.not.include('perf')
-          expect(chunk).to.not.include('revert')
-          expect(chunk).to.not.include('***:**')
-          expect(chunk).to.not.include(': Not backward compatible.')
+    expect(changelog).to.not.include('ci')
+    expect(changelog).to.not.include('feat')
+    expect(changelog).to.not.include('fix')
+    expect(changelog).to.not.include('perf')
+    expect(changelog).to.not.include('revert')
+    expect(changelog).to.not.include('***:**')
+    expect(changelog).to.not.include(': Not backward compatible.')
 
-          // CHANGELOG should group sections in order of importance:
-          expect(
-            chunk.indexOf('BREAKING CHANGE') < chunk.indexOf('Features') &&
-              chunk.indexOf('Features') < chunk.indexOf('Bug Fixes') &&
-              chunk.indexOf('Bug Fixes') <
-                chunk.indexOf('Performance Improvements') &&
-              chunk.indexOf('Performance Improvements') <
-                chunk.indexOf('Reverts')
-          ).to.equal(true)
-
-          done()
-        })
-      )
+    // CHANGELOG should group sections in order of importance:
+    expect(
+      changelog.indexOf('BREAKING CHANGE') < changelog.indexOf('Features') &&
+        changelog.indexOf('Features') < changelog.indexOf('Bug Fixes') &&
+        changelog.indexOf('Bug Fixes') <
+          changelog.indexOf('Performance Improvements') &&
+        changelog.indexOf('Performance Improvements') <
+          changelog.indexOf('Reverts')
+    ).to.equal(true)
   })
 
-  it('should not list breaking change twice if ! is used', function (done) {
+  it('should not list breaking change twice if ! is used', async () => {
     preparing(1)
 
-    conventionalChangelogCore({ config: preset })
-      .on('error', done)
-      .pipe(
-        through(function (chunk) {
-          chunk = chunk.toString()
-          expect(chunk).to.not.match(/\* first build setup\r?\n/)
-          done()
-        })
-      )
+    const changelog = await core({ config: preset })
+    expect(changelog).to.not.match(/\* first build setup\r?\n/)
   })
 
-  it('should allow alternative "types" configuration to be provided', function (done) {
+  it('should allow alternative "types" configuration to be provided', async () => {
     preparing(1)
-    conventionalChangelogCore({ config: require('../preset')({ types: [] }) })
-      .on('error', done)
-      .pipe(
-        through(function (chunk) {
-          chunk = chunk.toString()
+    const changelog = await core({
+      config: require('../preset')({ types: [] })
+    })
 
-          expect(chunk).to.include('first build setup')
-          expect(chunk).to.include('**travis:** add TravisCI pipeline')
-          expect(chunk).to.include('**travis:** Continuously integrated.')
-          expect(chunk).to.include('amazing new module')
-          expect(chunk).to.include('**compile:** avoid a bug')
-          expect(chunk).to.include('Feat')
+    expect(changelog).to.include('first build setup')
+    expect(changelog).to.include('**travis:** add TravisCI pipeline')
+    expect(changelog).to.include('**travis:** Continuously integrated.')
+    expect(changelog).to.include('amazing new module')
+    expect(changelog).to.include('**compile:** avoid a bug')
+    expect(changelog).to.include('Feat')
 
-          expect(chunk).to.not.include('make it faster')
-          expect(chunk).to.not.include('Reverts')
-          done()
-        })
-      )
+    expect(changelog).to.not.include('make it faster')
+    expect(changelog).to.not.include('Reverts')
   })
 
-  it('should allow matching "scope" to configuration', function (done) {
+  it('should allow matching "scope" to configuration', async () => {
     preparing(1)
-    conventionalChangelogCore({
+    const changelog = await core({
       config: require('../preset')({
         types: [{ type: 'chore', scope: 'deps', section: 'Dependencies' }]
       })
     })
-      .on('error', done)
-      .pipe(
-        through(function (chunk) {
-          chunk = chunk.toString()
+    expect(changelog).to.include('### Dependencies')
+    expect(changelog).to.include('**deps:** upgrade example from 1 to 2')
 
-          expect(chunk).to.include('### Dependencies')
-          expect(chunk).to.include('**deps:** upgrade example from 1 to 2')
-
-          expect(chunk).to.not.include('release 0.0.0')
-          done()
-        })
-      )
+    expect(changelog).to.not.include('release 0.0.0')
   })
 
-  it('should properly format external repository issues', function (done) {
+  it('should properly format external repository issues', async () => {
     preparing(1)
-    conventionalChangelogCore({ config: preset })
-      .on('error', done)
-      .pipe(
-        through(function (chunk) {
-          chunk = chunk.toString()
-          expect(chunk).to.include(
-            '[#1](https://github.com/eemeli/version/issues/1)'
-          )
-          expect(chunk).to.include(
-            '[conventional-changelog/standard-version#358](https://github.com/conventional-changelog/standard-version/issues/358)'
-          )
-          done()
-        })
-      )
+    const changelog = await core({ config: preset })
+    expect(changelog).to.include(
+      '[#1](https://github.com/eemeli/version/issues/1)'
+    )
+    expect(changelog).to.include(
+      '[conventional-changelog/standard-version#358](https://github.com/conventional-changelog/standard-version/issues/358)'
+    )
   })
 
-  it('should properly format external repository issues given an `issueUrlFormat`', function (done) {
+  it('should properly format external repository issues given an `issueUrlFormat`', async () => {
     preparing(1)
-    conventionalChangelogCore({
+    const changelog = await core({
       config: getPreset({
         issuePrefixes: ['#', 'GH-'],
         issueUrlFormat: 'issues://{{repository}}/issues/{{id}}'
       })
     })
-      .on('error', done)
-      .pipe(
-        through(function (chunk) {
-          chunk = chunk.toString()
-          expect(chunk).to.include('[#1](issues://version/issues/1)')
-          expect(chunk).to.include(
-            '[conventional-changelog/standard-version#358](issues://standard-version/issues/358)'
-          )
-          expect(chunk).to.include('[GH-1](issues://version/issues/1)')
-          done()
-        })
-      )
+    expect(changelog).to.include('[#1](issues://version/issues/1)')
+    expect(changelog).to.include(
+      '[conventional-changelog/standard-version#358](issues://standard-version/issues/358)'
+    )
+    expect(changelog).to.include('[GH-1](issues://version/issues/1)')
   })
 
-  it('should properly format issues in external issue tracker given an `issueUrlFormat` with `prefix`', function (done) {
+  it('should properly format issues in external issue tracker given an `issueUrlFormat` with `prefix`', async () => {
     preparing(1)
-    conventionalChangelogCore({
+    const changelog = await core({
       config: getPreset({
         issueUrlFormat: 'https://example.com/browse/{{prefix}}{{id}}',
         issuePrefixes: ['EXAMPLE-']
       })
     })
-      .on('error', done)
-      .pipe(
-        through(function (chunk) {
-          chunk = chunk.toString()
-          expect(chunk).to.include(
-            '[EXAMPLE-1](https://example.com/browse/EXAMPLE-1)'
-          )
-          done()
-        })
-      )
+    expect(changelog).to.include(
+      '[EXAMPLE-1](https://example.com/browse/EXAMPLE-1)'
+    )
   })
 
-  it('should replace #[0-9]+ with GitHub format issue URL by default', function (done) {
+  it('should replace #[0-9]+ with GitHub format issue URL by default', async () => {
     preparing(2)
 
-    conventionalChangelogCore({ config: preset })
-      .on('error', done)
-      .pipe(
-        through(function (chunk) {
-          chunk = chunk.toString()
-          expect(chunk).to.include(
-            '[#133](https://github.com/eemeli/version/issues/133)'
-          )
-          done()
-        })
-      )
+    const changelog = await core({ config: preset })
+    expect(changelog).to.include(
+      '[#133](https://github.com/eemeli/version/issues/133)'
+    )
   })
 
-  it('should remove the issues that already appear in the subject', function (done) {
+  it('should remove the issues that already appear in the subject', async () => {
     preparing(3)
 
-    conventionalChangelogCore({ config: preset })
-      .on('error', done)
-      .pipe(
-        through(function (chunk) {
-          chunk = chunk.toString()
-          expect(chunk).to.include(
-            '[#88](https://github.com/eemeli/version/issues/88)'
-          )
-          expect(chunk).to.not.include(
-            'closes [#88](https://github.com/eemeli/version/issues/88)'
-          )
-          done()
-        })
-      )
+    const changelog = await core({ config: preset })
+    expect(changelog).to.include(
+      '[#88](https://github.com/eemeli/version/issues/88)'
+    )
+    expect(changelog).to.not.include(
+      'closes [#88](https://github.com/eemeli/version/issues/88)'
+    )
   })
 
-  it('should replace @user with configured userUrlFormat', function (done) {
+  it('should replace @user with configured userUrlFormat', async () => {
     preparing(4)
 
-    conventionalChangelogCore({
+    const changelog = await core({
       config: require('../preset')({ userUrlFormat: 'https://foo/{{user}}' })
     })
-      .on('error', done)
-      .pipe(
-        through(function (chunk) {
-          chunk = chunk.toString()
-          expect(chunk).to.include('[@bcoe](https://foo/bcoe)')
-          done()
-        })
-      )
+    expect(changelog).to.include('[@bcoe](https://foo/bcoe)')
   })
 
-  it('should not discard commit if there is BREAKING CHANGE', function (done) {
+  it('should not discard commit if there is BREAKING CHANGE', async () => {
     preparing(5)
 
-    conventionalChangelogCore({ config: preset })
-      .on('error', done)
-      .pipe(
-        through(function (chunk) {
-          chunk = chunk.toString()
-
-          expect(chunk).to.include('Continuous Integration')
-          expect(chunk).to.include('Build System')
-          expect(chunk).to.include('Documentation')
-          expect(chunk).to.include('Styles')
-          expect(chunk).to.include('Code Refactoring')
-          expect(chunk).to.include('Tests')
-
-          done()
-        })
-      )
+    const changelog = await core({ config: preset })
+    expect(changelog).to.include('Continuous Integration')
+    expect(changelog).to.include('Build System')
+    expect(changelog).to.include('Documentation')
+    expect(changelog).to.include('Styles')
+    expect(changelog).to.include('Code Refactoring')
+    expect(changelog).to.include('Tests')
   })
 
-  it('should omit optional ! in breaking commit', function (done) {
+  it('should omit optional ! in breaking commit', async () => {
     preparing(5)
 
-    conventionalChangelogCore({ config: preset })
-      .on('error', done)
-      .pipe(
-        through(function (chunk) {
-          chunk = chunk.toString()
-
-          expect(chunk).to.include('### Tests')
-          expect(chunk).to.include('* more tests')
-
-          done()
-        })
-      )
+    const changelog = await core({ config: preset })
+    expect(changelog).to.include('### Tests')
+    expect(changelog).to.include('* more tests')
   })
 
-  it('should work if there is a semver tag', function (done) {
+  it('should work if there is a semver tag', async () => {
     preparing(6)
-    let i = 0
 
-    conventionalChangelogCore({ config: preset, outputUnreleased: true })
-      .on('error', done)
-      .pipe(
-        through(
-          function (chunk, enc, cb) {
-            chunk = chunk.toString()
-
-            expect(chunk).to.include('some more feats')
-            expect(chunk).to.not.include('BREAKING')
-
-            i++
-            cb()
-          },
-          function () {
-            expect(i).to.equal(1)
-            done()
-          }
-        )
-      )
+    const changelog = await core({ config: preset, outputUnreleased: true })
+    expect(changelog).to.include('some more feats')
+    expect(changelog).to.not.include('BREAKING')
   })
 
-  it('should support "feature" as alias for "feat"', function (done) {
+  it('should support "feature" as alias for "feat"', async () => {
     preparing(7)
-    let i = 0
-
-    conventionalChangelogCore({ config: preset, outputUnreleased: true })
-      .on('error', done)
-      .pipe(
-        through(
-          function (chunk, enc, cb) {
-            chunk = chunk.toString()
-
-            expect(chunk).to.include('some more features')
-            expect(chunk).to.not.include('BREAKING')
-
-            i++
-            cb()
-          },
-          function () {
-            expect(i).to.equal(1)
-            done()
-          }
-        )
-      )
+    const changelog = await core({ config: preset, outputUnreleased: true })
+    expect(changelog).to.include('some more features')
+    expect(changelog).to.not.include('BREAKING')
   })
 
-  it('should work with unknown host', function (done) {
+  it('should work with unknown host', async () => {
     preparing(7)
-    let i = 0
-
-    conventionalChangelogCore({
+    const changelog = await core({
       config: require('../preset')({
         commitUrlFormat: 'http://unknown/commit/{{hash}}',
         compareUrlFormat:
@@ -447,201 +321,98 @@ describe('conventionalcommits.org preset', function () {
       }),
       pkg: { path: path.join(__dirname, 'fixtures/_unknown-host.json') }
     })
-      .on('error', done)
-      .pipe(
-        through(
-          function (chunk, enc, cb) {
-            chunk = chunk.toString()
-
-            expect(chunk).to.include('(http://unknown/compare')
-            expect(chunk).to.include('](http://unknown/commit/')
-
-            i++
-            cb()
-          },
-          function () {
-            expect(i).to.equal(1)
-            done()
-          }
-        )
-      )
+    expect(changelog).to.include('(http://unknown/compare')
+    expect(changelog).to.include('](http://unknown/commit/')
   })
 
-  it('should work specifying where to find a package.json using conventional-changelog-core', function (done) {
+  it('should work specifying where to find a package.json using conventional-changelog-core', async () => {
     preparing(8)
-    let i = 0
-
-    conventionalChangelogCore({
+    const changelog = await core({
       config: preset,
       pkg: { path: path.join(__dirname, 'fixtures/_known-host.json') }
     })
-      .on('error', done)
-      .pipe(
-        through(
-          function (chunk, enc, cb) {
-            chunk = chunk.toString()
-
-            expect(chunk).to.include(
-              '(https://github.com/conventional-changelog/example/compare'
-            )
-            expect(chunk).to.include(
-              '](https://github.com/conventional-changelog/example/commit/'
-            )
-            expect(chunk).to.include(
-              '](https://github.com/conventional-changelog/example/issues/'
-            )
-
-            i++
-            cb()
-          },
-          function () {
-            expect(i).to.equal(1)
-            done()
-          }
-        )
-      )
+    expect(changelog).to.include(
+      '(https://github.com/conventional-changelog/example/compare'
+    )
+    expect(changelog).to.include(
+      '](https://github.com/conventional-changelog/example/commit/'
+    )
+    expect(changelog).to.include(
+      '](https://github.com/conventional-changelog/example/issues/'
+    )
   })
 
-  it('should fallback to the closest package.json when not providing a location for a package.json', function (done) {
+  it('should fallback to the closest package.json when not providing a location for a package.json', async () => {
     preparing(8)
-    let i = 0
-
-    conventionalChangelogCore({ config: preset })
-      .on('error', done)
-      .pipe(
-        through(
-          function (chunk, enc, cb) {
-            chunk = chunk.toString()
-
-            expect(chunk).to.include(
-              '(https://github.com/eemeli/version/compare'
-            )
-            expect(chunk).to.include(
-              '](https://github.com/eemeli/version/commit/'
-            )
-            expect(chunk).to.include(
-              '](https://github.com/eemeli/version/issues/'
-            )
-
-            i++
-            cb()
-          },
-          function () {
-            expect(i).to.equal(1)
-            done()
-          }
-        )
-      )
+    const changelog = await core({ config: preset })
+    expect(changelog).to.include('(https://github.com/eemeli/version/compare')
+    expect(changelog).to.include('](https://github.com/eemeli/version/commit/')
+    expect(changelog).to.include('](https://github.com/eemeli/version/issues/')
   })
 
-  it('should support non public GitHub repository locations', function (done) {
+  it('should support non public GitHub repository locations', async () => {
     preparing(8)
 
-    conventionalChangelogCore({
+    const changelog = await core({
       config: preset,
       pkg: { path: path.join(__dirname, 'fixtures/_ghe-host.json') }
     })
-      .on('error', done)
-      .pipe(
-        through(function (chunk) {
-          chunk = chunk.toString()
-
-          expect(chunk).to.include('(https://github.internal.example.com/dlmr')
-          expect(chunk).to.include(
-            '(https://github.internal.example.com/conventional-changelog/internal/compare'
-          )
-          expect(chunk).to.include(
-            '](https://github.internal.example.com/conventional-changelog/internal/commit/'
-          )
-          expect(chunk).to.include(
-            '5](https://github.internal.example.com/conventional-changelog/internal/issues/5'
-          )
-          expect(chunk).to.include(
-            ' closes [#10](https://github.internal.example.com/conventional-changelog/internal/issues/10)'
-          )
-
-          done()
-        })
-      )
+    expect(changelog).to.include('(https://github.internal.example.com/dlmr')
+    expect(changelog).to.include(
+      '(https://github.internal.example.com/conventional-changelog/internal/compare'
+    )
+    expect(changelog).to.include(
+      '](https://github.internal.example.com/conventional-changelog/internal/commit/'
+    )
+    expect(changelog).to.include(
+      '5](https://github.internal.example.com/conventional-changelog/internal/issues/5'
+    )
+    expect(changelog).to.include(
+      ' closes [#10](https://github.internal.example.com/conventional-changelog/internal/issues/10)'
+    )
   })
 
-  it('should only replace with link to user if it is an username', function (done) {
+  it('should only replace with link to user if it is an username', async () => {
     preparing(9)
 
-    conventionalChangelogCore({ config: preset })
-      .on('error', done)
-      .pipe(
-        through(function (chunk) {
-          chunk = chunk.toString()
+    const changelog = await core({ config: preset })
+    expect(changelog).to.not.include('(https://github.com/5')
+    expect(changelog).to.include('(https://github.com/username')
 
-          expect(chunk).to.not.include('(https://github.com/5')
-          expect(chunk).to.include('(https://github.com/username')
-
-          expect(chunk).to.not.include(
-            '[@dummy](https://github.com/dummy)/package'
-          )
-          expect(chunk).to.include('bump @dummy/package from')
-          done()
-        })
-      )
+    expect(changelog).to.not.include(
+      '[@dummy](https://github.com/dummy)/package'
+    )
+    expect(changelog).to.include('bump @dummy/package from')
   })
 
-  it('supports multiple lines of footer information', function (done) {
+  it('supports multiple lines of footer information', async () => {
     preparing(9)
 
-    conventionalChangelogCore({ config: preset })
-      .on('error', done)
-      .pipe(
-        through(function (chunk) {
-          chunk = chunk.toString()
-          expect(chunk).to.include('closes [#99]')
-          expect(chunk).to.include('[#100]')
-          expect(chunk).to.include('this completely changes the API')
-          done()
-        })
-      )
+    const changelog = await core({ config: preset })
+    expect(changelog).to.include('closes [#99]')
+    expect(changelog).to.include('[#100]')
+    expect(changelog).to.include('this completely changes the API')
   })
 
-  it('does not require that types are case sensitive', function (done) {
+  it('does not require that types are case sensitive', async () => {
     preparing(9)
 
-    conventionalChangelogCore({ config: preset })
-      .on('error', done)
-      .pipe(
-        through(function (chunk) {
-          chunk = chunk.toString()
-          expect(chunk).to.include('incredible new flag')
-          done()
-        })
-      )
+    const changelog = await core({ config: preset })
+    expect(changelog).to.include('incredible new flag')
   })
 
-  it('populates breaking change if ! is present', function (done) {
+  it('populates breaking change if ! is present', async () => {
     preparing(9)
 
-    conventionalChangelogCore({ config: preset })
-      .on('error', done)
-      .pipe(
-        through(function (chunk) {
-          chunk = chunk.toString()
-          expect(chunk).to.match(/incredible new flag FIXES: #33\r?\n/)
-          done()
-        })
-      )
+    const changelog = await core({ config: preset })
+    expect(changelog).to.match(/incredible new flag FIXES: #33\r?\n/)
   })
 
-  it('parses both default (Revert "<subject>") and custom (revert: <subject>) revert commits', function (done) {
+  it('parses both default (Revert "<subject>") and custom (revert: <subject>) revert commits', async () => {
     preparing(10)
 
-    conventionalChangelogCore({ config: preset })
-      .on('error', done)
-      .pipe(
-        through(function (chunk) {
-          chunk = chunk.toString()
-          expect(chunk).to.match(/custom revert format/)
-          expect(chunk).to.match(/default revert format/)
-          done()
-        })
-      )
+    const changelog = await core({ config: preset })
+    expect(changelog).to.match(/custom revert format/)
+    expect(changelog).to.match(/default revert format/)
   })
 })
