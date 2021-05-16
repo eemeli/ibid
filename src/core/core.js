@@ -1,13 +1,13 @@
 'use strict'
 
 const addStream = require('add-stream')
+const { execFileSync } = require('child_process')
 const gitRawCommits = require('git-raw-commits')
 const conventionalCommitsParser = require('conventional-commits-parser')
 const conventionalChangelogWriter = require('conventional-changelog-writer')
 const _ = require('lodash')
-const stream = require('stream')
+const { Readable } = require('stream')
 const through = require('through2')
-const execFileSync = require('child_process').execFileSync
 const mergeConfig = require('./merge-config')
 
 function conventionalChangelog(
@@ -20,30 +20,23 @@ function conventionalChangelog(
 ) {
   writerOpts = writerOpts || {}
 
-  const readable = new stream.Readable({
-    objectMode: writerOpts.includeDetails
-  })
+  const readable = new Readable({ objectMode: writerOpts.includeDetails })
   readable._read = function () {}
 
-  let commitsErrorThrown = false
-
-  let commitsStream = new stream.Readable({
-    objectMode: true
-  })
+  let commitsStream = new Readable({ objectMode: true })
   commitsStream._read = function () {}
 
+  let commitsErrorThrown = false
   function commitsRange(from, to) {
-    return gitRawCommits(
-      _.merge({}, gitRawCommitsOpts, {
-        from: from,
-        to: to
-      })
-    ).on('error', function (err) {
-      if (!commitsErrorThrown) {
-        setImmediate(commitsStream.emit.bind(commitsStream), 'error', err)
-        commitsErrorThrown = true
+    return gitRawCommits(_.merge({}, gitRawCommitsOpts, { from, to })).on(
+      'error',
+      err => {
+        if (!commitsErrorThrown) {
+          setImmediate(commitsStream.emit.bind(commitsStream), 'error', err)
+          commitsErrorThrown = true
+        }
       }
-    })
+    )
   }
 
   mergeConfig(
@@ -70,13 +63,11 @@ function conventionalChangelog(
         reverseTags.push('HEAD')
 
         if (gitRawCommitsOpts.from) {
-          if (reverseTags.indexOf(gitRawCommitsOpts.from) !== -1) {
-            reverseTags = reverseTags.slice(
-              reverseTags.indexOf(gitRawCommitsOpts.from)
-            )
-          } else {
-            reverseTags = [gitRawCommitsOpts.from, 'HEAD']
-          }
+          const idx = reverseTags.indexOf(gitRawCommitsOpts.from)
+          reverseTags =
+            idx !== -1
+              ? reverseTags.slice(idx)
+              : [gitRawCommitsOpts.from, 'HEAD']
         }
 
         let streams = reverseTags.map((to, i) => {
@@ -84,13 +75,8 @@ function conventionalChangelog(
           return commitsRange(from, to)
         })
 
-        if (gitRawCommitsOpts.from) {
-          streams = streams.splice(1)
-        }
-
-        if (gitRawCommitsOpts.reverse) {
-          streams.reverse()
-        }
+        if (gitRawCommitsOpts.from) streams = streams.splice(1)
+        if (gitRawCommitsOpts.reverse) streams.reverse()
 
         streams
           .reduce((prev, next) => next.pipe(addStream(prev)))
@@ -136,9 +122,7 @@ function conventionalChangelog(
         })
         .pipe(
           through(
-            {
-              objectMode: writerOpts.includeDetails
-            },
+            { objectMode: writerOpts.includeDetails },
             function (chunk, enc, cb) {
               try {
                 readable.push(chunk)
@@ -147,12 +131,10 @@ function conventionalChangelog(
                   throw err
                 })
               }
-
               cb()
             },
             function (cb) {
               readable.push(null)
-
               cb()
             }
           )

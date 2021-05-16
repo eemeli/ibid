@@ -1650,7 +1650,7 @@ describe('conventionalChangelogCore', function () {
     it('should warn if config errors', function (done) {
       conventionalChangelogCore({
         config: new Promise(function (resolve, reject) {
-          reject('config error') // eslint-disable-line prefer-promise-reject-errors
+          reject(new Error('config error'))
         }),
         warn: function (warning) {
           expect(warning).to.include('config error')
@@ -1663,6 +1663,7 @@ describe('conventionalChangelogCore', function () {
 
   describe('unreleased', function () {
     it('should not output unreleased', function (done) {
+      this.timeout(5000)
       preparing(14)
 
       conventionalChangelogCore(
