@@ -142,10 +142,7 @@ describe('recommend-bump', () => {
     it('throws an error if unable to load a preset package', async () => {
       await assert.rejects(
         recommendBump({ preset: 'does-not-exist' }, [breakCommit]),
-        {
-          message:
-            'Unable to load the "does-not-exist" preset package. Please make sure it\'s installed.'
-        }
+        /Unable to load the "does-not-exist" preset package. Please make sure it's installed./
       )
     })
 

@@ -7,7 +7,7 @@ const filterReverted = require('../commit-filter/reverted')
 const gitLog = require('../git/git-log')
 const parseMessage = require('../message-parser/index')
 
-const getConfig = require('./get-config')
+const getConfig = require('../core/get-config')
 const recommendBump = require('./recommend-bump')
 
 async function getCommits(options, parserOpts) {

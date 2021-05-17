@@ -21,7 +21,6 @@
   "dependencies": {
     "add-stream": "^1.0.0",
     "compare-func": "^2.0.0",
-    "conventional-changelog-preset-loader": "^2.3.4",
     "get-pkg-repo": "^1.4.0",
     "git-raw-commits": "^2.0.10",
     "git-remote-origin-url": "^2.0.0",

@@ -2,7 +2,7 @@
 
 const { expect } = require('chai')
 const { describe, it } = require('mocha')
-const { resolvePreset } = require('./preset-loader')
+const resolvePreset = require('./resolve-preset')
 
 describe('presetLoader', () => {
   it('resolves unscoped package', () => {

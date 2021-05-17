@@ -1,6 +1,6 @@
 'use strict'
 
-const getConfig = require('./get-config')
+const getConfig = require('../core/get-config')
 
 const VERSIONS = ['major', 'minor', 'patch']
 
