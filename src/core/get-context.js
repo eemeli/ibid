@@ -6,35 +6,39 @@ const normalizePackageData = require('normalize-package-data')
 const readPkg = require('read-pkg')
 const readPkgUp = require('read-pkg-up')
 
-module.exports = async function getContext(optPkg, warn) {
-  let pkg = null
-  if (optPkg) {
+const getHostOpts = require('./host-opts')
+
+module.exports = async function getContext({ pkg, warn }, contextArg) {
+  let pkgData = null
+  if (pkg) {
     try {
       // TODO: Update these dependencies
-      pkg = optPkg.path ? await readPkg(optPkg.path) : (await readPkgUp()).pkg
+      pkgData = pkg.path ? await readPkg(pkg.path) : (await readPkgUp()).pkg
     } catch (error) {
       warn('Error parsing package.json: ' + error)
     }
-    pkg = optPkg.transform(pkg)
+    pkgData = pkg.transform(pkgData)
   }
 
-  if (!pkg || !pkg.repository || !pkg.repository.url) {
+  if (!pkgData || !pkgData.repository || !pkgData.repository.url) {
     try {
-      pkg = pkg || {}
-      pkg.repository = pkg.repository || {}
-      pkg.repository.url = await gitRemoteOriginUrl()
-      normalizePackageData(pkg)
+      pkgData = pkgData || {}
+      pkgData.repository = {
+        ...pkgData.repository,
+        url: await gitRemoteOriginUrl()
+      }
+      normalizePackageData(pkgData)
     } catch (_) {
       // ignore any error
     }
   }
 
-  const context = { version: (pkg && pkg.version) || '' }
+  let context = { version: (pkgData && pkgData.version) || '' }
 
-  if (pkg) {
+  if (pkgData) {
     let repo
     try {
-      repo = getPkgRepo(pkg)
+      repo = getPkgRepo(pkgData)
     } catch (_) {
       repo = {}
     }
@@ -50,8 +54,16 @@ module.exports = async function getContext(optPkg, warn) {
       context.repository = context.repository || repo.project
       context.repoUrl = browse
     }
-    context.packageData = pkg
+    context.packageData = pkgData
   }
+
+  context = { ...context, ...contextArg }
+  const hostOpts = getHostOpts(context.host)
+  if (hostOpts) {
+    if (!context.issue) context.issue = hostOpts.writer.issue
+    if (!context.commit) context.commit = hostOpts.writer.commit
+  } else if (context.host)
+    warn(`Host: ${JSON.stringify(context.host)} does not exist`)
 
   return context
 }

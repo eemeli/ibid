@@ -1,14 +1,15 @@
 'use strict'
 
 const addStream = require('add-stream')
-const { execFileSync } = require('child_process')
 const gitRawCommits = require('git-raw-commits')
 const _ = require('lodash')
 const { Readable } = require('stream')
 const { promisify } = require('util')
+const execFile = promisify(require('child_process').execFile)
 
 const parseMessage = require('../message-parser/index')
 const writer = require('../writer/writer')
+const getOptions = require('./get-options')
 const mergeConfig = require('./merge-config')
 
 async function core(
@@ -19,14 +20,15 @@ async function core(
   writerOptsArg,
   gitRawExecOpts
 ) {
+  const options = getOptions(optionsArg)
+
   const {
-    options,
     context,
     gitRawCommitsOpts,
     parserOpts,
     writerOpts
   } = await mergeConfig(
-    optionsArg,
+    options,
     contextArg,
     gitRawCommitsOptsArg,
     parserOptsArg,
@@ -35,21 +37,8 @@ async function core(
 
   let commitsStream = new Readable({ objectMode: true, read() {} })
 
-  let commitsErrorThrown = false
-  function commitsRange(from, to) {
-    return gitRawCommits(_.merge({}, gitRawCommitsOpts, { from, to })).on(
-      'error',
-      err => {
-        if (!commitsErrorThrown) {
-          setImmediate(commitsStream.emit.bind(commitsStream), 'error', err)
-          commitsErrorThrown = true
-        }
-      }
-    )
-  }
-
   try {
-    execFileSync('git', ['rev-parse', '--verify', 'HEAD'], {
+    await execFile('git', ['rev-parse', '--verify', 'HEAD'], {
       stdio: 'ignore'
     })
     let reverseTags = context.gitSemverTags.slice(0).reverse()
@@ -63,20 +52,17 @@ async function core(
 
     let streams = reverseTags.map((to, i) => {
       const from = i > 0 ? reverseTags[i - 1] : ''
-      return commitsRange(from, to)
+      const opt = _.merge({}, gitRawCommitsOpts, { from, to })
+      return gitRawCommits(opt).on('error', err => commitsStream.destroy(err))
     })
 
-    if (gitRawCommitsOpts.from) streams = streams.splice(1)
+    if (gitRawCommitsOpts.from) streams = streams.slice(1)
     if (gitRawCommitsOpts.reverse) streams.reverse()
 
     streams
       .reduce((prev, next) => next.pipe(addStream(prev)))
-      .on('data', function (data) {
-        setImmediate(commitsStream.emit.bind(commitsStream), 'data', data)
-      })
-      .on('end', function () {
-        setImmediate(commitsStream.emit.bind(commitsStream), 'end')
-      })
+      .on('data', data => commitsStream.push(data))
+      .on('end', () => commitsStream.push(null))
   } catch (_e) {
     commitsStream = gitRawCommits(gitRawCommitsOpts, gitRawExecOpts || {})
   }
