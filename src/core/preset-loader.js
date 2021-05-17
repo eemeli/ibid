@@ -5,7 +5,7 @@ const nodePath = require('path')
 module.exports = presetLoader(require)
 module.exports.presetLoader = presetLoader
 
-function presetLoader (requireMethod) {
+function presetLoader(requireMethod) {
   return path => {
     let name = ''
     let scope = ''

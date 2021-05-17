@@ -18,8 +18,9 @@ describe('presetLoader', () => {
 
     load('angular')
 
-    expect(requireMethod).to.have.been.calledOnce
-      .and.to.have.been.calledWith('conventional-changelog-angular')
+    expect(requireMethod).to.have.been.calledOnce.and.to.have.been.calledWith(
+      'conventional-changelog-angular'
+    )
   })
 
   it('loads unscoped package containing path', () => {
@@ -28,8 +29,9 @@ describe('presetLoader', () => {
 
     load('angular/preset/path')
 
-    expect(requireMethod).to.have.been.calledOnce
-      .and.to.have.been.calledWith('conventional-changelog-angular/preset/path')
+    expect(requireMethod).to.have.been.calledOnce.and.to.have.been.calledWith(
+      'conventional-changelog-angular/preset/path'
+    )
   })
 
   it('loads unscoped package with full package name', () => {
@@ -38,8 +40,9 @@ describe('presetLoader', () => {
 
     load('conventional-changelog-angular')
 
-    expect(requireMethod).to.have.been.calledOnce
-      .and.to.have.been.calledWith('conventional-changelog-angular')
+    expect(requireMethod).to.have.been.calledOnce.and.to.have.been.calledWith(
+      'conventional-changelog-angular'
+    )
   })
 
   it('loads unscoped package with full package name containing path', () => {
@@ -48,8 +51,9 @@ describe('presetLoader', () => {
 
     load('conventional-changelog-angular/preset/path')
 
-    expect(requireMethod).to.have.been.calledOnce
-      .and.to.have.been.calledWith('conventional-changelog-angular/preset/path')
+    expect(requireMethod).to.have.been.calledOnce.and.to.have.been.calledWith(
+      'conventional-changelog-angular/preset/path'
+    )
   })
 
   it('loads scoped package', () => {
@@ -58,8 +62,9 @@ describe('presetLoader', () => {
 
     load('@scope/angular')
 
-    expect(requireMethod).to.have.been.calledOnce
-      .and.to.have.been.calledWith('@scope/conventional-changelog-angular')
+    expect(requireMethod).to.have.been.calledOnce.and.to.have.been.calledWith(
+      '@scope/conventional-changelog-angular'
+    )
   })
 
   it('loads scoped package containing path', () => {
@@ -68,8 +73,9 @@ describe('presetLoader', () => {
 
     load('@scope/angular/preset/path')
 
-    expect(requireMethod).to.have.been.calledOnce
-      .and.to.have.been.calledWith('@scope/conventional-changelog-angular/preset/path')
+    expect(requireMethod).to.have.been.calledOnce.and.to.have.been.calledWith(
+      '@scope/conventional-changelog-angular/preset/path'
+    )
   })
 
   it('loads scoped package with full package name', () => {
@@ -78,8 +84,9 @@ describe('presetLoader', () => {
 
     load('@scope/conventional-changelog-angular')
 
-    expect(requireMethod).to.have.been.calledOnce
-      .and.to.have.been.calledWith('@scope/conventional-changelog-angular')
+    expect(requireMethod).to.have.been.calledOnce.and.to.have.been.calledWith(
+      '@scope/conventional-changelog-angular'
+    )
   })
 
   it('loads scoped package with full package name containing path', () => {
@@ -88,8 +95,9 @@ describe('presetLoader', () => {
 
     load('@scope/conventional-changelog-angular/preset/path')
 
-    expect(requireMethod).to.have.been.calledOnce
-      .and.to.have.been.calledWith('@scope/conventional-changelog-angular/preset/path')
+    expect(requireMethod).to.have.been.calledOnce.and.to.have.been.calledWith(
+      '@scope/conventional-changelog-angular/preset/path'
+    )
   })
 
   it('loads package with an absolute file path', () => {
@@ -99,8 +107,9 @@ describe('presetLoader', () => {
 
     load(filePath)
 
-    expect(requireMethod).to.have.been.calledOnce
-      .and.to.have.been.calledWith(filePath)
+    expect(requireMethod).to.have.been.calledOnce.and.to.have.been.calledWith(
+      filePath
+    )
   })
 
   it('loads package with an absolute file path name', () => {
@@ -110,7 +119,8 @@ describe('presetLoader', () => {
 
     load({ name: filePath })
 
-    expect(requireMethod).to.have.been.calledOnce
-      .and.to.have.been.calledWith(filePath)
+    expect(requireMethod).to.have.been.calledOnce.and.to.have.been.calledWith(
+      filePath
+    )
   })
 })
