@@ -4,13 +4,28 @@ const { promisify } = require('util')
 const resolvePreset = require('./resolve-preset')
 
 module.exports = async function getConfig({ config, preset }) {
-  const cfg = preset ? loadPreset(preset) : config
-  switch (typeof cfg) {
+  if (config && preset)
+    throw new Error(
+      'The config and preset options must not be used simultaneously'
+    )
+  const cfg = await unpackConfig(preset ? loadPreset(preset) : config)
+  return {
+    gitRawCommitsOpts: null,
+    gitRawExecOpts: null,
+    parserOpts: null,
+    recommendedBumpOpts: null,
+    writerOpts: null,
+    ...cfg
+  }
+}
+
+async function unpackConfig(config) {
+  switch (typeof config) {
     case 'function':
-      return promisify(cfg)()
+      return promisify(config)()
     case 'object':
     case 'undefined':
-      return cfg || {}
+      return config || {}
     default:
       throw new Error('preset package must be a promise, function, or object')
   }

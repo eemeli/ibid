@@ -9,31 +9,31 @@ const execFile = promisify(require('child_process').execFile)
 
 const parseMessage = require('../message-parser/index')
 const writer = require('../writer/writer')
+const getConfig = require('./get-config')
+const getContext = require('./get-context')
 const getOptions = require('./get-options')
 const mergeConfig = require('./merge-config')
 
-async function core(
-  optionsArg,
-  contextArg,
-  gitRawCommitsOptsArg,
-  parserOptsArg,
-  writerOptsArg,
-  gitRawExecOpts
-) {
+async function core(optionsArg, contextArg) {
   const options = getOptions(optionsArg)
 
+  let config
+  try {
+    config = await getConfig(options)
+  } catch (error) {
+    options.warn('getConfig: ' + error)
+  }
+
+  const context = await getContext(options, {
+    ...contextArg,
+    ...config.context
+  })
+
   const {
-    context,
     gitRawCommitsOpts,
     parserOpts,
     writerOpts
-  } = await mergeConfig(
-    options,
-    contextArg,
-    gitRawCommitsOptsArg,
-    parserOptsArg,
-    writerOptsArg
-  )
+  } = await mergeConfig(options, config, context)
 
   let commitsStream = new Readable({ objectMode: true, read() {} })
 
@@ -64,7 +64,10 @@ async function core(
       .on('data', data => commitsStream.push(data))
       .on('end', () => commitsStream.push(null))
   } catch (_e) {
-    commitsStream = gitRawCommits(gitRawCommitsOpts, gitRawExecOpts || {})
+    commitsStream = gitRawCommits(
+      gitRawCommitsOpts,
+      config.gitRawExecOpts || {}
+    )
   }
 
   const commits = []

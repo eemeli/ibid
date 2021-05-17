@@ -204,13 +204,12 @@ describe('conventionalChangelogCore', function () {
   it('should honour `gitRawCommitsOpts.from`', async function () {
     preparing(2)
 
-    const changelog = await core(
-      {},
-      {},
-      { from: 'HEAD~2' },
-      {},
-      { commitsSort: null }
-    )
+    const changelog = await core({
+      config: {
+        gitRawCommitsOpts: { from: 'HEAD~2' },
+        writerOpts: { commitsSort: null }
+      }
+    })
     expect(changelog).to.include('Second commit')
     expect(changelog).to.include('Third commit')
     expect(changelog).to.match(/Third commit closes #1[\w\W]*?\* Second commit/)
@@ -338,12 +337,11 @@ describe('conventionalChangelogCore', function () {
   it('should ignore other prefixes if an `issuePrefixes` option is not provided', async function () {
     preparing(4)
 
-    const changelog = await core(
-      {},
-      { host: 'github', owner: 'b', repository: 'a' },
-      {},
-      {}
-    )
+    const changelog = await core(null, {
+      host: 'github',
+      owner: 'b',
+      repository: 'a'
+    })
     expect(changelog).to.include('](github/b/a/commit/')
     expect(changelog).to.not.include('closes [#42](github/b/a/issues/42)')
   })
@@ -352,10 +350,8 @@ describe('conventionalChangelogCore', function () {
     preparing(5)
 
     const changelog = await core(
-      {},
-      { host: 'github', owner: 'b', repository: 'a' },
-      {},
-      { issuePrefixes: ['@'] }
+      { config: { parserOpts: { issuePrefixes: ['@'] } } },
+      { host: 'github', owner: 'b', repository: 'a' }
     )
     expect(changelog).to.include('](github/b/a/commit/')
     expect(changelog).to.include('closes [#42](github/b/a/issues/42)')
@@ -365,18 +361,13 @@ describe('conventionalChangelogCore', function () {
   it('should read host configs if only `parserOpts.referenceActions` is missing', async function () {
     preparing(5)
 
-    const changelog = await core(
-      {},
-      {
-        host: 'github',
-        owner: 'b',
-        repository: 'a',
-        issue: 'issue',
-        commit: 'commits'
-      },
-      {},
-      {}
-    )
+    const changelog = await core(null, {
+      host: 'github',
+      owner: 'b',
+      repository: 'a',
+      issue: 'issue',
+      commit: 'commits'
+    })
     expect(changelog).to.include('](github/b/a/commits/')
     expect(changelog).to.include('closes [#1](github/b/a/issue/1)')
   })
@@ -384,12 +375,11 @@ describe('conventionalChangelogCore', function () {
   it("should read github's host configs", async function () {
     preparing(5)
 
-    const changelog = await core(
-      {},
-      { host: 'github', owner: 'b', repository: 'a' },
-      {},
-      {}
-    )
+    const changelog = await core(null, {
+      host: 'github',
+      owner: 'b',
+      repository: 'a'
+    })
     expect(changelog).to.include('](github/b/a/commit/')
     expect(changelog).to.include('closes [#1](github/b/a/issues/1)')
   })
@@ -397,16 +387,11 @@ describe('conventionalChangelogCore', function () {
   it("should read bitbucket's host configs", async function () {
     preparing(5)
 
-    const changelog = await core(
-      {},
-      {
-        host: 'bitbucket',
-        owner: 'b',
-        repository: 'a'
-      },
-      {},
-      {}
-    )
+    const changelog = await core(null, {
+      host: 'bitbucket',
+      owner: 'b',
+      repository: 'a'
+    })
 
     expect(changelog).to.include('](bitbucket/b/a/commits/')
     expect(changelog).to.include('closes [#1](bitbucket/b/a/issue/1)')
@@ -415,12 +400,11 @@ describe('conventionalChangelogCore', function () {
   it("should read gitlab's host configs", async function () {
     preparing(5)
 
-    const changelog = await core(
-      {},
-      { host: 'gitlab', owner: 'b', repository: 'a' },
-      {},
-      {}
-    )
+    const changelog = await core(null, {
+      host: 'gitlab',
+      owner: 'b',
+      repository: 'a'
+    })
 
     expect(changelog).to.include('](gitlab/b/a/commit/')
     expect(changelog).to.include('closes [#1](gitlab/b/a/issues/1)')
@@ -457,13 +441,14 @@ describe('conventionalChangelogCore', function () {
 
   it('semverTags should be attached to the `context` object', async function () {
     preparing(6)
-    const changelog = await core(
-      { releaseCount: 0 },
-      {},
-      {},
-      {},
-      { mainTemplate: '{{gitSemverTags}} or {{gitSemverTags.[0]}}' }
-    )
+    const changelog = await core({
+      releaseCount: 0,
+      config: {
+        writerOpts: {
+          mainTemplate: '{{gitSemverTags}} or {{gitSemverTags.[0]}}'
+        }
+      }
+    })
     const exp = 'v2.0.0,v0.1.0 or v2.0.0'
     expect(changelog).to.equal(exp + exp + exp)
   })
@@ -471,15 +456,18 @@ describe('conventionalChangelogCore', function () {
   it('should not link compare', async function () {
     preparing(6)
     const changelog = await core(
-      { releaseCount: 0, append: true },
-      { version: '3.0.0', linkCompare: false },
-      {},
-      {},
       {
-        mainTemplate:
-          '{{#if linkCompare}}{{previousTag}}...{{currentTag}}{{else}}Not linked{{/if}}',
-        transform: () => null
-      }
+        releaseCount: 0,
+        append: true,
+        config: {
+          writerOpts: {
+            mainTemplate:
+              '{{#if linkCompare}}{{previousTag}}...{{currentTag}}{{else}}Not linked{{/if}}',
+            transform: () => null
+          }
+        }
+      },
+      { version: '3.0.0', linkCompare: false }
     )
     expect(changelog).to.equal('Not linked' + 'Not linked' + 'Not linked')
   })
@@ -556,7 +544,9 @@ describe('conventionalChangelogCore', function () {
   it('should error if it errors in git-raw-commits', function () {
     preparing(6)
 
-    return core({}, {}, { unknowOptions: false }).then(
+    return core({
+      config: { gitRawCommitsOpts: { unknowOptions: false } }
+    }).then(
       () => Promise.reject(new Error('Expected an error')),
       err => expect(err.message).to.include('Error in git-raw-commits:')
     )
@@ -591,7 +581,9 @@ describe('conventionalChangelogCore', function () {
   it('should error if it errors in conventional-changelog-writer', function () {
     preparing(8)
 
-    return core({}, {}, {}, {}, { finalizeContext: () => undefined.a }).then(
+    return core({
+      config: { writerOpts: { finalizeContext: () => undefined.a } }
+    }).then(
       () => Promise.reject(new Error('Expected an error')),
       err =>
         expect(err.message).to.include(
@@ -603,7 +595,9 @@ describe('conventionalChangelogCore', function () {
   it('should pass `parserOpts` to conventional-commits-parser', async function () {
     preparing(9)
 
-    const changelog = await core({}, {}, {}, { noteKeywords: ['Release note'] })
+    const changelog = await core({
+      config: { parserOpts: { noteKeywords: ['Release note'] } }
+    })
     expect(changelog).to.include('* test9')
     expect(changelog).to.include('### Release note\n\n* super release!')
   })
@@ -611,17 +605,12 @@ describe('conventionalChangelogCore', function () {
   it('should read each commit range exactly once', async function () {
     preparing(9)
 
-    const changelog = await core(
-      {
-        preset: {
-          compareUrlFormat: '/compare/{{previousTag}}...{{currentTag}}'
-        }
-      },
-      {},
-      {},
-      {},
-      { headerPartial: '', commitPartial: '* {{header}}\n' }
-    )
+    const changelog = await core({
+      config: {
+        compareUrlFormat: '/compare/{{previousTag}}...{{currentTag}}',
+        writerOpts: { headerPartial: '', commitPartial: '* {{header}}\n' }
+      }
+    })
     expect(changelog).to.equal('\n* test8\n* test8\n* test9\n\n\n\n')
   })
 
@@ -658,13 +647,11 @@ describe('conventionalChangelogCore', function () {
   it('should respect merge order', async function () {
     this.timeout(5000)
     preparing(19)
-    const changelog = await core(
-      { releaseCount: 0, append: true, outputUnreleased: true },
-      {},
-      {},
-      {},
-      {}
-    )
+    const changelog = await core({
+      releaseCount: 0,
+      append: true,
+      outputUnreleased: true
+    })
     expect(changelog).to.contain('included in 4.0.0')
     expect(changelog).to.contain('included in 5.0.0')
     expect(changelog).to.contain('merged, unreleased')
@@ -674,11 +661,13 @@ describe('conventionalChangelogCore', function () {
     it('should make `context.previousTag` default to a previous semver version of generated log (prepend)', async function () {
       const tail = preparing(11).tail
       const changelog = await core(
-        { releaseCount: 0 },
-        { version: '3.0.0' },
-        {},
-        {},
-        { mainTemplate: '{{previousTag}}...{{currentTag}}' }
+        {
+          config: {
+            writerOpts: { mainTemplate: '{{previousTag}}...{{currentTag}}' }
+          },
+          releaseCount: 0
+        },
+        { version: '3.0.0' }
       )
       expect(changelog).to.equal('v2.0.0...v3.0.0' + tail + '...v2.0.0')
     })
@@ -686,11 +675,14 @@ describe('conventionalChangelogCore', function () {
     it('should make `context.previousTag` default to a previous semver version of generated log (append)', async function () {
       const tail = preparing(11).tail
       const changelog = await core(
-        { releaseCount: 0, append: true },
-        { version: '3.0.0' },
-        {},
-        {},
-        { mainTemplate: '{{previousTag}}...{{currentTag}}' }
+        {
+          config: {
+            writerOpts: { mainTemplate: '{{previousTag}}...{{currentTag}}' }
+          },
+          releaseCount: 0,
+          append: true
+        },
+        { version: '3.0.0' }
       )
       expect(changelog).to.equal(tail + '...v2.0.0' + 'v2.0.0...v3.0.0')
     })
@@ -698,14 +690,17 @@ describe('conventionalChangelogCore', function () {
     it('`context.previousTag` and `context.currentTag` should be `null` if `keyCommit.gitTags` is not a semver', async function () {
       const tail = preparing(12).tail
       const changelog = await core(
-        { releaseCount: 0, append: true },
-        { version: '3.0.0' },
-        {},
-        {},
         {
-          mainTemplate: '{{previousTag}}...{{currentTag}}',
-          generateOn: 'version'
-        }
+          config: {
+            writerOpts: {
+              mainTemplate: '{{previousTag}}...{{currentTag}}',
+              generateOn: 'version'
+            }
+          },
+          releaseCount: 0,
+          append: true
+        },
+        { version: '3.0.0' }
       )
       expect(changelog).to.equal(tail + '...v2.0.0' + '...' + 'v2.0.0...v3.0.0')
     })
@@ -713,14 +708,16 @@ describe('conventionalChangelogCore', function () {
     it('should still work if first release has no commits (prepend)', async function () {
       preparing(13)
       const changelog = await core(
-        { releaseCount: 0 },
-        { version: '3.0.0' },
-        {},
-        {},
         {
-          mainTemplate: '{{previousTag}}...{{currentTag}}',
-          transform: () => null
-        }
+          config: {
+            writerOpts: {
+              mainTemplate: '{{previousTag}}...{{currentTag}}',
+              transform: () => null
+            }
+          },
+          releaseCount: 0
+        },
+        { version: '3.0.0' }
       )
       expect(changelog).to.equal(
         'v2.0.0...v3.0.0' + 'v0.0.1...v2.0.0' + '...v0.0.1'
@@ -730,14 +727,17 @@ describe('conventionalChangelogCore', function () {
     it('should still work if first release has no commits (append)', async function () {
       preparing(13)
       const changelog = await core(
-        { releaseCount: 0, append: true },
-        { version: '3.0.0' },
-        {},
-        {},
         {
-          mainTemplate: '{{previousTag}}...{{currentTag}}',
-          transform: () => null
-        }
+          config: {
+            writerOpts: {
+              mainTemplate: '{{previousTag}}...{{currentTag}}',
+              transform: () => null
+            }
+          },
+          releaseCount: 0,
+          append: true
+        },
+        { version: '3.0.0' }
       )
       expect(changelog).to.equal(
         '...v0.0.1' + 'v0.0.1...v2.0.0' + 'v2.0.0...v3.0.0'
@@ -747,11 +747,13 @@ describe('conventionalChangelogCore', function () {
     it('should change `context.currentTag` to last commit hash if it is unreleased', async function () {
       const head = preparing(13).head
       const changelog = await core(
-        { outputUnreleased: true },
-        { version: '2.0.0' },
-        {},
-        {},
-        { mainTemplate: '{{previousTag}}...{{currentTag}}' }
+        {
+          config: {
+            writerOpts: { mainTemplate: '{{previousTag}}...{{currentTag}}' }
+          },
+          outputUnreleased: true
+        },
+        { version: '2.0.0' }
       )
       expect(changelog).to.equal('v2.0.0...' + head)
     })
@@ -759,11 +761,13 @@ describe('conventionalChangelogCore', function () {
     it('should not prefix with a "v"', async function () {
       preparing(18)
       const changelog = await core(
-        { releaseCount: 0 },
-        { version: '4.0.0' },
-        {},
-        {},
-        { mainTemplate: '{{previousTag}}...{{currentTag}}' }
+        {
+          config: {
+            writerOpts: { mainTemplate: '{{previousTag}}...{{currentTag}}' }
+          },
+          releaseCount: 0
+        },
+        { version: '4.0.0' }
       )
       expect(changelog).to.include('3.0.0...4.0.0')
     })
@@ -771,11 +775,13 @@ describe('conventionalChangelogCore', function () {
     it('should remove the first "v"', async function () {
       preparing(18)
       const changelog = await core(
-        { releaseCount: 0 },
-        { version: 'v4.0.0' },
-        {},
-        {},
-        { mainTemplate: '{{previousTag}}...{{currentTag}}' }
+        {
+          config: {
+            writerOpts: { mainTemplate: '{{previousTag}}...{{currentTag}}' }
+          },
+          releaseCount: 0
+        },
+        { version: 'v4.0.0' }
       )
       expect(changelog).to.include('3.0.0...4.0.0')
     })
@@ -784,11 +790,12 @@ describe('conventionalChangelogCore', function () {
       preparing(1)
 
       const changelog = await core(
-        {},
-        { version: '1.0.0' },
-        {},
-        {},
-        { mainTemplate: '{{previousTag}}...{{currentTag}}' }
+        {
+          config: {
+            writerOpts: { mainTemplate: '{{previousTag}}...{{currentTag}}' }
+          }
+        },
+        { version: '1.0.0' }
       )
       expect(changelog).to.include('...v1.0.0')
     })
@@ -797,11 +804,12 @@ describe('conventionalChangelogCore', function () {
       preparing(1)
 
       const changelog = await core(
-        {},
-        { version: 'v1.0.0' },
-        {},
-        {},
-        { mainTemplate: '{{previousTag}}...{{currentTag}}' }
+        {
+          config: {
+            writerOpts: { mainTemplate: '{{previousTag}}...{{currentTag}}' }
+          }
+        },
+        { version: 'v1.0.0' }
       )
       expect(changelog).to.include('...v1.0.0')
     })
@@ -810,17 +818,18 @@ describe('conventionalChangelogCore', function () {
       this.timeout(5000)
       preparing(13)
       const changelog = await core(
-        { releaseCount: 0, append: true },
-        { version: '3.0.0' },
-        {},
-        {},
         {
-          mainTemplate:
-            '{{#if linkCompare}}{{previousTag}}...{{currentTag}}{{else}}Not linked{{/if}}',
-          transform: function () {
-            return null
-          }
-        }
+          config: {
+            writerOpts: {
+              mainTemplate:
+                '{{#if linkCompare}}{{previousTag}}...{{currentTag}}{{else}}Not linked{{/if}}',
+              transform: () => null
+            }
+          },
+          releaseCount: 0,
+          append: true
+        },
+        { version: '3.0.0' }
       )
       expect(changelog).to.equal(
         'Not linked' + 'v0.0.1...v2.0.0' + 'v2.0.0...v3.0.0'
@@ -829,14 +838,14 @@ describe('conventionalChangelogCore', function () {
 
     it('takes into account tagPrefix option', async function () {
       preparing(16)
-      const changelog = await core(
-        {
-          tagPrefix: 'foo@',
-          config: require('conventional-changelog-angular')
-        },
-        {},
-        { path: './packages/foo' }
-      )
+      const preset = await require('conventional-changelog-angular')
+      const changelog = await core({
+        tagPrefix: 'foo@',
+        config: {
+          ...preset,
+          gitRawCommitsOpts: { ...preset.gitRawCommitsOpts, path: './packages/foo' }
+        }
+      })
       // confirm that context.currentTag behaves differently when
       // tagPrefix is used
       expect(changelog).to.include('foo@1.0.0...foo@2.0.0')
@@ -875,9 +884,7 @@ describe('conventionalChangelogCore', function () {
 
     it('should warn if config errors', function (done) {
       core({
-        config: new Promise(function (resolve, reject) {
-          reject(new Error('config error'))
-        }),
+        config: Promise.reject(new Error('config error')),
         warn(warning) {
           expect(warning).to.include('config error')
           done()
@@ -912,13 +919,10 @@ describe('conventionalChangelogCore', function () {
     it('handles upcoming release', async function () {
       preparing(16)
 
-      const changelog = await core(
-        {
-          lernaPackage: 'foo'
-        },
-        {},
-        { path: './packages/foo' }
-      )
+      const changelog = await core({
+        config: { gitRawCommitsOpts: { path: './packages/foo' } },
+        lernaPackage: 'foo'
+      })
       expect(changelog).to.include('first lerna style commit hooray')
       expect(changelog).to.not.include('second lerna style commit woo')
       expect(changelog).to.not.include(
@@ -930,14 +934,14 @@ describe('conventionalChangelogCore', function () {
     it('takes into account lerna tag format when generating context.currentTag', async function () {
       preparing(16)
 
-      const changelog = await core(
-        {
-          lernaPackage: 'foo',
-          config: require('conventional-changelog-angular')
-        },
-        {},
-        { path: './packages/foo' }
-      )
+      const preset = await require('conventional-changelog-angular')
+      const changelog = await core({
+        lernaPackage: 'foo',
+        config: {
+          ...preset,
+          gitRawCommitsOpts: { ...preset.gitRawCommitsOpts, path: './packages/foo' }
+        }
+      })
       // confirm that context.currentTag behaves differently when
       // lerna style tags are applied.
       expect(changelog).to.include('foo@1.0.0...foo@2.0.0')
@@ -946,11 +950,11 @@ describe('conventionalChangelogCore', function () {
     it('should generate the changelog of the last two releases', async function () {
       preparing(17)
 
-      const changelog = await core(
-        { lernaPackage: 'foo', releaseCount: 2 },
-        {},
-        { path: './packages/foo' }
-      )
+      const changelog = await core({
+        config: { gitRawCommitsOpts: { path: './packages/foo' } },
+        lernaPackage: 'foo',
+        releaseCount: 2
+      })
       expect(changelog).to.include('first lerna style commit hooray')
       expect(changelog).to.include('second lerna style commit woo')
       expect(changelog).to.not.include(

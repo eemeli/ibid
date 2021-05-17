@@ -2,30 +2,10 @@
 const { promisify } = require('util')
 const gitSemverTags = promisify(require('git-semver-tags'))
 
-const getContext = require('./get-context')
 const getFinalizeContext = require('./finalize-context')
 const getHostOpts = require('./host-opts')
 
-async function mergeConfig(
-  options,
-  contextArg,
-  gitRawCommitsOptsArg,
-  parserOptsArg,
-  writerOptsArg
-) {
-  let config = {}
-  if (options.config) {
-    try {
-      config = await (typeof options.config === 'function'
-        ? promisify(options.config)()
-        : options.config)
-    } catch (error) {
-      options.warn('Error in config: ' + error)
-    }
-  }
-
-  let context = await getContext(options, { ...contextArg, ...config.context })
-
+async function mergeConfig(options, config, context) {
   let tags = []
   let fromTag = null
   try {
@@ -53,8 +33,7 @@ async function mergeConfig(
     from: context.resetChangelog ? null : fromTag,
     merges: false,
     debug: options.debug,
-    ...config.gitRawCommitsOpts,
-    ...gitRawCommitsOptsArg
+    ...config.gitRawCommitsOpts
   }
   if (options.append && !gitRawCommitsOpts.reverse)
     gitRawCommitsOpts.reverse = true
@@ -63,24 +42,17 @@ async function mergeConfig(
   const parserOpts = {
     ...(hostOpts && hostOpts.parser),
     ...config.parserOpts,
-    warn: options.warn,
-    ...parserOptsArg
+    warn: options.warn
   }
 
   const writerOpts = {
     debug: options.debug,
     finalizeContext: getFinalizeContext(options, tags),
     ...config.writerOpts,
-    reverse: options.append,
-    ...writerOptsArg
+    reverse: options.append
   }
 
-  return {
-    context,
-    gitRawCommitsOpts,
-    parserOpts,
-    writerOpts
-  }
+  return { gitRawCommitsOpts, parserOpts, writerOpts }
 }
 
 module.exports = mergeConfig

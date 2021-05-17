@@ -9,6 +9,7 @@ module.exports = function getOptions(optionsArg) {
       lernaPackage: null,
       outputUnreleased: false,
       pkg: null,
+      preset: null,
       releaseCount: 1,
       skipUnstable: false,
       tagPrefix: null,
