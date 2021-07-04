@@ -11,17 +11,26 @@ function checkRef(ref) {
 
 function parseCommit(src, { includeMerge }) {
   const headMatch = src.match(
-    /^([0-9a-f]+)\s+(Merge:.*\s+)?Author:\s*(.*?)\s+Date:\s*(\d+)\s+\n/
+    /^([0-9a-f]+)(?: \((.*?)\))?\s+(Merge:.*\s+)?Author:\s*(.*?)\s+Date:\s*(\d+)\s+\n/
   )
   if (!headMatch) {
     if (src.trim()) throw new Error(`Malformed git commit:\ncommit ${src}`)
     return null
   }
-  const [head, hash, merge, author, dateSrc] = headMatch
+  const [head, hash, refs, merge, author, dateSrc] = headMatch
   if (merge && !includeMerge) return null
+  const tags = []
+  if (refs)
+    for (const ref of refs.split(', ')) {
+      if (ref.startsWith('tag: ')) {
+        const tag = ref.substring(5)
+        checkRef(tag)
+        tags.push(tag)
+      }
+    }
   const date = new Date(Number(dateSrc) * 1000)
   const message = src.substring(head.length).replace(/^ {4}/gm, '').trimEnd()
-  return { hash, author, date, message }
+  return { hash, author, date, message, tags }
 }
 
 async function gitLog(from, to, { includeMerge = false, path } = {}) {
@@ -30,9 +39,9 @@ async function gitLog(from, to, { includeMerge = false, path } = {}) {
   const args = [
     'log',
     '--date=unix',
+    '--decorate=short',
     '--format=medium',
-    '--no-color',
-    '--no-decorate'
+    '--no-color'
   ]
   const range = from ? `${from}..${to || ''}` : to
   if (range) args.push(range)
