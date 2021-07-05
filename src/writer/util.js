@@ -4,7 +4,7 @@ const semver = require('semver')
 const _ = require('lodash')
 const stringify = require('json-stringify-safe')
 
-const filterReverted = require('../commit-filter/reverted')
+const { filterReverted } = require('../commits/filter-reverted')
 
 function compileTemplates({
   mainTemplate,

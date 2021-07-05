@@ -53,4 +53,4 @@ async function gitLog(from, to, { includeMerge = false, path } = {}) {
     .filter(Boolean)
 }
 
-module.exports = gitLog
+module.exports = { gitLog }

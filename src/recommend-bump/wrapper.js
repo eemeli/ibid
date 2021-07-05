@@ -3,8 +3,8 @@
 const { promisify } = require('util')
 const gitSemverTags = promisify(require('git-semver-tags'))
 
-const filterReverted = require('../commit-filter/reverted')
-const gitLog = require('../git/git-log')
+const { filterReverted } = require('../commits/filter-reverted')
+const { gitLog } = require('../commits/git-log')
 const parseMessage = require('../message-parser/index')
 
 const getConfig = require('../core/get-config')

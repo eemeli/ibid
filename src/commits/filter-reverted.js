@@ -27,4 +27,4 @@ function filterReverted(commits) {
   return commits.filter(commit => !remove.includes(commit.hash))
 }
 
-module.exports = filterReverted
+module.exports = { filterReverted }

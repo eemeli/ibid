@@ -1,7 +1,7 @@
 'use strict'
 const assert = require('assert')
 const { describe, it } = require('mocha')
-const filterReverted = require('./reverted')
+const { filterReverted } = require('./filter-reverted')
 
 describe('filterReverted()', () => {
   it('should error if `commits` is not `array`', () => {

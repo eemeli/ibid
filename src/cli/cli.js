@@ -3,7 +3,7 @@ const { resolve } = require('path')
 const glob = require('tiny-glob')
 const yargsParser = require('yargs-parser')
 
-const gitLog = require('../git/git-log')
+const { gitLog } = require('../commits/git-log')
 const gitTagList = require('../git/git-tag-list')
 const parseMessage = require('../message-parser/index')
 const getConfig = require('../recommend-bump/get-config')
