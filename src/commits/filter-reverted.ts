@@ -12,15 +12,9 @@ export function filterReverted(commits: Commit[]): Commit[] {
     for (const [hash, revert] of reverts) {
       // All revert fields must match
       if (
-        Object.entries(revert).every(([key, v0]) => {
-          const v1 = commit[key as keyof Commit]
-          return (
-            typeof v0 === typeof v1 &&
-            (typeof v0 === 'string'
-              ? v0.trim() === (v1 as string).trim()
-              : v0 === v1)
-          )
-        })
+        Object.entries(revert).every(
+          ([key, value]) => value === commit[key as keyof Commit]
+        )
       ) {
         // Filter out both this commit and the one that reverted it
         remove.push(commit.hash, hash)

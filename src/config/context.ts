@@ -9,7 +9,8 @@ export { Package }
 
 export interface Config {
   context?: (context: Context) => Context | Promise<Context>
-  includeMerge?: boolean
+  includeMergeCommits?: boolean
+  includeRevertedCommits?: boolean
 }
 
 export interface Context {
@@ -36,7 +37,10 @@ export async function getContext(
   cwd: string
 ): Promise<Context> {
   let context: Context = {
-    config: Object.assign({ includeMerge: false }, config),
+    config: Object.assign(
+      { includeMergeCommits: false, includeRevertedCommits: false },
+      config
+    ),
     cwd,
     getTag() {
       if (!context.package)

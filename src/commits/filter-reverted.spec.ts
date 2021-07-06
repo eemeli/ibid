@@ -11,7 +11,7 @@ describe('filterReverted()', () => {
   it('should filter reverted commits that exist in the commits array', () => {
     let commits: Commit[] = [
       {
-        hash: '207abfa16885ef5ff88dfc6cdde694bb3fd03104\n',
+        hash: '207abfa16885ef5ff88dfc6cdde694bb3fd03104',
         author: 'Author',
         date: new Date(),
         message: '',
@@ -19,8 +19,8 @@ describe('filterReverted()', () => {
         type: 'revert',
         scope: null,
         subject: 'feat(): a very important feature',
-        header: 'revert: feat(): a very important feature\n',
-        body: 'This reverts commit 048fe156c9eddbe566f040f64ca6be1f55b16a23.\n',
+        header: 'revert: feat(): a very important feature',
+        body: 'This reverts commit 048fe156c9eddbe566f040f64ca6be1f55b16a23.',
         footer: null,
         notes: [],
         references: [],
@@ -30,7 +30,7 @@ describe('filterReverted()', () => {
         }
       },
       {
-        hash: '789d898b5f8422d7f65cc25135af2c1a95a125ac\n',
+        hash: '789d898b5f8422d7f65cc25135af2c1a95a125ac',
         author: 'Author',
         date: new Date(),
         message: '',
@@ -38,8 +38,8 @@ describe('filterReverted()', () => {
         type: 'revert',
         scope: null,
         subject: 'feat(): amazing new module',
-        header: 'revert: feat(): amazing new module\n',
-        body: 'This reverts commit 56185b7356766d2b30cfa2406b257080272e0b7a.\n',
+        header: 'revert: feat(): amazing new module',
+        body: 'This reverts commit 56185b7356766d2b30cfa2406b257080272e0b7a.',
         footer: null,
         notes: [],
         references: [],
@@ -49,7 +49,7 @@ describe('filterReverted()', () => {
         }
       },
       {
-        hash: '56185b7356766d2b30cfa2406b257080272e0b7a\n',
+        hash: '56185b7356766d2b30cfa2406b257080272e0b7a',
         author: 'Author',
         date: new Date(),
         message: '',
@@ -57,15 +57,15 @@ describe('filterReverted()', () => {
         type: 'feat',
         scope: null,
         subject: 'amazing new module',
-        header: 'feat(): amazing new module\n',
+        header: 'feat(): amazing new module',
         body: null,
-        footer: 'BREAKING CHANGE: Not backward compatible.\n',
+        footer: 'BREAKING CHANGE: Not backward compatible.',
         notes: [],
         references: [],
         revert: null
       },
       {
-        hash: '815a3f0717bf1dfce007bd076420c609504edcf3\n',
+        hash: '815a3f0717bf1dfce007bd076420c609504edcf3',
         author: 'Author',
         date: new Date(),
         message: '',
@@ -73,7 +73,7 @@ describe('filterReverted()', () => {
         type: 'What',
         scope: null,
         subject: 'new feature',
-        header: 'feat(): new feature\n',
+        header: 'feat(): new feature',
         body: null,
         footer: null,
         notes: [],
@@ -81,7 +81,7 @@ describe('filterReverted()', () => {
         revert: null
       },
       {
-        hash: '74a3e4d6d25dee2c0d6483a0a3887417728cbe0a\n',
+        hash: '74a3e4d6d25dee2c0d6483a0a3887417728cbe0a',
         author: 'Author',
         date: new Date(),
         message: '',
@@ -89,7 +89,7 @@ describe('filterReverted()', () => {
         type: 'Chores',
         scope: null,
         subject: 'first commit',
-        header: 'chore: first commit\n',
+        header: 'chore: first commit',
         body: null,
         footer: null,
         notes: [],
@@ -105,9 +105,9 @@ describe('filterReverted()', () => {
     assert.deepStrictEqual(
       commits.map(commit => commit.hash),
       [
-        '207abfa16885ef5ff88dfc6cdde694bb3fd03104\n',
-        '815a3f0717bf1dfce007bd076420c609504edcf3\n',
-        '74a3e4d6d25dee2c0d6483a0a3887417728cbe0a\n'
+        '207abfa16885ef5ff88dfc6cdde694bb3fd03104',
+        '815a3f0717bf1dfce007bd076420c609504edcf3',
+        '74a3e4d6d25dee2c0d6483a0a3887417728cbe0a'
       ]
     )
   })

@@ -34,7 +34,7 @@ export function parseCommit(ctx: Context, src: string): Commit | null {
     return null
   }
   const [head, hash, refs, merge, author, dateSrc] = headMatch
-  if (merge && !ctx.config.includeMerge) return null
+  if (merge && !ctx.config.includeMergeCommits) return null
   const tags = []
   if (refs)
     for (const ref of refs.split(', ')) {

@@ -1,4 +1,5 @@
 import { Context } from '../config/context'
+import { filterReverted } from './filter-reverted'
 import { gitLog, gitRefExists } from './git'
 import { Commit, parseCommit } from './parse-commit'
 
@@ -11,5 +12,5 @@ export async function getCurrentCommits(ctx: Context): Promise<Commit[]> {
     const commit = parseCommit(ctx, src)
     if (commit) commits.push(commit)
   }
-  return commits
+  return ctx.config.includeRevertedCommits ? commits : filterReverted(commits)
 }
