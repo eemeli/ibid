@@ -58,17 +58,7 @@ function getReferences(input, { references, referenceParts }) {
 
 function parser(
   raw,
-  {
-    breakingHeaderPattern,
-    commentChar,
-    headerPattern,
-    headerCorrespondence,
-    fieldPattern,
-    revertPattern,
-    revertCorrespondence,
-    mergePattern,
-    mergeCorrespondence
-  },
+  { commentChar, fieldPattern, mergePattern, mergeCorrespondence },
   regex
 ) {
   const commit = {
@@ -101,10 +91,13 @@ function parser(
     for (const partName of mergeCorrespondence) commit[partName] = null
   }
 
+  const headerPattern = /^(\w*)(?:\((.*)\))?!?: (.*)$/
   const headerMatch = commit.header.match(headerPattern)
-  if (headerMatch)
-    Object.assign(commit, getParts(headerMatch, headerCorrespondence))
-  else for (const partName of headerCorrespondence) commit[partName] = null
+  if (headerMatch) {
+    commit.type = headerMatch[1] || null
+    commit.scope = headerMatch[2] || null
+    commit.subject = headerMatch[3] || null
+  }
 
   commit.references = getReferences(commit.header, regex)
 
@@ -165,7 +158,8 @@ function parser(
     else footer.push(line)
   }
 
-  if (breakingHeaderPattern && commit.notes.length === 0) {
+  if (commit.notes.length === 0) {
+    const breakingHeaderPattern = /^(\w*)(?:\((.*)\))?!: (.*)$/
     const breakingHeader = commit.header.match(breakingHeaderPattern)
     if (breakingHeader) {
       commit.notes = [
@@ -185,8 +179,13 @@ function parser(
     commit.mentions.push(mention)
 
   // does this commit revert any other commit?
+  const revertPattern = /^(?:Revert|revert:)\s(?:""|"?([\s\S]+?)"?)\s*This reverts commit (\w*)\./i
   const revertMatch = raw.match(revertPattern)
-  if (revertMatch) commit.revert = getParts(revertMatch, revertCorrespondence)
+  if (revertMatch)
+    commit.revert = {
+      header: revertMatch[1] || null,
+      hash: revertMatch[2] || null
+    }
 
   return commit
 }

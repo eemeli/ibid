@@ -9,71 +9,31 @@ const regex = require('./regex')
 describe('regex', function () {
   describe('notes', function () {
     it('should match a simple note', function () {
-      const reNotes = regex({
-        noteKeywords: ['Breaking News', 'Breaking Change']
-      }).notes
-      const match = 'Breaking News: This is so important.'.match(reNotes)
-      expect(match[0]).to.equal('Breaking News: This is so important.')
-      expect(match[1]).to.equal('Breaking News')
-      expect(match[2]).to.equal('This is so important.')
-    })
-
-    it('should match notes with customized pattern', function () {
-      const reNotes = regex({
-        noteKeywords: ['BREAKING CHANGE'],
-        notesPattern: noteKeywords =>
-          new RegExp(
-            '^[\\s|*]*(' + noteKeywords + ')[:\\s]+(?:\\[.*\\] )(.*)',
-            'i'
-          )
-      }).notes
-      const notes =
-        'BREAKING CHANGE: [Do not match this prefix.] This is so important.'
-      const match = notes.match(reNotes)
-      expect(match[0]).to.equal(notes)
-      expect(match[1]).to.equal('BREAKING CHANGE')
+      const reNotes = regex().notes
+      const match = 'Breaking Change: This is so important.'.match(reNotes)
+      expect(match[0]).to.equal('Breaking Change: This is so important.')
+      expect(match[1]).to.equal('Breaking Change')
       expect(match[2]).to.equal('This is so important.')
     })
 
     it('should be case insensitive', function () {
-      const reNotes = regex({
-        noteKeywords: ['Breaking News', 'Breaking Change']
-      }).notes
-      const match = 'BREAKING NEWS: This is so important.'.match(reNotes)
-      expect(match[0]).to.equal('BREAKING NEWS: This is so important.')
-      expect(match[1]).to.equal('BREAKING NEWS')
-      expect(match[2]).to.equal('This is so important.')
-    })
-
-    it('should ignore whitespace', function () {
-      const reNotes = regex({
-        noteKeywords: [
-          ' Breaking News',
-          'Breaking Change ',
-          '',
-          ' Breaking SOLUTION ',
-          '  '
-        ],
-        issuePrefixes: ['#']
-      }).notes
-      const match = 'Breaking News: This is so important.'.match(reNotes)
-      expect(match[0]).to.equal('Breaking News: This is so important.')
-      expect(match[1]).to.equal('Breaking News')
+      const reNotes = regex().notes
+      const match = 'BREAKING CHANGE: This is so important.'.match(reNotes)
+      expect(match[0]).to.equal('BREAKING CHANGE: This is so important.')
+      expect(match[1]).to.equal('BREAKING CHANGE')
       expect(match[2]).to.equal('This is so important.')
     })
 
     it('should not accidentally match in a sentence', function () {
       const reNotes = regex({
-        noteKeywords: [' Breaking News'],
         issuePrefixes: ['#']
       }).notes
-      const match = 'This is a breaking news: So important.'.match(reNotes)
+      const match = 'This is a breaking change: So important.'.match(reNotes)
       expect(match).to.equal(null)
     })
 
     it('should not match if there is text after `noteKeywords`', function () {
       const reNotes = regex({
-        noteKeywords: [' BREAKING CHANGE'],
         issuePrefixes: ['#']
       }).notes
       const match = 'BREAKING CHANGES: Wow.'.match(reNotes)

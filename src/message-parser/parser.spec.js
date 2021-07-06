@@ -12,12 +12,7 @@ describe('parser', function () {
 
   beforeEach(function () {
     options = {
-      revertPattern: /^Revert\s"([\s\S]*)"\s*This reverts commit (.*)\.$/,
-      revertCorrespondence: ['header', 'hash'],
       fieldPattern: /^-(.*?)-$/,
-      headerPattern: /^(\w*)(?:\(([\w$.\-* ]*)\))?: (.*)$/,
-      headerCorrespondence: ['type', 'scope', 'subject'],
-      noteKeywords: ['BREAKING AMEND'],
       issuePrefixes: ['#', 'gh-'],
       referenceActions: [
         'kill',
@@ -33,7 +28,7 @@ describe('parser', function () {
       'feat(scope): broadcast $destroy event on scope destruction\n' +
         'perf testing shows that in chrome this change adds 5-15% overhead\n' +
         'when destroying 10k nested scopes where each scope has a $destroy listener\n' +
-        'BREAKING AMEND: some breaking change\n' +
+        'BREAKING CHANGE: some breaking change\n' +
         'Kills #1, #123\n' +
         'killed #25\n' +
         'handle #33, Closes #100, Handled #3 kills repo#77\n' +
@@ -45,7 +40,7 @@ describe('parser', function () {
       'feat(scope): broadcast $destroy event on scope destruction\n' +
         'perf testing shows that in chrome this change adds 5-15% overhead\n' +
         'when destroying 10k nested scopes where each scope has a $destroy listener\n' +
-        'BREAKING AMEND:\n' +
+        'BREAKING CHANGE:\n' +
         'some breaking change\n' +
         'some other breaking change\n' +
         'Kills #1, #123\n' +
@@ -65,8 +60,8 @@ describe('parser', function () {
         '\n\n\n\n\n\n\nfeat(scope): broadcast $destroy event on scope destruction\n\n\n' +
           '\n\n\nperf testing shows that in chrome this change adds 5-15% overhead\n' +
           '\n\n\nwhen destroying 10k nested scopes where each scope has a $destroy listener\n\n' +
-          '\n\n\n\nBREAKING AMEND: some breaking change\n' +
-          '\n\n\n\nBREAKING AMEND: An awesome breaking change\n\n\n```\ncode here\n```' +
+          '\n\n\n\nBREAKING CHANGE: some breaking change\n' +
+          '\n\n\n\nBREAKING CHANGE: An awesome breaking change\n\n\n```\ncode here\n```' +
           '\n\nKills #1\n' +
           '\n\n\nkilled #25\n\n\n\n\n',
         options
@@ -77,14 +72,14 @@ describe('parser', function () {
       body:
         'perf testing shows that in chrome this change adds 5-15% overhead\n\n\n\nwhen destroying 10k nested scopes where each scope has a $destroy listener',
       footer:
-        'BREAKING AMEND: some breaking change\n\n\n\n\nBREAKING AMEND: An awesome breaking change\n\n\n```\ncode here\n```\n\nKills #1\n\n\n\nkilled #25',
+        'BREAKING CHANGE: some breaking change\n\n\n\n\nBREAKING CHANGE: An awesome breaking change\n\n\n```\ncode here\n```\n\nKills #1\n\n\n\nkilled #25',
       notes: [
         {
-          title: 'BREAKING AMEND',
+          title: 'BREAKING CHANGE',
           text: 'some breaking change'
         },
         {
-          title: 'BREAKING AMEND',
+          title: 'BREAKING CHANGE',
           text: 'An awesome breaking change\n\n\n```\ncode here\n```'
         }
       ],
@@ -120,8 +115,8 @@ describe('parser', function () {
         ' feat(scope): broadcast $destroy event on scope destruction \n' +
           ' perf testing shows that in chrome this change adds 5-15% overhead \n\n' +
           ' when destroying 10k nested scopes where each scope has a $destroy listener \n' +
-          '         BREAKING AMEND: some breaking change         \n\n' +
-          '   BREAKING AMEND: An awesome breaking change\n\n\n```\ncode here\n```' +
+          '         BREAKING CHANGE: some breaking change         \n\n' +
+          '   BREAKING CHANGE: An awesome breaking change\n\n\n```\ncode here\n```' +
           '\n\n    Kills   #1\n',
         options
       )
@@ -131,14 +126,14 @@ describe('parser', function () {
       body:
         ' perf testing shows that in chrome this change adds 5-15% overhead \n\n when destroying 10k nested scopes where each scope has a $destroy listener ',
       footer:
-        '         BREAKING AMEND: some breaking change         \n\n   BREAKING AMEND: An awesome breaking change\n\n\n```\ncode here\n```\n\n    Kills   #1',
+        '         BREAKING CHANGE: some breaking change         \n\n   BREAKING CHANGE: An awesome breaking change\n\n\n```\ncode here\n```\n\n    Kills   #1',
       notes: [
         {
-          title: 'BREAKING AMEND',
+          title: 'BREAKING CHANGE',
           text: 'some breaking change         '
         },
         {
-          title: 'BREAKING AMEND',
+          title: 'BREAKING CHANGE',
           text: 'An awesome breaking change\n\n\n```\ncode here\n```'
         }
       ],
@@ -169,7 +164,7 @@ describe('parser', function () {
           'feat(scope): broadcast $destroy event on scope destruction\n' +
           'perf testing shows that in chrome this change adds 5-15% overhead\n' +
           'when destroying 10k nested scopes where each scope has a $destroy listener\n' +
-          'BREAKING AMEND: some breaking change\n' +
+          'BREAKING CHANGE: some breaking change\n' +
           'Kills #1\n',
         options
       )
@@ -178,10 +173,10 @@ describe('parser', function () {
       header: 'feat(scope): broadcast $destroy event on scope destruction',
       body:
         'perf testing shows that in chrome this change adds 5-15% overhead\nwhen destroying 10k nested scopes where each scope has a $destroy listener',
-      footer: 'BREAKING AMEND: some breaking change\nKills #1',
+      footer: 'BREAKING CHANGE: some breaking change\nKills #1',
       notes: [
         {
-          title: 'BREAKING AMEND',
+          title: 'BREAKING CHANGE',
           text: 'some breaking change'
         }
       ],
@@ -343,8 +338,6 @@ describe('parser', function () {
   describe('mentions', function () {
     it('should mention someone in the commit', function () {
       const options = {
-        headerPattern: /^(\w*)(?:\(([\w$.\-* ]*)\))?: (.*)$/,
-        headerCorrespondence: ['type', 'scope', 'subject'],
         mergePattern: /^Merge pull request #(\d+) from (.*)$/,
         mergeCorrespondence: ['issueId', 'source']
       }
@@ -369,8 +362,6 @@ describe('parser', function () {
 
   describe('merge commits', function () {
     const mergeOptions = {
-      headerPattern: /^(\w*)(?:\(([\w$.\-* ]*)\))?: (.*)$/,
-      headerCorrespondence: ['type', 'scope', 'subject'],
       mergePattern: /^Merge branch '(\w+)'$/,
       mergeCorrespondence: ['source', 'issueId']
     }
@@ -386,8 +377,6 @@ describe('parser', function () {
     })
 
     const githubOptions = {
-      headerPattern: /^(\w*)(?:\(([\w$.\-* ]*)\))?: (.*)$/,
-      headerCorrespondence: ['type', 'scope', 'subject'],
       mergePattern: /^Merge pull request #(\d+) from (.*)$/,
       mergeCorrespondence: ['issueId', 'source']
     }
@@ -425,8 +414,6 @@ describe('parser', function () {
     })
 
     const gitLabOptions = {
-      headerPattern: /^(\w*)(?:\(([\w$.\-* ]*)\))?: (.*)$/,
-      headerCorrespondence: ['type', 'scope', 'subject'],
       mergePattern: /^Merge branch '([^']+)' into '[^']+'$/,
       mergeCorrespondence: ['source']
     }
@@ -495,10 +482,7 @@ describe('parser', function () {
 
   describe('header', function () {
     it('should allow ":" in scope', function () {
-      const msg = parseMessage('feat(ng:list): Allow custom separator', {
-        headerPattern: /^(\w*)(?:\(([:\w$.\-* ]*)\))?: (.*)$/,
-        headerCorrespondence: ['type', 'scope', 'subject']
-      })
+      const msg = parseMessage('feat(ng:list): Allow custom separator', {})
       expect(msg.scope).to.equal('ng:list')
     })
 
@@ -520,26 +504,6 @@ describe('parser', function () {
       expect(msg.subject).to.equal(
         'broadcast $destroy event on scope destruction'
       )
-    })
-
-    it('should allow correspondence to be changed', function () {
-      const msg = parseMessage('scope(my subject): fix this', {
-        headerPattern: /^(\w*)(?:\(([\w$.\-* ]*)\))?: (.*)$/,
-        headerCorrespondence: ['scope', 'subject', 'type']
-      })
-
-      expect(msg.type).to.equal('fix this')
-      expect(msg.scope).to.equal('scope')
-      expect(msg.subject).to.equal('my subject')
-    })
-
-    it('should be `null` if it is missing in `options.headerCorrespondence`', function () {
-      msg = parseMessage('scope(my subject): fix this', {
-        headerPattern: /^(\w*)(?:\(([\w$.\-* ]*)\))?: (.*)$/,
-        headerCorrespondence: ['scop', 'subject']
-      })
-
-      expect(msg.scope).to.equal(null)
     })
 
     it('should reference an issue with an owner', function () {
@@ -586,12 +550,7 @@ describe('parser', function () {
 
     it('should reference an issue without an action', function () {
       const options = {
-        revertPattern: /^Revert\s"([\s\S]*)"\s*This reverts commit (.*)\.$/,
-        revertCorrespondence: ['header', 'hash'],
         fieldPattern: /^-(.*?)-$/,
-        headerPattern: /^(\w*)(?:\(([\w$.\-* ]*)\))?: (.*)$/,
-        headerCorrespondence: ['type', 'scope', 'subject'],
-        noteKeywords: ['BREAKING AMEND'],
         issuePrefixes: ['#', 'gh-']
       }
 
@@ -629,7 +588,7 @@ describe('parser', function () {
 
     it('should parse footer', function () {
       expect(msg.footer).to.equal(
-        'BREAKING AMEND: some breaking change\n' +
+        'BREAKING CHANGE: some breaking change\n' +
           'Kills #1, #123\n' +
           'killed #25\n' +
           'handle #33, Closes #100, Handled #3 kills repo#77\n' +
@@ -643,14 +602,14 @@ describe('parser', function () {
 
     it('should parse important notes', function () {
       expect(msg.notes[0]).to.eql({
-        title: 'BREAKING AMEND',
+        title: 'BREAKING CHANGE',
         text: 'some breaking change'
       })
     })
 
     it('should parse important notes with more than one paragraphs', function () {
       expect(longNoteMsg.notes[0]).to.eql({
-        title: 'BREAKING AMEND',
+        title: 'BREAKING CHANGE',
         text: 'some breaking change\nsome other breaking change'
       })
     })
@@ -663,7 +622,6 @@ describe('parser', function () {
         'of applications will see template parse errors that shuld be fixed by\n' +
         'nesting elements or using `<template>` tags explicitly.'
       const text = expectedText + '\n' + 'Closes #9462'
-      options.noteKeywords = ['BREAKING CHANGE']
       const msg = parseMessage(
         'fix(core): report duplicate template bindings in templates\n' +
           '\n' +
@@ -687,7 +645,6 @@ describe('parser', function () {
     })
 
     it('should not treat it as important notes if there are texts after `noteKeywords`', function () {
-      options.noteKeywords = ['BREAKING CHANGE']
       const msg = parseMessage(
         'fix(core): report duplicate template bindings in templates\n' +
           '\n' +
@@ -783,12 +740,7 @@ describe('parser', function () {
 
     it('should reference an issue without an action', function () {
       const options = {
-        revertPattern: /^Revert\s"([\s\S]*)"\s*This reverts commit (.*)\.$/,
-        revertCorrespondence: ['header', 'hash'],
         fieldPattern: /^-(.*?)-$/,
-        headerPattern: /^(\w*)(?:\(([\w$.\-* ]*)\))?: (.*)$/,
-        headerCorrespondence: ['type', 'scope', 'subject'],
-        noteKeywords: ['BREAKING AMEND'],
         issuePrefixes: ['#', 'gh-']
       }
 
@@ -879,11 +831,11 @@ describe('parser', function () {
           'perf testing shows that in chrome this change adds 5-15% overhead\n' +
           'when destroying 10k nested scopes where each scope has a $destroy listener\n' +
           'Kills #1, #123\n' +
-          'BREAKING AMEND: some breaking change\n',
+          'BREAKING CHANGE: some breaking change\n',
         options
       )
       expect(msg.notes[0]).to.eql({
-        title: 'BREAKING AMEND',
+        title: 'BREAKING CHANGE',
         text: 'some breaking change'
       })
       expect(msg.references).to.eql([
@@ -905,7 +857,7 @@ describe('parser', function () {
         }
       ])
       expect(msg.footer).to.equal(
-        'Kills #1, #123\nBREAKING AMEND: some breaking change'
+        'Kills #1, #123\nBREAKING CHANGE: some breaking change'
       )
     })
 
@@ -915,11 +867,11 @@ describe('parser', function () {
           'perf testing shows that in chrome this change adds 5-15% overhead\n' +
           'when destroying 10k nested scopes where each scope has a $destroy listener\n' +
           'Kills #1, #123\n' +
-          'BREAKING AMEND: some breaking change\nsome other breaking change',
+          'BREAKING CHANGE: some breaking change\nsome other breaking change',
         options
       )
       expect(msg.notes[0]).to.eql({
-        title: 'BREAKING AMEND',
+        title: 'BREAKING CHANGE',
         text: 'some breaking change\nsome other breaking change'
       })
       expect(msg.references).to.eql([
@@ -941,7 +893,7 @@ describe('parser', function () {
         }
       ])
       expect(msg.footer).to.equal(
-        'Kills #1, #123\nBREAKING AMEND: some breaking change\nsome other breaking change'
+        'Kills #1, #123\nBREAKING CHANGE: some breaking change\nsome other breaking change'
       )
     })
 
@@ -952,11 +904,11 @@ describe('parser', function () {
           'when destroying 10k nested scopes where each scope has a $destroy listener\n' +
           'Kills gh-1, #123\n' +
           'other\n' +
-          'BREAKING AMEND: some breaking change\n',
+          'BREAKING CHANGE: some breaking change\n',
         options
       )
       expect(msg.notes[0]).to.eql({
-        title: 'BREAKING AMEND',
+        title: 'BREAKING CHANGE',
         text: 'some breaking change'
       })
       expect(msg.references).to.eql([
@@ -978,17 +930,12 @@ describe('parser', function () {
         }
       ])
       expect(msg.footer).to.equal(
-        'Kills gh-1, #123\nother\nBREAKING AMEND: some breaking change'
+        'Kills gh-1, #123\nother\nBREAKING CHANGE: some breaking change'
       )
     })
 
     it('should add the subject as note if it match breakingHeaderPattern', function () {
-      const options = {
-        headerPattern: /^(\w*)(?:\(([\w$.\-* ]*)\))?: (.*)$/,
-        breakingHeaderPattern: /^(\w*)(?:\((.*)\))?!: (.*)$/,
-        headerCorrespondence: ['type', 'scope', 'subject']
-      }
-      const msg = parseMessage('feat!: breaking change feature', options)
+      const msg = parseMessage('feat!: breaking change feature', {})
       expect(msg.notes[0]).to.eql({
         title: 'BREAKING CHANGE',
         text: 'breaking change feature'
@@ -996,18 +943,12 @@ describe('parser', function () {
     })
 
     it('should not duplicate notes if the subject match breakingHeaderPattern', function () {
-      const options = {
-        headerPattern: /^(\w*)(?:\(([\w$.\-* ]*)\))?: (.*)$/,
-        breakingHeaderPattern: /^(\w*)(?:\((.*)\))?!: (.*)$/,
-        headerCorrespondence: ['type', 'scope', 'subject'],
-        noteKeywords: ['BREAKING AMEND']
-      }
       const msg = parseMessage(
-        'feat!: breaking change feature\nBREAKING AMEND: some breaking change',
-        options
+        'feat!: breaking change feature\nBREAKING CHANGE: some breaking change',
+        {}
       )
       expect(msg.notes[0]).to.eql({
-        title: 'BREAKING AMEND',
+        title: 'BREAKING CHANGE',
         text: 'some breaking change'
       })
       expect(msg.notes.length).to.eql(1)

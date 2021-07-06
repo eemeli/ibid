@@ -88,18 +88,16 @@ describe('parseMessage()', () => {
   describe('options', () => {
     it('should take options', () => {
       const commits = [
-        'feat(ng-list) Allow custom separator\n' +
+        'feat(ng-list): Allow custom separator\n' +
           'bla bla bla\n\n' +
           'Fix #123\nCloses #25\nfix #33\n',
 
-        'fix(ng-list) Another custom separator\n' +
+        'fix(ng-list): Another custom separator\n' +
           'bla bla bla\n\n' +
-          'BREAKING CHANGES: some breaking changes\n'
+          'BREAKING CHANGE: some breaking changes\n'
       ]
 
       const options = {
-        headerPattern: /^(\w*)(?:\(([\w$.\-* ]*)\))? (.*)$/,
-        noteKeywords: ['BREAKING CHANGES'],
         referenceActions: ['fix']
       }
 
@@ -139,20 +137,20 @@ describe('parseMessage()', () => {
       expect(chunk.scope).to.equal('ng-list')
       expect(chunk.subject).to.equal('Another custom separator')
       expect(chunk.notes[0]).to.eql({
-        title: 'BREAKING CHANGES',
+        title: 'BREAKING CHANGE',
         text: 'some breaking changes'
       })
     })
 
     it('should take string options', () => {
       const commits = [
-        'feat(ng-list) Allow custom separator\n' +
+        'feat(ng-list): Allow custom separator\n' +
           'bla bla bla\n\n' +
           'Fix #123\nCloses #25\nfix #33\n',
 
-        'fix(ng-list) Another custom separator\n' +
+        'fix(ng-list): Another custom separator\n' +
           'bla bla bla\n\n' +
-          'BREAKING CHANGES: some breaking changes\n',
+          'BREAKING CHANGE: some breaking changes\n',
 
         'blabla\n' + '-hash-\n' + '9b1aff905b638aa274a5fc8f88662df446d374bd',
 
@@ -162,21 +160,15 @@ describe('parseMessage()', () => {
 
       const options = {
         fieldPattern: '^-(.*?)-$',
-        headerPattern: '^(\\w*)(?:\\(([\\w\\$\\.\\-\\* ]*)\\))?\\ (.*)$',
-        headerCorrespondence: 'subject,type,  scope,',
         issuePrefixes: '#',
-        noteKeywords: 'BREAKING CHANGES',
         referenceActions: 'fix',
-        revertPattern:
-          '^Revert\\s"([\\s\\S]*)"\\s*This reverts commit (\\w*)\\.',
         mergePattern: '/^Merge pull request #(\\d+) from (.*)$/',
-        revertCorrespondence: ' header'
       }
 
       let chunk = parseMessage(commits[0], options)
-      expect(chunk.subject).to.equal('feat')
-      expect(chunk.type).to.equal('ng-list')
-      expect(chunk.scope).to.equal('Allow custom separator')
+      expect(chunk.type).to.equal('feat')
+      expect(chunk.scope).to.equal('ng-list')
+      expect(chunk.subject).to.equal('Allow custom separator')
       expect(chunk.references).to.eql([
         {
           action: 'Fix',
@@ -205,11 +197,11 @@ describe('parseMessage()', () => {
       ])
 
       chunk = parseMessage(commits[1], options)
-      expect(chunk.type).to.equal('ng-list')
-      expect(chunk.scope).to.equal('Another custom separator')
-      expect(chunk.subject).to.equal('fix')
+      expect(chunk.type).to.equal('fix')
+      expect(chunk.scope).to.equal('ng-list')
+      expect(chunk.subject).to.equal('Another custom separator')
       expect(chunk.notes[0]).to.eql({
-        title: 'BREAKING CHANGES',
+        title: 'BREAKING CHANGE',
         text: 'some breaking changes'
       })
 
@@ -240,7 +232,7 @@ describe('parseMessage()', () => {
       ])
     })
 
-    it('should parse slash in the header with default headerPattern option', () => {
+    it('should parse slash in the header', () => {
       const result = parseMessage('feat(hello/world): message')
 
       expect(result.type).to.equal('feat')

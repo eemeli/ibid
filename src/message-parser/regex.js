@@ -7,14 +7,6 @@ const join = array =>
     .filter(Boolean)
     .join('|')
 
-function getNotesRegex(noteKeywords, notesPattern) {
-  if (!noteKeywords) return matchNone
-  const noteKeywordsSelection = join(noteKeywords)
-  return notesPattern
-    ? notesPattern(noteKeywordsSelection)
-    : new RegExp('^[\\s|*]*(' + noteKeywordsSelection + ')[:\\s]+(.*)', 'i')
-}
-
 function getReferencePartsRegex(issuePrefixes, issuePrefixesCaseSensitive) {
   if (!issuePrefixes) return matchNone
   return new RegExp(
@@ -35,12 +27,10 @@ function getReferencesRegex(referenceActions) {
 const regex = ({
   issuePrefixes,
   issuePrefixesCaseSensitive,
-  noteKeywords,
-  notesPattern,
   referenceActions
 } = {}) => ({
   mentions: /@([\w-]+)/g,
-  notes: getNotesRegex(noteKeywords, notesPattern),
+  notes: /^[\s|*]*(BREAKING CHANGE)[:\s]+(.*)/i,
   referenceParts: getReferencePartsRegex(
     issuePrefixes,
     issuePrefixesCaseSensitive
