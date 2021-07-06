@@ -1,7 +1,7 @@
 import assert from 'assert'
 import { describe, it } from 'mocha'
 import { filterReverted } from './filter-reverted'
-import { Commit } from './git-log'
+import { Commit } from './parse-commit'
 
 describe('filterReverted()', () => {
   it('should error if `commits` is not `array`', () => {

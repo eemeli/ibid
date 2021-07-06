@@ -5,26 +5,49 @@ import { resolve } from 'path'
 // 'fs/promises' is only available from Node.js 14.0.0
 const { readFile } = promises
 
-export interface Config {
-  context?: (
-    cwd: string,
-    pkgData: Package | null
-  ) => Package | null | Promise<Package | null>
-}
-
 export { Package }
 
-export async function getContext(config: Config, cwd: string) {
-  let pkgData: Package | null
+export interface Config {
+  context?: (context: Context) => Context | Promise<Context>
+  includeMerge?: boolean
+}
+
+export interface Context {
+  config: Config
+  cwd: string
+  getTag(): string
+  package: Package | null
+}
+
+async function getPackage(cwd: string) {
   try {
     const path = resolve(cwd, 'package.json')
-    const json = JSON.parse(await readFile(path, 'utf8'))
-    normalize(json)
-    pkgData = json
+    const pkgData: Package = JSON.parse(await readFile(path, 'utf8'))
+    normalize(pkgData)
+    return pkgData
   } catch (error) {
-    if (error instanceof Error && (error as any).code === 'ENOENT')
-      pkgData = null
+    if (error && error.code === 'ENOENT') return null
     else throw error
   }
-  return config.context ? config.context(cwd, pkgData) : pkgData
+}
+
+export async function getContext(
+  config: Config,
+  cwd: string
+): Promise<Context> {
+  let context: Context = {
+    config: Object.assign({ includeMerge: false }, config),
+    cwd,
+    getTag() {
+      if (!context.package)
+        throw new Error(
+          `For default tag resolution, context must include a valid package`
+        )
+      const { name, version } = context.package
+      return `${name}@${version}`
+    },
+    package: await getPackage(cwd)
+  }
+  if (config.context) context = await config.context(context)
+  return context
 }

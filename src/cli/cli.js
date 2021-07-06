@@ -3,8 +3,7 @@ const { resolve } = require('path')
 const glob = require('tiny-glob')
 const yargsParser = require('yargs-parser')
 
-const { gitLog } = require('../commits/git-log')
-const gitTagList = require('../git/git-tag-list')
+const { gitLog, gitRefExists } = require('../commits/git')
 const parseMessage = require('../message-parser/index')
 const getConfig = require('../recommend-bump/get-config')
 const recommendBump = require('../recommend-bump/recommend-bump')
@@ -37,10 +36,9 @@ async function findPackages(patterns) {
   const packages = await findPackages(argv._)
   if (packages.length === 0)
     throw new Error(`No packages found in: ${argv._.join(' ')}`)
-  const tags = await gitTagList()
   for (const pkg of packages) {
     const tag = `${pkg.name}@${pkg.version}`
-    if (!tags.includes(tag))
+    if (!(await gitRefExists()))
       throw new Error(`Current version tag not found: ${tag}`)
     pkg.changes = await gitLog(tag, null, { path: pkg.root })
     for (const commit of pkg.changes)

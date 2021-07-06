@@ -1,4 +1,4 @@
-import { Commit, Revert } from './git-log'
+import { Commit, Revert } from './parse-commit'
 
 export function filterReverted(commits: Commit[]): Commit[] {
   if (!Array.isArray(commits)) throw new TypeError('Expected an array')
