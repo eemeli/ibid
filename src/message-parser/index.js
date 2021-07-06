@@ -1,5 +1,30 @@
 const parser = require('./parser')
-const regex = require('./regex')
+
+const matchNone = /(?!.*)/
+const matchAll = /()(.+)/g
+
+const join = array =>
+  array
+    .map(val => val.trim())
+    .filter(Boolean)
+    .join('|')
+
+function getReferencePartsRegex(issuePrefixes, issuePrefixesCaseSensitive) {
+  if (!issuePrefixes) return matchNone
+  return new RegExp(
+    '(?:.*?)??\\s*([\\w-\\.\\/]*?)??(' + join(issuePrefixes) + ')([\\w-]*\\d+)',
+    issuePrefixesCaseSensitive ? 'g' : 'gi'
+  )
+}
+
+function getReferencesRegex(referenceActions) {
+  if (!referenceActions) return matchAll
+  const joinedKeywords = join(referenceActions)
+  return new RegExp(
+    '(' + joinedKeywords + ')(?:\\s+(.*?))(?=(?:' + joinedKeywords + ')|$)',
+    'gi'
+  )
+}
 
 function getOptions({
   commentChar = null,
@@ -19,42 +44,24 @@ function getOptions({
   fieldPattern = /^-(.*?)-$/,
   mergePattern = null,
   mergeCorrespondence = []
-} = {}) {
-  if (typeof referenceActions === 'string')
-    referenceActions = referenceActions.split(',')
-
-  if (typeof issuePrefixes === 'string')
-    issuePrefixes = issuePrefixes.split(',')
-
-  if (typeof fieldPattern === 'string') fieldPattern = new RegExp(fieldPattern)
-
-  if (typeof mergePattern === 'string') mergePattern = new RegExp(mergePattern)
-
-  if (typeof mergeCorrespondence === 'string')
-    mergeCorrespondence = mergeCorrespondence.split(',')
-  mergeCorrespondence = mergeCorrespondence.map(part => part.trim())
-
+}) {
   return {
-    parserOpt: {
-      commentChar,
-      fieldPattern,
-      mergePattern,
-      mergeCorrespondence
-    },
-    regexOpt: {
+    commentChar,
+    fieldPattern,
+    mergePattern,
+    mergeCorrespondence,
+    referenceParts: getReferencePartsRegex(
       issuePrefixes,
-      issuePrefixesCaseSensitive,
-      referenceActions
-    }
+      issuePrefixesCaseSensitive
+    ),
+    references: getReferencesRegex(referenceActions)
   }
 }
 
-function parseMessage(commit, options) {
+function parseMessage(commit, options = {}) {
   if (typeof commit !== 'string' || !commit.trim())
     throw new TypeError('Expected a raw commit')
-
-  const { parserOpt, regexOpt } = getOptions(options)
-  return parser(commit, parserOpt, regex(regexOpt))
+  return parser(commit, getOptions(options))
 }
 
 module.exports = parseMessage

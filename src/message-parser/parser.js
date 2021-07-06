@@ -26,7 +26,7 @@ function getParts(match, correspondence) {
   return res
 }
 
-function getReferences(input, { references, referenceParts }) {
+function getReferences(input, references, referenceParts) {
   const res = []
 
   const reApplicable = input.match(references) ? references : CATCH_ALL
@@ -58,8 +58,14 @@ function getReferences(input, { references, referenceParts }) {
 
 function parser(
   raw,
-  { commentChar, fieldPattern, mergePattern, mergeCorrespondence },
-  regex
+  {
+    commentChar,
+    fieldPattern,
+    mergePattern,
+    mergeCorrespondence,
+    references,
+    referenceParts
+  }
 ) {
   const commit = {
     body: null,
@@ -99,7 +105,7 @@ function parser(
     commit.subject = headerMatch[3] || null
   }
 
-  commit.references = getReferences(commit.header, regex)
+  commit.references = getReferences(commit.header, references, referenceParts)
 
   // parse body & footer
   const body = []
@@ -124,7 +130,7 @@ function parser(
     }
 
     // this is a new important note
-    const notesMatch = line.match(regex.notes)
+    const notesMatch = line.match(/^[\s|*]*(BREAKING CHANGE)[:\s]+(.*)/i)
     if (notesMatch) {
       continueNote = true
       isBody = false
@@ -138,7 +144,7 @@ function parser(
       continue
     }
 
-    const lineReferences = getReferences(line, regex)
+    const lineReferences = getReferences(line, references, referenceParts)
     if (lineReferences.length > 0) {
       isBody = false
       continueNote = false
@@ -175,7 +181,7 @@ function parser(
   if (footer.length > 0) commit.footer = trimOffNewlines(footer.join('\n'))
   for (const note of commit.notes) note.text = trimOffNewlines(note.text)
 
-  for (const [, mention] of raw.matchAll(regex.mentions))
+  for (const [, mention] of raw.matchAll(/@([\w-]+)/g))
     commit.mentions.push(mention)
 
   // does this commit revert any other commit?
