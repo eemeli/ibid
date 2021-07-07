@@ -514,18 +514,12 @@ describe('parser', function () {
 
   describe('mentions', function () {
     it('should mention someone in the commit', function () {
-      const options = {
-        mergePattern: /^Merge pull request #(\d+) from (.*)$/,
-        mergeCorrespondence: ['issueId', 'source']
-      }
-
       const msg = parseMessage(
         '@Steve\n' +
           '@conventional-changelog @someone' +
           '\n' +
           'perf testing shows that in chrome this change adds 5-15% overhead\n' +
-          '@this is',
-        options
+          '@this is'
       )
 
       expect(msg.mentions).to.eql([
@@ -534,126 +528,6 @@ describe('parser', function () {
         'someone',
         'this'
       ])
-    })
-  })
-
-  describe('merge commits', function () {
-    const mergeOptions = {
-      mergePattern: /^Merge branch '(\w+)'$/,
-      mergeCorrespondence: ['source', 'issueId']
-    }
-
-    const mergeMsg = parseMessage(
-      "Merge branch 'feature'\nHEADER",
-      mergeOptions
-    )
-
-    it('should parse merge header in merge commit', function () {
-      expect(mergeMsg.source).to.equal('feature')
-      expect(mergeMsg.issueId).to.equal(null)
-    })
-
-    const githubOptions = {
-      mergePattern: /^Merge pull request #(\d+) from (.*)$/,
-      mergeCorrespondence: ['issueId', 'source']
-    }
-
-    const githubMsg = parseMessage(
-      'Merge pull request #1 from user/feature/feature-name\n' +
-        '\n' +
-        'feat(scope): broadcast $destroy event on scope destruction\n' +
-        '\n' +
-        'perf testing shows that in chrome this change adds 5-15% overhead\n' +
-        'when destroying 10k nested scopes where each scope has a $destroy listener',
-      githubOptions
-    )
-
-    it('should parse header in GitHub like pull request', function () {
-      expect(githubMsg.header).to.equal(
-        'feat(scope): broadcast $destroy event on scope destruction'
-      )
-    })
-
-    it('should understand header parts in GitHub like pull request', function () {
-      expect(githubMsg.type).to.equal('feat')
-      expect(githubMsg.scope).to.equal('scope')
-      expect(githubMsg.subject).to.equal(
-        'broadcast $destroy event on scope destruction'
-      )
-    })
-
-    it('should understand merge parts in GitHub like pull request', function () {
-      expect(githubMsg.merge).to.equal(
-        'Merge pull request #1 from user/feature/feature-name'
-      )
-      expect(githubMsg.issueId).to.equal('1')
-      expect(githubMsg.source).to.equal('user/feature/feature-name')
-    })
-
-    const gitLabOptions = {
-      mergePattern: /^Merge branch '([^']+)' into '[^']+'$/,
-      mergeCorrespondence: ['source']
-    }
-
-    const gitlabMsg = parseMessage(
-      "Merge branch 'feature/feature-name' into 'master'\r\n" +
-        '\r\n' +
-        'feat(scope): broadcast $destroy event on scope destruction\r\n' +
-        '\r\n' +
-        'perf testing shows that in chrome this change adds 5-15% overhead\r\n' +
-        'when destroying 10k nested scopes where each scope has a $destroy listener\r\n' +
-        '\r\n' +
-        'See merge request !1',
-      gitLabOptions
-    )
-
-    it('should parse header in GitLab like merge request', function () {
-      expect(gitlabMsg.header).to.equal(
-        'feat(scope): broadcast $destroy event on scope destruction'
-      )
-    })
-
-    it('should understand header parts in GitLab like merge request', function () {
-      expect(gitlabMsg.type).to.equal('feat')
-      expect(gitlabMsg.scope).to.equal('scope')
-      expect(gitlabMsg.subject).to.equal(
-        'broadcast $destroy event on scope destruction'
-      )
-    })
-
-    it('should understand merge parts in GitLab like merge request', function () {
-      expect(gitlabMsg.merge).to.equal(
-        "Merge branch 'feature/feature-name' into 'master'"
-      )
-      expect(gitlabMsg.source).to.equal('feature/feature-name')
-    })
-
-    it('Should parse header if merge header is missing', function () {
-      const msgWithoutmergeHeader = parseMessage(
-        'feat(scope): broadcast $destroy event on scope destruction',
-        githubOptions
-      )
-
-      expect(msgWithoutmergeHeader.merge).to.equal(null)
-    })
-
-    it('merge should be null if options.mergePattern is not defined', function () {
-      expect(msg.merge).to.equal(null)
-    })
-
-    it('Should not parse conventional header if pull request header present and mergePattern is not set', function () {
-      const msgWithmergeHeaderWithoutmergePattern = parseMessage(
-        'Merge pull request #1 from user/feature/feature-name\n' +
-          'feat(scope): broadcast $destroy event on scope destruction',
-        options
-      )
-      expect(msgWithmergeHeaderWithoutmergePattern.type).to.equal(null)
-      expect(msgWithmergeHeaderWithoutmergePattern.scope).to.equal(null)
-      expect(msgWithmergeHeaderWithoutmergePattern.subject).to.equal(null)
-    })
-
-    it('does not throw if merge commit has no header', () => {
-      parseMessage("Merge branch 'feature'", mergeOptions)
     })
   })
 

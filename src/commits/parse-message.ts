@@ -19,15 +19,6 @@ function getLines(raw: string, commentChar: string | null) {
   return lines.filter(line => !line.match(/^\s*gpg:/))
 }
 
-function getParts(match: string[], correspondence: string[]) {
-  const res: Record<string, string | null> = {}
-  for (let i = 0; i < correspondence.length; ++i) {
-    const name = correspondence[i]
-    res[name] = match[i + 1] || null
-  }
-  return res
-}
-
 function getReferences(
   input: string,
   references: RegExp,
@@ -68,8 +59,6 @@ export function parseMessage(
 ): Partial<Commit> {
   const {
     commentChar,
-    mergePattern,
-    mergeCorrespondence,
     references,
     referenceParts
   } = getParseContext(options)
@@ -93,16 +82,6 @@ export function parseMessage(
 
   // parse header
   commit.header = lines.shift()
-  const mergeMatch = mergePattern && commit.header?.match(mergePattern)
-  if (mergeMatch) {
-    let header = lines.shift()
-    while (header !== undefined && !header.trim()) header = lines.shift()
-    commit.header = header || ''
-    commit.merge = mergeMatch[0]
-    Object.assign(commit, getParts(mergeMatch, mergeCorrespondence))
-  } else {
-    for (const partName of mergeCorrespondence) commit[partName] = null
-  }
 
   const headerPattern = /^(\w*)(?:\((.*)\))?!?: (.*)$/
   const headerMatch = commit.header?.match(headerPattern)
