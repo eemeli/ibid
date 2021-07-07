@@ -71,7 +71,7 @@ betterThanBefore.setups([
   },
   function () {
     // 9
-    gitDummyCommit(['test9', 'Release note: super release!'])
+    gitDummyCommit(['test9', 'BREAKING CHANGE: super release!'])
   },
   function () {
     // 10
@@ -592,14 +592,12 @@ describe('conventionalChangelogCore', function () {
     )
   })
 
-  it('should pass `parserOpts` to conventional-commits-parser', async function () {
+  it('should handle breaking changes', async function () {
     preparing(9)
 
-    const changelog = await core({
-      config: { parserOpts: { noteKeywords: ['Release note'] } }
-    })
+    const changelog = await core({})
     expect(changelog).to.include('* test9')
-    expect(changelog).to.include('### Release note\n\n* super release!')
+    expect(changelog).to.include('### BREAKING CHANGE\n\n* super release!')
   })
 
   it('should read each commit range exactly once', async function () {
@@ -611,7 +609,7 @@ describe('conventionalChangelogCore', function () {
         writerOpts: { headerPartial: '', commitPartial: '* {{header}}\n' }
       }
     })
-    expect(changelog).to.equal('\n* test8\n* test8\n* test9\n\n\n\n')
+    expect(changelog).to.equal('\n* test8\n* test8\n* test9\n\n\n### BREAKING CHANGE\n\n* super release!\n\n\n')
   })
 
   it('should recreate the changelog from scratch', async function () {
@@ -843,7 +841,10 @@ describe('conventionalChangelogCore', function () {
         tagPrefix: 'foo@',
         config: {
           ...preset,
-          gitRawCommitsOpts: { ...preset.gitRawCommitsOpts, path: './packages/foo' }
+          gitRawCommitsOpts: {
+            ...preset.gitRawCommitsOpts,
+            path: './packages/foo'
+          }
         }
       })
       // confirm that context.currentTag behaves differently when
@@ -939,7 +940,10 @@ describe('conventionalChangelogCore', function () {
         lernaPackage: 'foo',
         config: {
           ...preset,
-          gitRawCommitsOpts: { ...preset.gitRawCommitsOpts, path: './packages/foo' }
+          gitRawCommitsOpts: {
+            ...preset.gitRawCommitsOpts,
+            path: './packages/foo'
+          }
         }
       })
       // confirm that context.currentTag behaves differently when

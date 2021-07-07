@@ -4,7 +4,7 @@ const { promisify } = require('util')
 const gitSemverTags = promisify(require('git-semver-tags'))
 
 const { filterReverted } = require('../commits/filter-reverted')
-const { gitLog } = require('../commits/git-log')
+const { gitLog } = require('../commits/git')
 const { parseMessage } = require('../commits/parse-message')
 
 const getConfig = require('../core/get-config')
@@ -17,7 +17,7 @@ async function getCommits(options, parserOpts) {
     tagPrefix: options.tagPrefix,
     skipUnstable: options.skipUnstable
   })
-  const commits = await gitLog(tags[0], null, { path: options.path })
+  const commits = await gitLog(tags[0], null, options.path)
   for (const commit of commits)
     Object.assign(commit, parseMessage(commit.message, parserOpts))
   return options.ignoreReverted ? filterReverted(commits) : commits

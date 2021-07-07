@@ -7,7 +7,7 @@ const { Readable } = require('stream')
 const { promisify } = require('util')
 const execFile = promisify(require('child_process').execFile)
 
-const parseMessage = require('../message-parser/index')
+const { parseMessage } = require('../commits/parse-message')
 const writer = require('../writer/writer')
 const getConfig = require('./get-config')
 const getContext = require('./get-context')

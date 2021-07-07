@@ -40,7 +40,7 @@ async function findPackages(patterns) {
     const tag = `${pkg.name}@${pkg.version}`
     if (!(await gitRefExists()))
       throw new Error(`Current version tag not found: ${tag}`)
-    pkg.changes = await gitLog(tag, null, { path: pkg.root })
+    pkg.changes = await gitLog(tag, null, pkg.root)
     for (const commit of pkg.changes)
       Object.assign(commit, parseMessage(commit.message, config.parserOpts))
     const bump = await recommendBump(config.recommendedBumpOpts, pkg.changes)
