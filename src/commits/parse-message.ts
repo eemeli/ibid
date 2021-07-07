@@ -11,11 +11,10 @@ const append = (src: unknown, line: string) =>
 // license: MIT
 const trimOffNewlines = (str: string) => str.replace(/^(\r?\n)+|(\r?\n)+$/g, '')
 
-function getLines(raw: string, commentChar: string | null) {
+function getLines(raw: string) {
   let lines = trimOffNewlines(raw).split(/\r?\n/)
   const scissorIndex = lines.indexOf(SCISSOR)
   if (scissorIndex !== -1) lines = lines.slice(0, scissorIndex)
-  if (commentChar) lines = lines.filter(line => line[0] !== commentChar)
   return lines.filter(line => !line.match(/^\s*gpg:/))
 }
 
@@ -57,11 +56,7 @@ export function parseMessage(
   raw: string,
   options: ParseOptions = {}
 ): Partial<Commit> {
-  const {
-    commentChar,
-    references,
-    referenceParts
-  } = getParseContext(options)
+  const { references, referenceParts } = getParseContext(options)
 
   const commit: Partial<Commit> = {
     body: null,
@@ -77,7 +72,7 @@ export function parseMessage(
     type: null
   }
 
-  const lines = getLines(raw, commentChar)
+  const lines = getLines(raw)
   if (lines.length === 0) return commit
 
   // parse header

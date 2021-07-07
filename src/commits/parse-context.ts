@@ -28,20 +28,17 @@ function getReferencesRegex(referenceActions: string[] | null) {
 }
 
 export interface ParseOptions {
-  commentChar?: null
   referenceActions?: string[]
   issuePrefixes?: string[]
   issuePrefixesCaseSensitive?: boolean
 }
 
 export interface ParseContext {
-  commentChar: string | null
   references: RegExp
   referenceParts: RegExp
 }
 
 export function getParseContext({
-  commentChar = null,
   referenceActions = [
     'close',
     'closes',
@@ -57,7 +54,6 @@ export function getParseContext({
   issuePrefixesCaseSensitive = false,
 }: ParseOptions): ParseContext {
   return {
-    commentChar,
     referenceParts: getReferencePartsRegex(
       issuePrefixes,
       issuePrefixesCaseSensitive
