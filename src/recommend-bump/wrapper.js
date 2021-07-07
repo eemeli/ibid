@@ -5,7 +5,7 @@ const gitSemverTags = promisify(require('git-semver-tags'))
 
 const { filterReverted } = require('../commits/filter-reverted')
 const { gitLog } = require('../commits/git-log')
-const parseMessage = require('../message-parser/index')
+const { parseMessage } = require('../commits/parse-message')
 
 const getConfig = require('../core/get-config')
 const recommendBump = require('./recommend-bump')

@@ -4,7 +4,7 @@ const glob = require('tiny-glob')
 const yargsParser = require('yargs-parser')
 
 const { gitLog, gitRefExists } = require('../commits/git')
-const parseMessage = require('../message-parser/index')
+const { parseMessage } = require('../commits/parse-message')
 const getConfig = require('../recommend-bump/get-config')
 const recommendBump = require('../recommend-bump/recommend-bump')
 

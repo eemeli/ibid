@@ -1,14 +1,192 @@
-'use strict'
-const { expect } = require('chai')
-const { beforeEach, describe, it } = require('mocha')
-const parseMessage = require('./index')
+import { expect } from 'chai'
+import { beforeEach, describe, it } from 'mocha'
+import { Commit } from '../commits/parse-commit'
+import { ParseOptions } from './parse-context'
+
+import { parseMessage } from './parse-message'
+
+describe('parseMessage()', () => {
+  it('should work', () => {
+    const commit =
+      'feat(ng-list): Allow custom separator\n' +
+      'bla bla bla\n\n' +
+      'Closes #123\nCloses #25\nFixes #33\n'
+    const result = parseMessage(commit)
+
+    expect(result.header).to.equal('feat(ng-list): Allow custom separator')
+    expect(result.footer).to.equal('Closes #123\nCloses #25\nFixes #33')
+    expect(result.references).to.eql([
+      {
+        action: 'Closes',
+        issue: '123',
+        owner: null,
+        prefix: '#',
+        raw: '#123',
+        repository: null
+      },
+      {
+        action: 'Closes',
+        issue: '25',
+        owner: null,
+        prefix: '#',
+        raw: '#25',
+        repository: null
+      },
+      {
+        action: 'Fixes',
+        issue: '33',
+        owner: null,
+        prefix: '#',
+        raw: '#33',
+        repository: null
+      }
+    ])
+  })
+
+  it('should parse raw commits', () => {
+    const commits = [
+      'feat(ng-list): Allow custom separator\n' +
+        'bla bla bla\n\n' +
+        'Closes #123\nCloses #25\nFixes #33\n',
+
+      'feat(scope): broadcast $destroy event on scope destruction\n' +
+        'bla bla bla\n\n' +
+        'BREAKING CHANGE: some breaking change\n',
+
+      'fix(zzz): Very cool commit\n' +
+        'bla bla bla\n\n' +
+        'Closes #2, #3. Resolves #4. Fixes #5. Fixes #6.\n' +
+        'What not ?\n',
+
+      'chore(scope with spaces): some chore\n' +
+        'bla bla bla\n\n' +
+        'BREAKING CHANGE: some other breaking change\n',
+
+      'Revert "throw an error if a callback is passed to animate methods"\n\n' +
+        'This reverts commit 9bb4d6ccbe80b7704c6b7f53317ca8146bc103ca.\n\n' +
+        '-hash-\n' +
+        'd7a40a29214f37d469e57d730dfd042b639d4d1f'
+    ]
+
+    expect(parseMessage(commits[0]).header).to.equal(
+      'feat(ng-list): Allow custom separator'
+    )
+    expect(parseMessage(commits[1]).notes).to.eql([
+      { title: 'BREAKING CHANGE', text: 'some breaking change' }
+    ])
+    expect(parseMessage(commits[2]).header).to.equal(
+      'fix(zzz): Very cool commit'
+    )
+    expect(parseMessage(commits[3]).header).to.equal(
+      'chore(scope with spaces): some chore'
+    )
+    expect(parseMessage(commits[4]).revert).to.eql({
+      header: 'throw an error if a callback is passed to animate methods',
+      hash: '9bb4d6ccbe80b7704c6b7f53317ca8146bc103ca'
+    })
+  })
+
+  describe('options', () => {
+    it('should take options', () => {
+      const commits = [
+        'feat(ng-list): Allow custom separator\n' +
+          'bla bla bla\n\n' +
+          'Fix #123\nCloses #25\nfix #33\n',
+
+        'fix(ng-list): Another custom separator\n' +
+          'bla bla bla\n\n' +
+          'BREAKING CHANGE: some breaking changes\n'
+      ]
+
+      const options = {
+        referenceActions: ['fix']
+      }
+
+      let chunk = parseMessage(commits[0], options)
+      expect(chunk.type).to.equal('feat')
+      expect(chunk.scope).to.equal('ng-list')
+      expect(chunk.subject).to.equal('Allow custom separator')
+      expect(chunk.references).to.eql([
+        {
+          action: 'Fix',
+          owner: null,
+          repository: null,
+          issue: '123',
+          raw: '#123',
+          prefix: '#'
+        },
+        {
+          action: null,
+          owner: null,
+          repository: null,
+          issue: '25',
+          raw: 'Closes #25',
+          prefix: '#'
+        },
+        {
+          action: 'fix',
+          owner: null,
+          repository: null,
+          issue: '33',
+          raw: '#33',
+          prefix: '#'
+        }
+      ])
+
+      chunk = parseMessage(commits[1], options)
+      expect(chunk.type).to.equal('fix')
+      expect(chunk.scope).to.equal('ng-list')
+      expect(chunk.subject).to.equal('Another custom separator')
+      expect(chunk.notes?.[0]).to.eql({
+        title: 'BREAKING CHANGE',
+        text: 'some breaking changes'
+      })
+    })
+  })
+
+  describe('header', () => {
+    it('should parse references from header', () => {
+      const result = parseMessage('Subject #1')
+
+      expect(result.references).to.eql([
+        {
+          action: null,
+          issue: '1',
+          owner: null,
+          prefix: '#',
+          raw: 'Subject #1',
+          repository: null
+        }
+      ])
+    })
+
+    it('should parse slash in the header', () => {
+      const result = parseMessage('feat(hello/world): message')
+
+      expect(result.type).to.equal('feat')
+      expect(result.scope).to.equal('hello/world')
+      expect(result.subject).to.equal('message')
+    })
+  })
+})
+
+describe('errors', () => {
+  it('should ignore malformed commits', () => {
+    const commits = [
+      'chore(scope with spaces): some chore\n',
+      'fix(zzz): Very cool commit\n' + 'bla bla bla\n\n'
+    ]
+    for (const commit of commits)
+      expect(() => parseMessage(commit)).not.to.throw()
+  })
+})
 
 describe('parser', function () {
-  let options
-  let msg
-  let simpleMsg
-  let longNoteMsg
-  let headerOnlyMsg
+  let options: ParseOptions
+  let msg: Partial<Commit>
+  let simpleMsg: Partial<Commit>
+  let longNoteMsg: Partial<Commit>
+  let headerOnlyMsg: Partial<Commit>
 
   beforeEach(function () {
     options = {
@@ -601,14 +779,14 @@ describe('parser', function () {
     })
 
     it('should parse important notes', function () {
-      expect(msg.notes[0]).to.eql({
+      expect(msg.notes?.[0]).to.eql({
         title: 'BREAKING CHANGE',
         text: 'some breaking change'
       })
     })
 
     it('should parse important notes with more than one paragraphs', function () {
-      expect(longNoteMsg.notes[0]).to.eql({
+      expect(longNoteMsg.notes?.[0]).to.eql({
         title: 'BREAKING CHANGE',
         text: 'some breaking change\nsome other breaking change'
       })
@@ -636,12 +814,8 @@ describe('parser', function () {
         title: 'BREAKING CHANGE',
         text: expectedText
       }
-      expect(
-        msg.references.map(function (ref) {
-          return ref.issue
-        })
-      ).to.include('9462')
-      expect(msg.notes[0]).to.eql(expected)
+      expect(msg.references?.map(ref => ref.issue)).to.include('9462')
+      expect(msg.notes?.[0]).to.eql(expected)
     })
 
     it('should not treat it as important notes if there are texts after `noteKeywords`', function () {
@@ -834,7 +1008,7 @@ describe('parser', function () {
           'BREAKING CHANGE: some breaking change\n',
         options
       )
-      expect(msg.notes[0]).to.eql({
+      expect(msg.notes?.[0]).to.eql({
         title: 'BREAKING CHANGE',
         text: 'some breaking change'
       })
@@ -870,7 +1044,7 @@ describe('parser', function () {
           'BREAKING CHANGE: some breaking change\nsome other breaking change',
         options
       )
-      expect(msg.notes[0]).to.eql({
+      expect(msg.notes?.[0]).to.eql({
         title: 'BREAKING CHANGE',
         text: 'some breaking change\nsome other breaking change'
       })
@@ -907,7 +1081,7 @@ describe('parser', function () {
           'BREAKING CHANGE: some breaking change\n',
         options
       )
-      expect(msg.notes[0]).to.eql({
+      expect(msg.notes?.[0]).to.eql({
         title: 'BREAKING CHANGE',
         text: 'some breaking change'
       })
@@ -936,7 +1110,7 @@ describe('parser', function () {
 
     it('should add the subject as note if it match breakingHeaderPattern', function () {
       const msg = parseMessage('feat!: breaking change feature', {})
-      expect(msg.notes[0]).to.eql({
+      expect(msg.notes?.[0]).to.eql({
         title: 'BREAKING CHANGE',
         text: 'breaking change feature'
       })
@@ -947,11 +1121,11 @@ describe('parser', function () {
         'feat!: breaking change feature\nBREAKING CHANGE: some breaking change',
         {}
       )
-      expect(msg.notes[0]).to.eql({
+      expect(msg.notes?.[0]).to.eql({
         title: 'BREAKING CHANGE',
         text: 'some breaking change'
       })
-      expect(msg.notes.length).to.eql(1)
+      expect(msg.notes?.length).to.eql(1)
     })
   })
 
@@ -1020,6 +1194,225 @@ describe('parser', function () {
         header: null,
         hash: null
       })
+    })
+  })
+
+  describe('notes', function () {
+    it('should match a simple note', function () {
+      const { notes } = parseMessage(
+        'header\n\nBreaking Change: This is so important.'
+      )
+      expect(notes).to.deep.equal([
+        { title: 'Breaking Change', text: 'This is so important.' }
+      ])
+    })
+
+    it('should be case insensitive', function () {
+      const { notes } = parseMessage(
+        'header\n\nBREAKING CHANGE: This is so important.'
+      )
+      expect(notes).to.deep.equal([
+        { title: 'BREAKING CHANGE', text: 'This is so important.' }
+      ])
+    })
+
+    it('should not accidentally match in a sentence', function () {
+      const { notes } = parseMessage(
+        'header\n\nThis is a breaking change: So important.'
+      )
+      expect(notes).to.deep.equal([])
+    })
+
+    it('should not match if there is text after `noteKeywords`', function () {
+      const { notes } = parseMessage(
+        'header\n\nBREAKING CHANGES: This is so not important.'
+      )
+      expect(notes).to.deep.equal([])
+    })
+  })
+
+  describe('references', function () {
+    it('should match a simple header reference', function () {
+      const { references } = parseMessage('closes #1\n')
+      expect(references?.length).to.equal(1)
+      expect(references?.[0]).to.include({ action: 'closes', issue: '1' })
+    })
+
+    it('should be case insensitive', function () {
+      const { references } = parseMessage('CloseS #1\n')
+      expect(references?.length).to.equal(1)
+      expect(references?.[0]).to.include({ action: 'CloseS', issue: '1' })
+    })
+
+    it('should not match if keywords does not present', function () {
+      const { references } = parseMessage('Closer #1\n')
+      expect(references?.length).to.equal(1)
+      expect(references?.[0]).to.include({ action: null, issue: '1' })
+    })
+
+    it('should match multiple references', function () {
+      const { references } = parseMessage(
+        'Closes #1 resolves #2; closes bug #4'
+      )
+      expect(references?.length).to.equal(3)
+      expect(references?.[0]).to.include({ action: 'Closes', issue: '1' })
+      expect(references?.[1]).to.include({ action: 'resolves', issue: '2' })
+      expect(references?.[2]).to.include({ action: 'closes', issue: '4' })
+    })
+
+    it('should match references with mixed content, like JIRA tickets', function () {
+      const { references } = parseMessage(
+        'Closes #JIRA-123 fixes #MY-OTHER-PROJECT-123; closes bug #4'
+      )
+      expect(references?.length).to.equal(3)
+      expect(references?.[0]).to.include({
+        action: 'Closes',
+        issue: 'JIRA-123'
+      })
+      expect(references?.[1]).to.include({
+        action: 'fixes',
+        issue: 'MY-OTHER-PROJECT-123'
+      })
+      expect(references?.[2]).to.include({ action: 'closes', issue: '4' })
+    })
+
+    it('should reference an issue without an action', function () {
+      const { references } = parseMessage('gh-1, prefix-3, Closes gh-6')
+      expect(references?.length).to.equal(0)
+    })
+
+    it('should ignore whitespace', function () {
+      const referenceActions = [' Closes', 'amends ', '', ' fixes ', '   ']
+      const { references } = parseMessage('closes #1, amends #2, fixes #3', {
+        referenceActions
+      })
+      expect(references?.length).to.equal(3)
+    })
+  })
+
+  describe('referenceParts', function () {
+    it('should match simple reference parts', function () {
+      const { references } = parseMessage('#1')
+      expect(references?.length).to.equal(1)
+      expect(references?.[0]).to.include({ issue: '1', prefix: '#' })
+    })
+
+    it('should reference an issue in parenthesis', function () {
+      const { references } = parseMessage(
+        '#27), pinned shelljs to version that works with nyc (#30)'
+      )
+      expect(references?.length).to.equal(2)
+      expect(references?.[0]).to.include({ issue: '27', prefix: '#' })
+      expect(references?.[1]).to.include({ issue: '30', prefix: '#' })
+    })
+
+    it('should match reference parts with a repository', function () {
+      const { references } = parseMessage('repo#1')
+      expect(references?.length).to.equal(1)
+      expect(references?.[0]).to.include({
+        issue: '1',
+        prefix: '#',
+        repository: 'repo'
+      })
+    })
+
+    it('should match JIRA-123 like reference parts', function () {
+      const { references } = parseMessage('#JIRA-123')
+      expect(references?.length).to.equal(1)
+      expect(references?.[0]).to.include({ issue: 'JIRA-123', prefix: '#' })
+    })
+
+    it('should not match MY-€#%#&-123 mixed symbol reference parts', function () {
+      const { references } = parseMessage('#MY-€#%#&-123')
+      expect(references?.length).to.equal(0)
+    })
+
+    it('should match reference parts with multiple references', function () {
+      const { references } = parseMessage('#1 #2, something #3; repo#4')
+      expect(references?.length).to.equal(4)
+      for (let i = 0; i < 4; ++i)
+        expect(references?.[i]).to.include({
+          issue: String(i + 1),
+          prefix: '#'
+        })
+    })
+
+    it('should match issues with customized prefix', function () {
+      const { references } = parseMessage(
+        'closes gh-1, resolves #2, fixes other-3',
+        {
+          issuePrefixes: ['gh-', 'other-']
+        }
+      )
+      expect(references?.length).to.equal(2)
+      expect(references?.[0]).to.include({
+        action: 'closes',
+        issue: '1',
+        prefix: 'gh-'
+      })
+      expect(references?.[1]).to.include({
+        action: 'fixes',
+        issue: '3',
+        prefix: 'other-'
+      })
+    })
+
+    it('should be case sensitve if set in options', function () {
+      const { references } = parseMessage(
+        'closes gh-1, resolves GH-2, fixes other-3',
+        {
+          issuePrefixes: ['GH-'],
+          issuePrefixesCaseSensitive: true
+        }
+      )
+      expect(references?.length).to.equal(1)
+      expect(references?.[0]).to.include({
+        action: 'resolves',
+        issue: '2',
+        prefix: 'GH-'
+      })
+    })
+  })
+
+  describe('mentions', function () {
+    it('should match basic mention', function () {
+      const { mentions } = parseMessage('Thanks!! @someone')
+      expect(mentions).to.deep.equal(['someone'])
+    })
+
+    it('should match mention with hyphen', function () {
+      const { mentions } = parseMessage('Thanks!! @some-one')
+      expect(mentions).to.deep.equal(['some-one'])
+    })
+
+    it('should match mention with underscore', function () {
+      const { mentions } = parseMessage('Thanks!! @some_one')
+      expect(mentions).to.deep.equal(['some_one'])
+    })
+
+    it('should match mention with parentheses', function () {
+      const { mentions } = parseMessage('Fix feature1 (by @someone)')
+      expect(mentions).to.deep.equal(['someone'])
+    })
+
+    it('should match mention with brackets', function () {
+      const { mentions } = parseMessage('Fix feature1 [by @someone]')
+      expect(mentions).to.deep.equal(['someone'])
+    })
+
+    it('should match mention with braces', function () {
+      const { mentions } = parseMessage('Fix feature1 {by @someone}')
+      expect(mentions).to.deep.equal(['someone'])
+    })
+
+    it('should match mention with angle brackets', function () {
+      const { mentions } = parseMessage('Fix feature1 <by @someone>')
+      expect(mentions).to.deep.equal(['someone'])
+    })
+
+    it('should match multiple mentions', function () {
+      const { mentions } = parseMessage('Thanks!! @someone and @another')
+      expect(mentions).to.deep.equal(['someone', 'another'])
     })
   })
 })

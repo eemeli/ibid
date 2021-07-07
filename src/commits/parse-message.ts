@@ -1,15 +1,17 @@
-'use strict'
+import { Commit, Reference } from '../commits/parse-commit'
+import { getParseContext, ParseOptions } from './parse-context'
 
 const CATCH_ALL = /()(.+)/gi
 const SCISSOR = '# ------------------------ >8 ------------------------'
 
-const append = (src, line) => (src ? src + '\n' + line : line)
+const append = (src: unknown, line: string) =>
+  src ? String(src) + '\n' + line : line
 
 // Based on trim-off-newlines@1.0.1 by Steve Mao<maochenyan@gmail.com>
 // license: MIT
-const trimOffNewlines = str => str.replace(/^(\r?\n)+|(\r?\n)+$/g, '')
+const trimOffNewlines = (str: string) => str.replace(/^(\r?\n)+|(\r?\n)+$/g, '')
 
-function getLines(raw, commentChar) {
+function getLines(raw: string, commentChar: string | null) {
   let lines = trimOffNewlines(raw).split(/\r?\n/)
   const scissorIndex = lines.indexOf(SCISSOR)
   if (scissorIndex !== -1) lines = lines.slice(0, scissorIndex)
@@ -17,8 +19,8 @@ function getLines(raw, commentChar) {
   return lines.filter(line => !line.match(/^\s*gpg:/))
 }
 
-function getParts(match, correspondence) {
-  const res = {}
+function getParts(match: string[], correspondence: string[]) {
+  const res: Record<string, string | null> = {}
   for (let i = 0; i < correspondence.length; ++i) {
     const name = correspondence[i]
     res[name] = match[i + 1] || null
@@ -26,8 +28,12 @@ function getParts(match, correspondence) {
   return res
 }
 
-function getReferences(input, references, referenceParts) {
-  const res = []
+function getReferences(
+  input: string,
+  references: RegExp,
+  referenceParts: RegExp
+) {
+  const res: Reference[] = []
 
   const reApplicable = input.match(references) ? references : CATCH_ALL
 
@@ -56,18 +62,20 @@ function getReferences(input, references, referenceParts) {
   return res
 }
 
-function parser(
-  raw,
-  {
+export function parseMessage(
+  raw: string,
+  options: ParseOptions = {}
+): Partial<Commit> {
+  const {
     commentChar,
     fieldPattern,
     mergePattern,
     mergeCorrespondence,
     references,
     referenceParts
-  }
-) {
-  const commit = {
+  } = getParseContext(options)
+
+  const commit: Partial<Commit> = {
     body: null,
     footer: null,
     header: null,
@@ -86,8 +94,8 @@ function parser(
 
   // parse header
   commit.header = lines.shift()
-  const mergeMatch = commit.header.match(mergePattern)
-  if (mergeMatch && mergePattern) {
+  const mergeMatch = mergePattern && commit.header?.match(mergePattern)
+  if (mergeMatch) {
     let header = lines.shift()
     while (header !== undefined && !header.trim()) header = lines.shift()
     commit.header = header || ''
@@ -98,18 +106,23 @@ function parser(
   }
 
   const headerPattern = /^(\w*)(?:\((.*)\))?!?: (.*)$/
-  const headerMatch = commit.header.match(headerPattern)
+  const headerMatch = commit.header?.match(headerPattern)
   if (headerMatch) {
     commit.type = headerMatch[1] || null
     commit.scope = headerMatch[2] || null
     commit.subject = headerMatch[3] || null
   }
 
-  commit.references = getReferences(commit.header, references, referenceParts)
+  commit.references = getReferences(
+    commit.header || '',
+    references,
+    referenceParts
+  )
 
   // parse body & footer
   const body = []
   const footer = []
+  const notes: { title: string; text: string }[] = []
 
   let currentField = null
   let continueNote = false
@@ -140,7 +153,7 @@ function parser(
         title: notesMatch[1],
         text: notesMatch[2]
       }
-      commit.notes.push(note)
+      notes.push(note)
       continue
     }
 
@@ -154,7 +167,7 @@ function parser(
     }
 
     if (continueNote) {
-      const lastNote = commit.notes[commit.notes.length - 1]
+      const lastNote = notes[notes.length - 1]
       lastNote.text = append(lastNote.text, line)
       footer.push(line)
       continue
@@ -164,25 +177,25 @@ function parser(
     else footer.push(line)
   }
 
-  if (commit.notes.length === 0) {
+  if (notes.length === 0) {
     const breakingHeaderPattern = /^(\w*)(?:\((.*)\))?!: (.*)$/
-    const breakingHeader = commit.header.match(breakingHeaderPattern)
+    const breakingHeader = commit.header?.match(breakingHeaderPattern)
     if (breakingHeader) {
-      commit.notes = [
-        {
-          title: 'BREAKING CHANGE',
-          text: breakingHeader[3] // the description of the change.
-        }
-      ]
+      notes.push({
+        title: 'BREAKING CHANGE',
+        text: breakingHeader[3] // the description of the change.
+      })
     }
   }
 
   if (body.length > 0) commit.body = trimOffNewlines(body.join('\n'))
   if (footer.length > 0) commit.footer = trimOffNewlines(footer.join('\n'))
-  for (const note of commit.notes) note.text = trimOffNewlines(note.text)
+  for (const note of notes) note.text = trimOffNewlines(note.text)
+  commit.notes = notes
 
-  for (const [, mention] of raw.matchAll(/@([\w-]+)/g))
-    commit.mentions.push(mention)
+  const mentions: string[] = []
+  for (const [, mention] of raw.matchAll(/@([\w-]+)/g)) mentions.push(mention)
+  commit.mentions = mentions
 
   // does this commit revert any other commit?
   const revertPattern = /^(?:Revert|revert:)\s(?:""|"?([\s\S]+?)"?)\s*This reverts commit (\w*)\./i
@@ -195,5 +208,3 @@ function parser(
 
   return commit
 }
-
-module.exports = parser

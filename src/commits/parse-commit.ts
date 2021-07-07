@@ -1,6 +1,15 @@
 import { Context } from '../config/context'
 import { checkRefShape } from './git'
 
+export interface Reference {
+  action: string | null
+  owner: string | null | undefined
+  repository: string | null
+  issue: string
+  raw: string
+  prefix: string
+}
+
 export interface Commit {
   hash: string
   author: string
@@ -9,14 +18,18 @@ export interface Commit {
   tags: string[]
   revert?: Revert | null
 
-  type?: string
-  scope?: null
-  subject?: string
-  header?: string
+  type?: string | null
+  scope?: string | null
+  subject?: string | null
+  header?: string | null
   body?: string | null
   footer?: string | null
-  notes?: never[]
-  references?: never[]
+  merge?: string | null
+  notes?: { title: string; text: string }[]
+  mentions?: string[]
+  references?: Reference[]
+
+  [key: string]: unknown
 }
 
 export type Revert = Partial<

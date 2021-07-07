@@ -1,15 +1,16 @@
-const parser = require('./parser')
-
 const matchNone = /(?!.*)/
 const matchAll = /()(.+)/g
 
-const join = array =>
+const join = (array: string[]) =>
   array
     .map(val => val.trim())
     .filter(Boolean)
     .join('|')
 
-function getReferencePartsRegex(issuePrefixes, issuePrefixesCaseSensitive) {
+function getReferencePartsRegex(
+  issuePrefixes: string[] | null,
+  issuePrefixesCaseSensitive: boolean
+) {
   if (!issuePrefixes) return matchNone
   return new RegExp(
     '(?:.*?)??\\s*([\\w-\\.\\/]*?)??(' + join(issuePrefixes) + ')([\\w-]*\\d+)',
@@ -17,7 +18,7 @@ function getReferencePartsRegex(issuePrefixes, issuePrefixesCaseSensitive) {
   )
 }
 
-function getReferencesRegex(referenceActions) {
+function getReferencesRegex(referenceActions: string[] | null) {
   if (!referenceActions) return matchAll
   const joinedKeywords = join(referenceActions)
   return new RegExp(
@@ -26,7 +27,26 @@ function getReferencesRegex(referenceActions) {
   )
 }
 
-function getOptions({
+export interface ParseOptions {
+  commentChar?: null
+  referenceActions?: string[]
+  issuePrefixes?: string[]
+  issuePrefixesCaseSensitive?: boolean
+  fieldPattern?: RegExp
+  mergePattern?: RegExp | null
+  mergeCorrespondence?: string[]
+}
+
+export interface ParseContext {
+  commentChar: string | null
+  fieldPattern: RegExp | null
+  mergePattern: RegExp | null
+  mergeCorrespondence: string[]
+  references: RegExp
+  referenceParts: RegExp
+}
+
+export function getParseContext({
   commentChar = null,
   referenceActions = [
     'close',
@@ -44,7 +64,7 @@ function getOptions({
   fieldPattern = /^-(.*?)-$/,
   mergePattern = null,
   mergeCorrespondence = []
-}) {
+}: ParseOptions): ParseContext {
   return {
     commentChar,
     fieldPattern,
@@ -57,11 +77,3 @@ function getOptions({
     references: getReferencesRegex(referenceActions)
   }
 }
-
-function parseMessage(commit, options = {}) {
-  if (typeof commit !== 'string' || !commit.trim())
-    throw new TypeError('Expected a raw commit')
-  return parser(commit, getOptions(options))
-}
-
-module.exports = parseMessage
