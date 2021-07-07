@@ -30,7 +30,8 @@ export async function gitLog(
     '--date=unix',
     '--decorate=short',
     '--format=medium',
-    '--no-color'
+    '--no-color',
+    '--no-show-signature'
   ]
   const range = from ? `${from}..${to || ''}` : to
   if (range) args.push(range)

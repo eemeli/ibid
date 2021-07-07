@@ -2,7 +2,6 @@ import { Commit, Reference } from '../commits/parse-commit'
 import { getParseContext, ParseOptions } from './parse-context'
 
 const CATCH_ALL = /()(.+)/gi
-const SCISSOR = '# ------------------------ >8 ------------------------'
 
 const append = (src: unknown, line: string) =>
   src ? String(src) + '\n' + line : line
@@ -10,13 +9,6 @@ const append = (src: unknown, line: string) =>
 // Based on trim-off-newlines@1.0.1 by Steve Mao<maochenyan@gmail.com>
 // license: MIT
 const trimOffNewlines = (str: string) => str.replace(/^(\r?\n)+|(\r?\n)+$/g, '')
-
-function getLines(raw: string) {
-  let lines = trimOffNewlines(raw).split(/\r?\n/)
-  const scissorIndex = lines.indexOf(SCISSOR)
-  if (scissorIndex !== -1) lines = lines.slice(0, scissorIndex)
-  return lines.filter(line => !line.match(/^\s*gpg:/))
-}
 
 function getReferences(
   input: string,
@@ -72,7 +64,7 @@ export function parseMessage(
     type: null
   }
 
-  const lines = getLines(raw)
+  const lines = trimOffNewlines(raw).split(/\r?\n/)
   if (lines.length === 0) return commit
 
   // parse header
