@@ -68,7 +68,6 @@ export function parseMessage(
 ): Partial<Commit> {
   const {
     commentChar,
-    fieldPattern,
     mergePattern,
     mergeCorrespondence,
     references,
@@ -124,24 +123,10 @@ export function parseMessage(
   const footer = []
   const notes: { title: string; text: string }[] = []
 
-  let currentField = null
   let continueNote = false
   let isBody = true
 
   for (const line of lines) {
-    if (fieldPattern) {
-      const fieldMatch = fieldPattern.exec(line)
-      if (fieldMatch) {
-        currentField = fieldMatch[1]
-        continue
-      }
-
-      if (currentField) {
-        commit[currentField] = append(commit[currentField], line)
-        continue
-      }
-    }
-
     // this is a new important note
     const notesMatch = line.match(/^[\s|*]*(BREAKING CHANGE)[:\s]+(.*)/i)
     if (notesMatch) {

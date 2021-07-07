@@ -32,14 +32,12 @@ export interface ParseOptions {
   referenceActions?: string[]
   issuePrefixes?: string[]
   issuePrefixesCaseSensitive?: boolean
-  fieldPattern?: RegExp
   mergePattern?: RegExp | null
   mergeCorrespondence?: string[]
 }
 
 export interface ParseContext {
   commentChar: string | null
-  fieldPattern: RegExp | null
   mergePattern: RegExp | null
   mergeCorrespondence: string[]
   references: RegExp
@@ -61,13 +59,11 @@ export function getParseContext({
   ],
   issuePrefixes = ['#'],
   issuePrefixesCaseSensitive = false,
-  fieldPattern = /^-(.*?)-$/,
   mergePattern = null,
   mergeCorrespondence = []
 }: ParseOptions): ParseContext {
   return {
     commentChar,
-    fieldPattern,
     mergePattern,
     mergeCorrespondence,
     referenceParts: getReferencePartsRegex(

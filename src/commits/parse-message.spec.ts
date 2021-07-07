@@ -190,7 +190,6 @@ describe('parser', function () {
 
   beforeEach(function () {
     options = {
-      fieldPattern: /^-(.*?)-$/,
       issuePrefixes: ['#', 'gh-'],
       referenceActions: [
         'kill',
@@ -728,7 +727,6 @@ describe('parser', function () {
 
     it('should reference an issue without an action', function () {
       const options = {
-        fieldPattern: /^-(.*?)-$/,
         issuePrefixes: ['#', 'gh-']
       }
 
@@ -914,7 +912,6 @@ describe('parser', function () {
 
     it('should reference an issue without an action', function () {
       const options = {
-        fieldPattern: /^-(.*?)-$/,
         issuePrefixes: ['#', 'gh-']
       }
 
@@ -1126,50 +1123,6 @@ describe('parser', function () {
         text: 'some breaking change'
       })
       expect(msg.notes?.length).to.eql(1)
-    })
-  })
-
-  describe('others', function () {
-    it('should parse hash', function () {
-      msg = parseMessage(
-        'My commit message\n' +
-          '-hash-\n' +
-          '9b1aff905b638aa274a5fc8f88662df446d374bd',
-        options
-      )
-
-      expect(msg.hash).to.equal('9b1aff905b638aa274a5fc8f88662df446d374bd')
-    })
-
-    it('should parse sideNotes', function () {
-      msg = parseMessage(
-        'My commit message\n' +
-          '-sideNotes-\n' +
-          'It should warn the correct unfound file names.\n' +
-          'Also it should continue if one file cannot be found.\n' +
-          'Tests are added for these',
-        options
-      )
-
-      expect(msg.sideNotes).to.equal(
-        'It should warn the correct unfound file names.\n' +
-          'Also it should continue if one file cannot be found.\n' +
-          'Tests are added for these'
-      )
-    })
-
-    it('should parse committer name and email', function () {
-      msg = parseMessage(
-        'My commit message\n' +
-          '-committerName-\n' +
-          'Steve Mao\n' +
-          '- committerEmail-\n' +
-          'test@github.com',
-        options
-      )
-
-      expect(msg.committerName).to.equal('Steve Mao')
-      expect(msg[' committerEmail']).to.equal('test@github.com')
     })
   })
 
