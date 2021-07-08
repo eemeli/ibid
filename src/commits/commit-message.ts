@@ -75,7 +75,7 @@ export class CommitMessage {
 
   get references(): Reference[] {
     if (!this.context) throw new Error('Context required for references')
-    return getReferences(this.raw, this.context.getHostContext())
+    return getReferences(this.raw, this.context.hostContext)
   }
 
   get revert(): Revert | null {

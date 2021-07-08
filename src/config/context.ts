@@ -21,11 +21,11 @@ export interface Context {
   config: Required<Config>
   cwd: string | null
   package: Package | null
-  getHostContext(): HostContext
-  getHostInfo(): {
+  get hostContext(): HostContext
+  get hostInfo(): {
     type: 'bitbucket' | 'gist' | 'github' | 'gitlab' | null
   } | null
-  getTag(): string
+  get tag(): string
 }
 
 async function getPackage(cwd: string) {
@@ -46,7 +46,7 @@ export async function getContext(
 ): Promise<Context> {
   const cache: {
     hostContext?: HostContext
-    hostInfo?: ReturnType<Context['getHostInfo']>
+    hostInfo?: Context['hostInfo']
   } = {}
   const context: Context = {
     config: Object.assign(
@@ -62,9 +62,9 @@ export async function getContext(
     cwd,
     package: typeof cwd === 'string' ? await getPackage(cwd) : null,
 
-    getHostContext() {
+    get hostContext() {
       if (cache.hostContext !== undefined) return cache.hostContext
-      const type = this.getHostInfo()?.type ?? '_default'
+      const type = this.hostInfo?.type ?? '_default'
       return (cache.hostContext = Object.assign(
         {},
         hostData[type] || hostData._default,
@@ -72,7 +72,7 @@ export async function getContext(
       ))
     },
 
-    getHostInfo() {
+    get hostInfo() {
       if (cache.hostInfo !== undefined) return cache.hostInfo
       return (cache.hostInfo =
         this.package && this.package.repository
@@ -80,7 +80,7 @@ export async function getContext(
           : null)
     },
 
-    getTag() {
+    get tag() {
       if (!this.package)
         throw new Error(
           `For default tag resolution, context must include a valid package`
