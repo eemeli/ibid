@@ -1,14 +1,6 @@
 import { Context } from '../config/context'
 import { checkRefShape } from './git'
-
-export interface Reference {
-  action: string | null
-  owner: string | null | undefined
-  repository: string | null
-  issue: string
-  raw: string
-  prefix: string
-}
+import { Reference } from './commit-message-references'
 
 export interface Commit {
   hash: string
