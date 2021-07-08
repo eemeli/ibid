@@ -13,6 +13,7 @@ describe('filterReverted()', () => {
     const commits: Commit[] = [
       {
         hash: '207abfa16885ef5ff88dfc6cdde694bb3fd03104',
+        merge: null,
         author: 'Author',
         date: new Date(),
         tags: [],
@@ -22,6 +23,7 @@ describe('filterReverted()', () => {
       },
       {
         hash: '789d898b5f8422d7f65cc25135af2c1a95a125ac',
+        merge: null,
         author: 'Author',
         date: new Date(),
         tags: [],
@@ -31,6 +33,7 @@ describe('filterReverted()', () => {
       },
       {
         hash: '56185b7356766d2b30cfa2406b257080272e0b7a',
+        merge: null,
         author: 'Author',
         date: new Date(),
         tags: [],
@@ -40,6 +43,7 @@ describe('filterReverted()', () => {
       },
       {
         hash: '815a3f0717bf1dfce007bd076420c609504edcf3',
+        merge: null,
         author: 'Author',
         date: new Date(),
         tags: [],
@@ -47,6 +51,7 @@ describe('filterReverted()', () => {
       },
       {
         hash: '74a3e4d6d25dee2c0d6483a0a3887417728cbe0a',
+        merge: null,
         author: 'Author',
         date: new Date(),
         tags: [],

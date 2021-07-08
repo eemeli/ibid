@@ -10,10 +10,13 @@ export async function getCurrentCommits(ctx: Context): Promise<Commit[]> {
   const tag = ctx.getTag()
   if (!(await gitRefExists(tag)))
     throw new Error(`Current git tag not found: ${tag}`)
+
+  const { includeMergeCommits, includeRevertedCommits } = ctx.config
   const commits: Commit[] = []
   for (const src of await gitLog(tag, null, ctx.cwd)) {
     const commit = parseCommit(ctx, src)
-    if (commit) commits.push(commit)
+    if (commit && (includeMergeCommits || !commit.merge)) commits.push(commit)
   }
-  return ctx.config.includeRevertedCommits ? commits : filterReverted(commits)
+
+  return includeRevertedCommits ? commits : filterReverted(commits)
 }

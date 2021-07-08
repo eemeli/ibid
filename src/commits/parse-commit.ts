@@ -4,23 +4,21 @@ import { CommitMessage } from './commit-message'
 
 export interface Commit {
   hash: string
+  merge: string[] | null
   author: string
   date: Date
   tags: string[]
   message: CommitMessage
 }
 
-export function parseCommit(ctx: Context, src: string): Commit | null {
+export function parseCommit(_ctx: Context, src: string): Commit  {
   const headMatch = src.match(
-    /^commit ([0-9a-f]+)(?: \((.*?)\))?\s+(Merge:.*\s+)?Author:\s*(.*?)\s+Date:\s*(\d+)\s+\n/
+    /^commit ([0-9a-f]+)(?: \((.*?)\))?\s+(?:Merge:(.*)\s+)?Author:\s*(.*?)\s+Date:\s*(\d+)\s+\n/
   )
-  if (!headMatch) {
-    if (src.trim()) throw new Error(`Malformed git commit:\n${src}`)
-    return null
-  }
+  if (!headMatch) throw new Error(`Malformed git commit:\n${src}`)
 
-  const [head, hash, refs, merge, author, dateSrc] = headMatch
-  if (merge && !ctx.config.includeMergeCommits) return null
+  const [head, hash, refs, mergeSrc, author, dateSrc] = headMatch
+
   const tags = []
   if (refs)
     for (const ref of refs.split(', ')) {
@@ -35,6 +33,7 @@ export function parseCommit(ctx: Context, src: string): Commit | null {
 
   return {
     hash,
+    merge: mergeSrc ? mergeSrc.split(' ').filter(Boolean) : null,
     author,
     date: new Date(Number(dateSrc) * 1000),
     tags,
