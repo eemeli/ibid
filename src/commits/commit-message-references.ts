@@ -1,3 +1,5 @@
+import { HostContext } from '../config/host-data'
+
 export interface Reference {
   raw: string
   action: string | null
@@ -6,25 +8,10 @@ export interface Reference {
   issue: string
 }
 
-export interface ReferenceOptions {
-  issuePrefixes?: string[]
-  referenceActions?: string[]
-}
-
 function getReferencesRegexp({
-  issuePrefixes = ['#'],
-  referenceActions = [
-    'close',
-    'closes',
-    'closed',
-    'fix',
-    'fixes',
-    'fixed',
-    'resolve',
-    'resolves',
-    'resolved'
-  ]
-}: ReferenceOptions): RegExp {
+  issuePrefixes,
+  referenceActions
+}: HostContext): RegExp {
   const ra = referenceActions
     .map(act => {
       const lc = act.toLowerCase()
@@ -41,9 +28,9 @@ function getReferencesRegexp({
 
 export function getReferences(
   src: string,
-  options: ReferenceOptions = {}
+  hostContext: HostContext
 ): Reference[] {
-  const re = getReferencesRegexp(options)
+  const re = getReferencesRegexp(hostContext)
   const refs: Reference[] = []
   for (const [raw, action, scope, prefix, issue] of src.matchAll(re)) {
     refs.push({

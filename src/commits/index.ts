@@ -14,7 +14,7 @@ export async function getCurrentCommits(ctx: Context): Promise<Commit[]> {
   const { includeMergeCommits, includeRevertedCommits } = ctx.config
   const commits: Commit[] = []
   for (const src of await gitLog(tag, null, ctx.cwd)) {
-    const commit = parseCommit(ctx, src)
+    const commit = parseCommit(src, ctx)
     if (commit && (includeMergeCommits || !commit.merge)) commits.push(commit)
   }
 

@@ -11,7 +11,7 @@ export interface Commit {
   message: CommitMessage
 }
 
-export function parseCommit(_ctx: Context, src: string): Commit  {
+export function parseCommit(src: string, ctx?: Context): Commit  {
   const headMatch = src.match(
     /^commit ([0-9a-f]+)(?: \((.*?)\))?\s+(?:Merge:(.*)\s+)?Author:\s*(.*?)\s+Date:\s*(\d+)\s+\n/
   )
@@ -37,6 +37,6 @@ export function parseCommit(_ctx: Context, src: string): Commit  {
     author,
     date: new Date(Number(dateSrc) * 1000),
     tags,
-    message: new CommitMessage(msgSrc)
+    message: new CommitMessage(msgSrc, ctx)
   }
 }

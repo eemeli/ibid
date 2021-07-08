@@ -21,7 +21,7 @@ export async function gitRefExists(ref: string): Promise<boolean> {
 export async function gitLog(
   from: string | null,
   to: string | null,
-  path?: string
+  path?: string | null
 ): Promise<string[]> {
   checkRefShape(from)
   checkRefShape(to)

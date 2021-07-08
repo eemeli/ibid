@@ -1,8 +1,5 @@
-import {
-  getReferences,
-  ReferenceOptions,
-  Reference
-} from './commit-message-references'
+import { Context } from '../config/context'
+import { getReferences, Reference } from './commit-message-references'
 
 export interface Revert {
   hash: string
@@ -10,7 +7,7 @@ export interface Revert {
 }
 
 export class CommitMessage {
-  options: ReferenceOptions
+  context: Context | null
 
   raw: string
   header: string
@@ -22,13 +19,13 @@ export class CommitMessage {
   subject: string
   breaking: string | null = null
 
-  constructor(raw: string, options: ReferenceOptions = {}) {
+  constructor(raw: string, ctx?: Context) {
     const parts = raw
       .replace(/[ \t]+$/gm, '')
       .trimStart()
       .split(/(?:\r?\n){2,}/)
 
-    this.options = options
+    this.context = ctx || null
     this.raw = raw
     this.header = parts.shift() || ''
 
@@ -77,7 +74,8 @@ export class CommitMessage {
   }
 
   get references(): Reference[] {
-    return getReferences(this.raw, this.options)
+    if (!this.context) throw new Error('Context required for references')
+    return getReferences(this.raw, this.context.getHostContext())
   }
 
   get revert(): Revert | null {

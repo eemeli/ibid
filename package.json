@@ -27,6 +27,7 @@
     "git-remote-origin-url": "^2.0.0",
     "git-semver-tags": "^4.1.1",
     "handlebars": "^4.7.7",
+    "hosted-git-info": "^4.0.2",
     "json-stringify-safe": "^5.0.1",
     "lodash": "^4.17.21",
     "normalize-package-data": "^3.0.2",
@@ -37,6 +38,7 @@
   },
   "devDependencies": {
     "@types/chai": "^4.2.20",
+    "@types/hosted-git-info": "^3.0.2",
     "@types/mocha": "^8.2.2",
     "@types/node": "^12.20.15",
     "@typescript-eslint/eslint-plugin": "^4.28.1",
