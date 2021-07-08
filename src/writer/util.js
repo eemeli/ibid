@@ -4,8 +4,6 @@ const semver = require('semver')
 const _ = require('lodash')
 const stringify = require('json-stringify-safe')
 
-const { filterReverted } = require('../commits/filter-reverted')
-
 function compileTemplates({
   mainTemplate,
   headerPartial,
@@ -117,11 +115,7 @@ function generate(options, commits, context, keyCommit) {
   let notes = []
   const compiled = compileTemplates(options)
 
-  const filteredCommits = options.ignoreReverted
-    ? filterReverted(commits)
-    : _.clone(commits)
-
-  for (const commit of filteredCommits) {
+  for (const commit of commits) {
     for (const note of commit.notes) note.commit = commit
     notes = notes.concat(commit.notes)
   }
@@ -130,7 +124,7 @@ function generate(options, commits, context, keyCommit) {
     {},
     context,
     keyCommit,
-    getExtraContext(filteredCommits, notes, options)
+    getExtraContext(commits, notes, options)
   )
 
   if (keyCommit && keyCommit.committerDate)
@@ -140,7 +134,7 @@ function generate(options, commits, context, keyCommit) {
   context = options.finalizeContext(
     context,
     options,
-    filteredCommits,
+    commits.slice(),
     keyCommit,
     commits
   )
