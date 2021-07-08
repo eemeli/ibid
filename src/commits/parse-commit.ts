@@ -1,34 +1,14 @@
 import { Context } from '../config/context'
 import { checkRefShape } from './git'
-import { Reference } from './commit-message-references'
+import { CommitMessage } from './commit-message'
 
 export interface Commit {
   hash: string
   author: string
   date: Date
-  message: string
   tags: string[]
-  revert?: Revert | null
-
-  type?: string | null
-  scope?: string | null
-  subject?: string | null
-  header?: string | null
-  body?: string | null
-  footer?: string | null
-  merge?: string | null
-  notes?: { title: string; text: string }[]
-  mentions?: string[]
-  references?: Reference[]
-
-  [key: string]: unknown
+  message: CommitMessage
 }
-
-export type Revert = Partial<
-  {
-    [key in keyof Commit]: unknown
-  }
->
 
 export function parseCommit(ctx: Context, src: string): Commit | null {
   const headMatch = src.match(
@@ -38,6 +18,7 @@ export function parseCommit(ctx: Context, src: string): Commit | null {
     if (src.trim()) throw new Error(`Malformed git commit:\n${src}`)
     return null
   }
+
   const [head, hash, refs, merge, author, dateSrc] = headMatch
   if (merge && !ctx.config.includeMergeCommits) return null
   const tags = []
@@ -49,7 +30,14 @@ export function parseCommit(ctx: Context, src: string): Commit | null {
         tags.push(tag)
       }
     }
-  const date = new Date(Number(dateSrc) * 1000)
-  const message = src.substring(head.length).replace(/^ {4}/gm, '').trimEnd()
-  return { hash, author, date, message, tags }
+
+  const msgSrc = src.substring(head.length).replace(/^ {4}/gm, '').trimEnd()
+
+  return {
+    hash,
+    author,
+    date: new Date(Number(dateSrc) * 1000),
+    tags,
+    message: new CommitMessage(msgSrc)
+  }
 }

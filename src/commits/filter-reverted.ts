@@ -1,23 +1,24 @@
-import { Commit, Revert } from './parse-commit'
+import { Revert } from './commit-message'
+import { Commit } from './parse-commit'
 
 export function filterReverted(commits: Commit[]): Commit[] {
   if (!Array.isArray(commits)) throw new TypeError('Expected an array')
 
   const reverts = new Map<string, Revert>()
-  for (const commit of commits)
-    if (commit.revert) reverts.set(commit.hash, commit.revert)
+  for (const commit of commits) {
+    const rev = commit.message.revert
+    if (rev) reverts.set(commit.hash, rev)
+  }
   const remove: string[] = []
 
   for (const commit of commits) {
-    for (const [hash, revert] of reverts) {
-      // All revert fields must match
+    for (const [revert, { hash, header }] of reverts) {
       if (
-        Object.entries(revert).every(
-          ([key, value]) => value === commit[key as keyof Commit]
-        )
+        commit.hash.startsWith(hash) &&
+        commit.message.header.includes(header)
       ) {
         // Filter out both this commit and the one that reverted it
-        remove.push(commit.hash, hash)
+        remove.push(commit.hash, revert)
         break
       }
     }

@@ -3,6 +3,9 @@ import { filterReverted } from './filter-reverted'
 import { gitLog, gitRefExists } from './git'
 import { Commit, parseCommit } from './parse-commit'
 
+export { CommitMessage } from './commit-message'
+export { Commit, parseCommit }
+
 export async function getCurrentCommits(ctx: Context): Promise<Commit[]> {
   const tag = ctx.getTag()
   if (!(await gitRefExists(tag)))

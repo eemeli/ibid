@@ -676,15 +676,6 @@ describe('parser', function () {
         hash: '9bb4d6ccbe80b7704c6b7f53317ca8146bc103ca'
       })
     })
-
-    it('should parse revert even if a field is missing', function () {
-      msg = new CommitMessage(
-        'Revert ""\n\n' + 'This reverts commit .',
-        options
-      )
-
-      expect(msg.revert).to.eql({ header: null, hash: null })
-    })
   })
 
   describe('footer', function () {

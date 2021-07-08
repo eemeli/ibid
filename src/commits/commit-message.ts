@@ -4,6 +4,11 @@ import {
   Reference
 } from './commit-message-references'
 
+export interface Revert {
+  hash: string
+  header: string
+}
+
 export class CommitMessage {
   options: ReferenceOptions
 
@@ -75,9 +80,9 @@ export class CommitMessage {
     return getReferences(this.raw, this.options)
   }
 
-  get revert(): { header: string | null; hash: string | null } | null {
-    const re = /^(?:Revert|revert:)\s(?:""|"?([\s\S]+?)"?)\s*This reverts commit (\w*)\./i
-    const rm = this.raw.match(re)
-    return rm ? { header: rm[1] || null, hash: rm[2] || null } : null
+  get revert(): Revert | null {
+    const re = /^(?:Revert|revert:)\s(?:""|"?([\s\S]+?)"?)\s*This reverts commit (\w+)\./i
+    const [, header, hash] = this.raw.match(re) || []
+    return hash && header ? { hash, header } : null
   }
 }
