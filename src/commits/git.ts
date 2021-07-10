@@ -2,6 +2,11 @@ import { promisify } from 'util'
 import { execFile as execFileCb } from 'child_process'
 export const execFile = promisify(execFileCb)
 
+export async function gitAbbrevLength(): Promise<number> {
+  const { stdout } = await execFile('git', ['rev-parse', '--short', 'HEAD'])
+  return stdout.trim().length || 7
+}
+
 /** Source: https://git-scm.com/docs/git-check-ref-format */
 // eslint-disable-next-line no-control-regex
 const invalidGitRef = /[\x00-\x20:*?[\\\x7f]|\/[/.]|@{|^@$|^[/.]|[/.]$/

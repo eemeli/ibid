@@ -21,6 +21,7 @@ describe('new CommitMessage', () => {
     expect(result.references).to.eql([
       {
         raw: 'Closes #123',
+        ref: '#123',
         action: 'Closes',
         scope: null,
         prefix: '#',
@@ -28,6 +29,7 @@ describe('new CommitMessage', () => {
       },
       {
         raw: 'Closes #25',
+        ref: '#25',
         action: 'Closes',
         scope: null,
         prefix: '#',
@@ -35,6 +37,7 @@ describe('new CommitMessage', () => {
       },
       {
         raw: 'Fixes #33',
+        ref: '#33',
         action: 'Fixes',
         scope: null,
         prefix: '#',
@@ -109,24 +112,27 @@ describe('new CommitMessage', () => {
       expect(chunk.subject).to.equal('Allow custom separator')
       expect(chunk.references).to.eql([
         {
+          raw: 'Fix #123',
+          ref: '#123',
           action: 'Fix',
           scope: null,
           issue: '123',
-          raw: 'Fix #123',
           prefix: '#'
         },
         {
+          raw: '#25',
+          ref: '#25',
           action: null,
           scope: null,
           issue: '25',
-          raw: '#25',
           prefix: '#'
         },
         {
+          raw: 'fix #33',
+          ref: '#33',
           action: 'fix',
           scope: null,
           issue: '33',
-          raw: 'fix #33',
           prefix: '#'
         }
       ])
@@ -147,7 +153,14 @@ describe('new CommitMessage', () => {
       const result = new CommitMessage('Subject #1', await getContext())
 
       expect(result.references).to.eql([
-        { action: null, issue: '1', scope: null, prefix: '#', raw: '#1' }
+        {
+          raw: '#1',
+          ref: '#1',
+          action: null,
+          issue: '1',
+          scope: null,
+          prefix: '#'
+        }
       ])
     })
 
@@ -220,8 +233,7 @@ kills stevemao/conventional-commits-parser#1`
 
     expect(msg).to.deep.include({
       header: 'feat(scope): broadcast $destroy event on scope destruction',
-      body:
-        'perf testing shows that in chrome this change adds 5-15% overhead\n\nwhen destroying 10k nested scopes where each scope has a $destroy listener',
+      body: 'perf testing shows that in chrome this change adds 5-15% overhead\n\nwhen destroying 10k nested scopes where each scope has a $destroy listener',
       footer: [
         { token: 'BREAKING CHANGE', value: 'some breaking change' },
         {
@@ -239,17 +251,19 @@ kills stevemao/conventional-commits-parser#1`
     expect(msg.mentions).to.eql([])
     expect(msg.references).to.eql([
       {
+        raw: 'Kills #1',
+        ref: '#1',
         action: 'Kills',
         scope: null,
         issue: '1',
-        raw: 'Kills #1',
         prefix: '#'
       },
       {
+        raw: 'killed #25',
+        ref: '#25',
         action: 'killed',
         scope: null,
         issue: '25',
-        raw: 'killed #25',
         prefix: '#'
       }
     ])
@@ -268,8 +282,7 @@ kills stevemao/conventional-commits-parser#1`
 
     expect(msg).to.deep.include({
       header: 'feat(scope): broadcast $destroy event on scope destruction',
-      body:
-        'perf testing shows that in chrome this change adds 5-15% overhead\n\n when destroying 10k nested scopes where each scope has a $destroy listener',
+      body: 'perf testing shows that in chrome this change adds 5-15% overhead\n\n when destroying 10k nested scopes where each scope has a $destroy listener',
       footer: [
         { token: 'BREAKING CHANGE', value: 'some breaking change' },
         {
@@ -284,10 +297,11 @@ kills stevemao/conventional-commits-parser#1`
     })
     expect(msg.references).to.eql([
       {
+        raw: 'Kills   #1',
+        ref: '#1',
         action: 'Kills',
         scope: null,
         issue: '1',
-        raw: 'Kills   #1',
         prefix: '#'
       }
     ])
@@ -347,10 +361,11 @@ kills stevemao/conventional-commits-parser#1`
       const msg = new CommitMessage('handled angular/angular.js#1', ctx)
       expect(msg.references).to.eql([
         {
+          raw: 'handled angular/angular.js#1',
+          ref: 'angular/angular.js#1',
           action: 'handled',
           scope: 'angular/angular.js',
           issue: '1',
-          raw: 'handled angular/angular.js#1',
           prefix: '#'
         }
       ])
@@ -360,10 +375,11 @@ kills stevemao/conventional-commits-parser#1`
       const msg = new CommitMessage('handled angular.js#1', ctx)
       expect(msg.references).to.eql([
         {
+          raw: 'handled angular.js#1',
+          ref: 'angular.js#1',
           action: 'handled',
           scope: 'angular.js',
           issue: '1',
-          raw: 'handled angular.js#1',
           prefix: '#'
         }
       ])
@@ -373,10 +389,11 @@ kills stevemao/conventional-commits-parser#1`
       const msg = new CommitMessage('handled gh-1', ctx)
       expect(msg.references).to.eql([
         {
+          raw: 'handled gh-1',
+          ref: 'gh-1',
           action: 'handled',
           scope: null,
           issue: '1',
-          raw: 'handled gh-1',
           prefix: 'gh-'
         }
       ])
@@ -396,10 +413,11 @@ kills stevemao/conventional-commits-parser#1`
       const msg = new CommitMessage('This is gh-1', ctx)
       expect(msg.references).to.eql([
         {
+          raw: 'gh-1',
+          ref: 'gh-1',
           action: null,
           scope: null,
           issue: '1',
-          raw: 'gh-1',
           prefix: 'gh-'
         }
       ])
@@ -502,59 +520,67 @@ kills stevemao/conventional-commits-parser#1`
     it('should parse references', function () {
       expect(msg.references).to.eql([
         {
+          raw: 'Kills #1',
+          ref: '#1',
           action: 'Kills',
           scope: null,
           issue: '1',
-          raw: 'Kills #1',
           prefix: '#'
         },
         {
+          raw: '#123',
+          ref: '#123',
           action: null,
           scope: null,
           issue: '123',
-          raw: '#123',
           prefix: '#'
         },
         {
+          raw: 'killed #25',
+          ref: '#25',
           action: 'killed',
           scope: null,
           issue: '25',
-          raw: 'killed #25',
           prefix: '#'
         },
         {
+          raw: 'handle #33',
+          ref: '#33',
           action: 'handle',
           scope: null,
           issue: '33',
-          raw: 'handle #33',
           prefix: '#'
         },
         {
+          raw: '#100',
+          ref: '#100',
           action: null,
           scope: null,
           issue: '100',
-          raw: '#100',
           prefix: '#'
         },
         {
+          raw: 'Handled #3',
+          ref: '#3',
           action: 'Handled',
           scope: null,
           issue: '3',
-          raw: 'Handled #3',
           prefix: '#'
         },
         {
+          raw: 'kills repo#77',
+          ref: 'repo#77',
           action: 'kills',
           scope: 'repo',
           issue: '77',
-          raw: 'kills repo#77',
           prefix: '#'
         },
         {
+          raw: 'kills stevemao/conventional-commits-parser#1',
+          ref: 'stevemao/conventional-commits-parser#1',
           action: 'kills',
           scope: 'stevemao/conventional-commits-parser',
           issue: '1',
-          raw: 'kills stevemao/conventional-commits-parser#1',
           prefix: '#'
         }
       ])
@@ -583,24 +609,54 @@ kills stevemao/conventional-commits-parser#1`
       )
 
       expect(msg.references).to.eql([
-        { action: null, scope: null, issue: '1', raw: '#1', prefix: '#' },
         {
+          raw: '#1',
+          ref: '#1',
+          action: null,
+          scope: null,
+          issue: '1',
+          prefix: '#'
+        },
+        {
+          raw: 'gh-123',
+          ref: 'gh-123',
           action: null,
           scope: null,
           issue: '123',
-          raw: 'gh-123',
           prefix: 'gh-'
         },
-        { action: null, scope: null, issue: '25', raw: '#25', prefix: '#' },
-        { action: null, scope: null, issue: '33', raw: '#33', prefix: '#' },
         {
+          raw: '#25',
+          ref: '#25',
+          action: null,
+          scope: null,
+          issue: '25',
+          prefix: '#'
+        },
+        {
+          raw: '#33',
+          ref: '#33',
+          action: null,
+          scope: null,
+          issue: '33',
+          prefix: '#'
+        },
+        {
+          raw: 'gh-100',
+          ref: 'gh-100',
           action: null,
           scope: null,
           issue: '100',
-          raw: 'gh-100',
           prefix: 'gh-'
         },
-        { action: null, scope: null, issue: '3', raw: '#3', prefix: '#' }
+        {
+          raw: '#3',
+          ref: '#3',
+          action: null,
+          scope: null,
+          issue: '3',
+          prefix: '#'
+        }
       ])
     })
 
@@ -639,13 +695,14 @@ kills stevemao/conventional-commits-parser#1`
       ])
       expect(msg.references).to.eql([
         {
+          raw: 'Kills #1',
+          ref: '#1',
           action: 'Kills',
           scope: null,
           issue: '1',
-          raw: 'Kills #1',
           prefix: '#'
         },
-        { action: null, scope: null, issue: '123', raw: '#123', prefix: '#' }
+        { raw: '#123', ref: '#123', action: null, scope: null, issue: '123', prefix: '#' }
       ])
       expect(msg.breaking).to.equal('some breaking change')
     })
@@ -742,47 +799,57 @@ kills stevemao/conventional-commits-parser#1`
 
   describe('references', function () {
     it('should match a simple header reference', async function () {
-      const { references } = new CommitMessage('closes #1\n', await getContext())
+      const { references } = new CommitMessage(
+        'closes #1\n',
+        await getContext()
+      )
       expect(references.length).to.equal(1)
       expect(references[0]).to.include({ action: 'closes', issue: '1' })
     })
 
     it('should be case insensitive', async function () {
-      const { references } = new CommitMessage('Closes #1\n', await getContext())
+      const { references } = new CommitMessage(
+        'Closes #1\n',
+        await getContext()
+      )
       expect(references.length).to.equal(1)
       expect(references[0]).to.include({ action: 'Closes', issue: '1' })
     })
 
     it('should not match if keywords does not present', async function () {
-      const { references } = new CommitMessage('Closer #1\n', await getContext())
+      const { references } = new CommitMessage(
+        'Closer #1\n',
+        await getContext()
+      )
       expect(references.length).to.equal(1)
       expect(references[0]).to.include({ action: null, issue: '1' })
     })
 
     it('should match multiple references', async function () {
       const { references } = new CommitMessage(
-        'Closes #1 resolves #2; closes bug #4', await getContext()
+        'Closes #1 resolves #2; closes bug #4',
+        await getContext()
       )
-      expect(
-        references.map(ref => `${ref.action} ${ref.issue}`)
-      ).to.deep.equal(['Closes 1', 'resolves 2', 'null 4'])
+      expect(references.map(ref => `${ref.action} ${ref.issue}`)).to.deep.equal(
+        ['Closes 1', 'resolves 2', 'null 4']
+      )
     })
 
     it('should match references with mixed content, like JIRA tickets', async function () {
       const { references } = new CommitMessage(
-        'Closes #JIRA-123 fixes #MY-OTHER-PROJECT-123; closes bug #4', await getContext()
+        'Closes #JIRA-123 fixes #MY-OTHER-PROJECT-123; closes bug #4',
+        await getContext()
       )
-      expect(
-        references.map(ref => `${ref.action} ${ref.issue}`)
-      ).to.deep.equal([
-        'Closes JIRA-123',
-        'fixes MY-OTHER-PROJECT-123',
-        'null 4'
-      ])
+      expect(references.map(ref => `${ref.action} ${ref.issue}`)).to.deep.equal(
+        ['Closes JIRA-123', 'fixes MY-OTHER-PROJECT-123', 'null 4']
+      )
     })
 
     it('should reference an issue without an action', async function () {
-      const { references } = new CommitMessage('gh-1, prefix-3, Closes gh-6', await getContext())
+      const { references } = new CommitMessage(
+        'gh-1, prefix-3, Closes gh-6',
+        await getContext()
+      )
       expect(references.length).to.equal(0)
     })
 
@@ -807,7 +874,8 @@ kills stevemao/conventional-commits-parser#1`
 
     it('should reference an issue in parenthesis', async function () {
       const { references } = new CommitMessage(
-        '#27), pinned shelljs to version that works with nyc (#30)', await getContext()
+        '#27), pinned shelljs to version that works with nyc (#30)',
+        await getContext()
       )
       expect(references.length).to.equal(2)
       expect(references[0]).to.include({ issue: '27', prefix: '#' })
@@ -831,12 +899,18 @@ kills stevemao/conventional-commits-parser#1`
     })
 
     it('should not match MY-€#%#&-123 mixed symbol reference parts', async function () {
-      const { references } = new CommitMessage('#MY-€#%#&-123', await getContext())
+      const { references } = new CommitMessage(
+        '#MY-€#%#&-123',
+        await getContext()
+      )
       expect(references.length).to.equal(0)
     })
 
     it('should match reference parts with multiple references', async function () {
-      const { references } = new CommitMessage('#1 #2, something #3; repo#4', await getContext())
+      const { references } = new CommitMessage(
+        '#1 #2, something #3; repo#4',
+        await getContext()
+      )
       expect(references.length).to.equal(4)
       for (let i = 0; i < 4; ++i)
         expect(references[i]).to.include({

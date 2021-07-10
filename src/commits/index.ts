@@ -4,6 +4,7 @@ import { gitLog, gitRefExists } from './git'
 import { Commit, parseCommit } from './parse-commit'
 
 export { CommitMessage } from './commit-message'
+export { Reference } from './commit-message-references'
 export { Commit, parseCommit }
 
 export async function getCurrentCommits(ctx: Context): Promise<Commit[]> {

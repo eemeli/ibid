@@ -2,6 +2,7 @@ import { HostContext } from '../config/host-data'
 
 export interface Reference {
   raw: string
+  ref: string
   action: string | null
   scope: string | null
   prefix: string
@@ -30,16 +31,15 @@ export function getReferences(
   src: string,
   hostContext: HostContext
 ): Reference[] {
-  const re = getReferencesRegexp(hostContext)
-  const refs: Reference[] = []
-  for (const [raw, action, scope, prefix, issue] of src.matchAll(re)) {
-    refs.push({
+  return Array.from(
+    src.matchAll(getReferencesRegexp(hostContext)),
+    ([raw, action, scope, prefix, issue]) => ({
       raw,
+      ref: (scope || '') + prefix + issue,
       action: action || null,
       scope: scope || null,
       prefix,
       issue
     })
-  }
-  return refs
+  )
 }

@@ -74,12 +74,12 @@ export class CommitMessage {
   }
 
   get references(): Reference[] {
-    if (!this.context) throw new Error('Context required for references')
-    return getReferences(this.raw, this.context.hostContext)
+    return this.context ? getReferences(this.raw, this.context.hostContext) : []
   }
 
   get revert(): Revert | null {
-    const re = /^(?:Revert|revert:)\s(?:""|"?([\s\S]+?)"?)\s*This reverts commit (\w+)\./i
+    const re =
+      /^(?:Revert|revert:)\s(?:""|"?([\s\S]+?)"?)\s*This reverts commit (\w+)\./i
     const [, header, hash] = this.raw.match(re) || []
     return hash && header ? { hash, header } : null
   }
