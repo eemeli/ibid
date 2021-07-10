@@ -1,11 +1,14 @@
 export interface HostContext {
+  commitPath: string
+  issuePath: string
   issuePrefixes: string[]
   referenceActions: string[]
-  writer: { issue: string; commit: string }
 }
 
 export const hostData: Record<string, HostContext> = {
   _default: {
+    commitPath: 'commit',
+    issuePath: 'issues',
     issuePrefixes: ['#'],
     referenceActions: [
       'close',
@@ -17,11 +20,12 @@ export const hostData: Record<string, HostContext> = {
       'resolve',
       'resolves',
       'resolved'
-    ],
-    writer: { issue: 'issues', commit: 'commit' }
+    ]
   },
 
   bitbucket: {
+    commitPath: 'commits',
+    issuePath: 'issue',
     issuePrefixes: ['#'],
     referenceActions: [
       'close',
@@ -36,11 +40,12 @@ export const hostData: Record<string, HostContext> = {
       'resolves',
       'resolved',
       'resolving'
-    ],
-    writer: { issue: 'issue', commit: 'commits' }
+    ]
   },
 
   github: {
+    commitPath: 'commit',
+    issuePath: 'issues',
     issuePrefixes: ['#', 'gh-'],
     referenceActions: [
       'close',
@@ -52,11 +57,12 @@ export const hostData: Record<string, HostContext> = {
       'resolve',
       'resolves',
       'resolved'
-    ],
-    writer: { issue: 'issues', commit: 'commit' }
+    ]
   },
 
   gitlab: {
+    commitPath: 'commit',
+    issuePath: 'issues',
     issuePrefixes: ['#'],
     referenceActions: [
       'close',
@@ -67,7 +73,6 @@ export const hostData: Record<string, HostContext> = {
       'fixes',
       'fixed',
       'fixing'
-    ],
-    writer: { issue: 'issues', commit: 'commit' }
+    ]
   }
 }

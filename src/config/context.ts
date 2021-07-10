@@ -3,19 +3,12 @@ import { fromUrl } from 'hosted-git-info'
 import normalize, { Package } from 'normalize-package-data'
 import { resolve } from 'path'
 import { HostContext, hostData } from './host-data'
+import { Config, getConfig } from './config'
 
 // 'fs/promises' is only available from Node.js 14.0.0
 const { readFile } = promises
 
 export { HostContext, Package }
-
-export interface Config {
-  context?: (context: Context) => Context | Promise<Context>
-  hostContext?: Partial<HostContext> | null
-  includeMergeCommits?: boolean
-  includeRevertedCommits?: boolean
-  tag?: (name: string | null, version: string) => string
-}
 
 export interface Context {
   config: Required<Config>
@@ -23,7 +16,10 @@ export interface Context {
   package: Package | null
   get hostContext(): HostContext
   get hostInfo(): {
+    browse(): string
+    project: string
     type: 'bitbucket' | 'gist' | 'github' | 'gitlab' | null
+    user: string
   } | null
   get tag(): string
 }
@@ -49,16 +45,7 @@ export async function getContext(
     hostInfo?: Context['hostInfo']
   } = {}
   const context: Context = {
-    config: Object.assign(
-      {
-        context: (ctx: Context) => ctx,
-        hostContext: null,
-        includeMergeCommits: false,
-        includeRevertedCommits: false,
-        tag: (name: string | null, version: string) => `${name}@${version}`
-      },
-      config
-    ),
+    config: await getConfig(config),
     cwd,
     package: typeof cwd === 'string' ? await getPackage(cwd) : null,
 
