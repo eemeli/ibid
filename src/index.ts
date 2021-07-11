@@ -16,15 +16,17 @@ export {
 export { changelogFormatter, Config, getRequiredConfig } from './config/config'
 export { Context, createContext, HostContext, Package } from './config/context'
 
-export async function getCurrentUpdate(
-  path = '.',
-  config: Config = {}
-): Promise<{
+export interface PackageUpdate {
   context: Context
   commits: Commit[]
   bump: ReturnType<typeof recommendBump>
   version: string | null
-}> {
+}
+
+export async function getCurrentUpdate(
+  path = '.',
+  config: Config = {}
+): Promise<PackageUpdate> {
   const cwd = resolve(path)
   const context = await createContext(config, cwd)
   if (!context.package) throw new Error(`Failed to read package data in ${cwd}`)
