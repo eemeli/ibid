@@ -65,7 +65,9 @@ function linkReference(ctx: Context, ref: Reference) {
   return String(url)
 }
 
-export const getConfig = async (config: Config): Promise<Required<Config>> =>
+export const getRequiredConfig = async (
+  config: Config
+): Promise<Required<Config>> =>
   Object.assign(
     {
       changelogEntryPattern: /^##/m,

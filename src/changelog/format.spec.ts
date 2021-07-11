@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import { beforeEach, describe, it } from 'mocha'
 import { Commit, CommitMessage } from '../commits'
-import { Context, getContext } from '../config/context'
+import { Context, createContext } from '../config/context'
 
 import { formatChangelog } from './format'
 
@@ -10,7 +10,7 @@ describe('formatChangelog', () => {
   const dateStr = date.toISOString().substring(0, 10)
 
   let ctx: Context
-  beforeEach(async () => (ctx = await getContext()))
+  beforeEach(async () => (ctx = await createContext()))
 
   const mockCommit = (hash: string, msg: string): Commit => ({
     hash,

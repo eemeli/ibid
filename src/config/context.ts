@@ -3,7 +3,7 @@ import { fromUrl } from 'hosted-git-info'
 import normalize, { Package } from 'normalize-package-data'
 import { resolve } from 'path'
 import { HostContext, hostData } from './host-data'
-import { Config, getConfig } from './config'
+import { Config, getRequiredConfig } from './config'
 
 // 'fs/promises' is only available from Node.js 14.0.0
 const { readFile } = promises
@@ -36,7 +36,7 @@ async function getPackage(cwd: string) {
   }
 }
 
-export async function getContext(
+export async function createContext(
   config: Config = {},
   cwd: string | null = null
 ): Promise<Context> {
@@ -45,7 +45,7 @@ export async function getContext(
     hostInfo?: Context['hostInfo']
   } = {}
   const context: Context = {
-    config: await getConfig(config),
+    config: await getRequiredConfig(config),
     cwd,
     package: typeof cwd === 'string' ? await getPackage(cwd) : null,
 

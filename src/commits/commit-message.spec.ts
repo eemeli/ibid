@@ -1,6 +1,6 @@
 import { expect } from 'chai'
 import { beforeEach, describe, it } from 'mocha'
-import { getContext } from '../config/context'
+import { createContext } from '../config/context'
 
 import { CommitMessage } from './commit-message'
 
@@ -10,7 +10,7 @@ describe('new CommitMessage', () => {
       'feat(ng-list): Allow custom separator\n\n' +
       'bla bla bla\n\n' +
       'Closes #123\nCloses #25\nFixes #33\n'
-    const result = new CommitMessage(commit, await getContext())
+    const result = new CommitMessage(commit, await createContext())
 
     expect(result.header).to.equal('feat(ng-list): Allow custom separator')
     expect(result.footer).to.eql([
@@ -101,7 +101,7 @@ describe('new CommitMessage', () => {
           'BREAKING CHANGE: some breaking changes\n'
       ]
 
-      const ctx = await getContext(
+      const ctx = await createContext(
         { hostContext: { issuePrefixes: ['#'], referenceActions: ['fix'] } },
         null
       )
@@ -150,7 +150,7 @@ describe('new CommitMessage', () => {
 
   describe('header', () => {
     it('should parse references from header', async () => {
-      const result = new CommitMessage('Subject #1', await getContext())
+      const result = new CommitMessage('Subject #1', await createContext())
 
       expect(result.references).to.eql([
         {
@@ -186,7 +186,7 @@ describe('errors', () => {
 })
 
 describe('parser', async function () {
-  const ctx = await getContext(
+  const ctx = await createContext(
     {
       hostContext: {
         issuePrefixes: ['#', 'gh-'],
@@ -400,7 +400,7 @@ kills stevemao/conventional-commits-parser#1`
     })
 
     it('should reference an issue without an action', async function () {
-      const ctx = await getContext(
+      const ctx = await createContext(
         {
           hostContext: {
             issuePrefixes: ['#', 'gh-'],
@@ -587,7 +587,7 @@ kills stevemao/conventional-commits-parser#1`
     })
 
     it('should reference an issue without an action', async function () {
-      const ctx = await getContext(
+      const ctx = await createContext(
         {
           hostContext: {
             issuePrefixes: ['#', 'gh-'],
@@ -808,7 +808,7 @@ kills stevemao/conventional-commits-parser#1`
     it('should match a simple header reference', async function () {
       const { references } = new CommitMessage(
         'closes #1\n',
-        await getContext()
+        await createContext()
       )
       expect(references.length).to.equal(1)
       expect(references[0]).to.include({ action: 'closes', issue: '1' })
@@ -817,7 +817,7 @@ kills stevemao/conventional-commits-parser#1`
     it('should be case insensitive', async function () {
       const { references } = new CommitMessage(
         'Closes #1\n',
-        await getContext()
+        await createContext()
       )
       expect(references.length).to.equal(1)
       expect(references[0]).to.include({ action: 'Closes', issue: '1' })
@@ -826,7 +826,7 @@ kills stevemao/conventional-commits-parser#1`
     it('should not match if keywords does not present', async function () {
       const { references } = new CommitMessage(
         'Closer #1\n',
-        await getContext()
+        await createContext()
       )
       expect(references.length).to.equal(1)
       expect(references[0]).to.include({ action: null, issue: '1' })
@@ -835,7 +835,7 @@ kills stevemao/conventional-commits-parser#1`
     it('should match multiple references', async function () {
       const { references } = new CommitMessage(
         'Closes #1 resolves #2; closes bug #4',
-        await getContext()
+        await createContext()
       )
       expect(references.map(ref => `${ref.action} ${ref.issue}`)).to.deep.equal(
         ['Closes 1', 'resolves 2', 'null 4']
@@ -845,7 +845,7 @@ kills stevemao/conventional-commits-parser#1`
     it('should match references with mixed content, like JIRA tickets', async function () {
       const { references } = new CommitMessage(
         'Closes #JIRA-123 fixes #MY-OTHER-PROJECT-123; closes bug #4',
-        await getContext()
+        await createContext()
       )
       expect(references.map(ref => `${ref.action} ${ref.issue}`)).to.deep.equal(
         ['Closes JIRA-123', 'fixes MY-OTHER-PROJECT-123', 'null 4']
@@ -855,14 +855,17 @@ kills stevemao/conventional-commits-parser#1`
     it('should reference an issue without an action', async function () {
       const { references } = new CommitMessage(
         'gh-1, prefix-3, Closes gh-6',
-        await getContext()
+        await createContext()
       )
       expect(references.length).to.equal(0)
     })
 
     it('should accept custom referenceActions', async function () {
       const referenceActions = ['Closes', 'amends', 'fixes']
-      const ctx = await getContext({ hostContext: { referenceActions } }, null)
+      const ctx = await createContext(
+        { hostContext: { referenceActions } },
+        null
+      )
       const msg = new CommitMessage('closes #1, amends #2, Fixes #3', ctx)
       expect(msg.references.map(ref => ref.raw)).to.eql([
         'closes #1',
@@ -874,7 +877,7 @@ kills stevemao/conventional-commits-parser#1`
 
   describe('referenceParts', function () {
     it('should match simple reference parts', async function () {
-      const { references } = new CommitMessage('#1', await getContext())
+      const { references } = new CommitMessage('#1', await createContext())
       expect(references.length).to.equal(1)
       expect(references[0]).to.include({ issue: '1', prefix: '#' })
     })
@@ -882,7 +885,7 @@ kills stevemao/conventional-commits-parser#1`
     it('should reference an issue in parenthesis', async function () {
       const { references } = new CommitMessage(
         '#27), pinned shelljs to version that works with nyc (#30)',
-        await getContext()
+        await createContext()
       )
       expect(references.length).to.equal(2)
       expect(references[0]).to.include({ issue: '27', prefix: '#' })
@@ -890,7 +893,7 @@ kills stevemao/conventional-commits-parser#1`
     })
 
     it('should match reference parts with a repository', async function () {
-      const { references } = new CommitMessage('repo#1', await getContext())
+      const { references } = new CommitMessage('repo#1', await createContext())
       expect(references.length).to.equal(1)
       expect(references[0]).to.include({
         issue: '1',
@@ -900,7 +903,10 @@ kills stevemao/conventional-commits-parser#1`
     })
 
     it('should match JIRA-123 like reference parts', async function () {
-      const { references } = new CommitMessage('#JIRA-123', await getContext())
+      const { references } = new CommitMessage(
+        '#JIRA-123',
+        await createContext()
+      )
       expect(references.length).to.equal(1)
       expect(references[0]).to.include({ issue: 'JIRA-123', prefix: '#' })
     })
@@ -908,7 +914,7 @@ kills stevemao/conventional-commits-parser#1`
     it('should not match MY-€#%#&-123 mixed symbol reference parts', async function () {
       const { references } = new CommitMessage(
         '#MY-€#%#&-123',
-        await getContext()
+        await createContext()
       )
       expect(references.length).to.equal(0)
     })
@@ -916,7 +922,7 @@ kills stevemao/conventional-commits-parser#1`
     it('should match reference parts with multiple references', async function () {
       const { references } = new CommitMessage(
         '#1 #2, something #3; repo#4',
-        await getContext()
+        await createContext()
       )
       expect(references.length).to.equal(4)
       for (let i = 0; i < 4; ++i)
@@ -928,7 +934,7 @@ kills stevemao/conventional-commits-parser#1`
 
     it('should match issues with customized prefix', async function () {
       const issuePrefixes = ['gh-', 'other-']
-      const ctx = await getContext({ hostContext: { issuePrefixes } }, null)
+      const ctx = await createContext({ hostContext: { issuePrefixes } }, null)
       const { references } = new CommitMessage(
         'closes gh-1, resolves #2, fixes other-3',
         ctx
@@ -948,7 +954,7 @@ kills stevemao/conventional-commits-parser#1`
 
     it('should be case sensitive', async function () {
       const issuePrefixes = ['GH-']
-      const ctx = await getContext({ hostContext: { issuePrefixes } }, null)
+      const ctx = await createContext({ hostContext: { issuePrefixes } }, null)
       const { references } = new CommitMessage(
         'closes gh-1, resolves GH-2, fixes other-3',
         ctx
