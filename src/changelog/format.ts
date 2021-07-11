@@ -18,14 +18,8 @@ const titles: Record<string, string> = {
   other: 'Other Changes'
 }
 
-export const format = {
-  changelog(ctx: Context, version: string | null, commits: Commit[]): string {
-    const head = this.header(ctx, version, null)
-    const body = this.changes(ctx, commits)
-    return body ? `${head}\n${body}` : head
-  },
-
-  header(ctx: Context, version: string | null, title: string | null): string {
+export const formatChangelog = {
+  header(ctx: Context, version: string | null, title?: string | null): string {
     const { linkCompare } = ctx.config
     const prev = ctx.package?.version
     const url =

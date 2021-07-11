@@ -1,18 +1,21 @@
 import { URL } from 'url'
+import type { formatChangelog } from '../changelog/format'
 import type { Commit, Reference } from '../commits'
 import { gitAbbrevLength } from '../commits/git'
-import type { format } from '../changelog/format'
 import type { Context } from './context'
 import type { HostContext } from './host-data'
 
 export type changelogFormatter = (
   ctx: Context,
+  fmt: typeof formatChangelog,
   version: string | null,
   commits: Commit[]
 ) => string | Promise<string>
 
 export interface Config {
-  changelogFormat?: (fmt: typeof format) => changelogFormatter
+  changelogEntryPattern?: RegExp
+  changelogFormat?: changelogFormatter
+  changelogIntro?: string
   changelogSections?: string[]
   changelogTitles?: Record<string, string>
   context?: (context: Context) => Context | Promise<Context>
@@ -26,6 +29,16 @@ export interface Config {
   linkReference?: ((context: Context, ref: Reference) => string | null) | false
   shortHashLength?: number
   tag?: (name: string | null, version: string) => string
+}
+
+function changelogFormat(
+  ctx: Context,
+  fmt: typeof formatChangelog,
+  version: string | null,
+  commits: Commit[]
+) {
+  const body = fmt.changes(ctx, commits)
+  return body ? `${fmt.header(ctx, version)}\n${body}` : ''
 }
 
 function linkCommit(ctx: Context, hash: string) {
@@ -55,7 +68,9 @@ function linkReference(ctx: Context, ref: Reference) {
 export const getConfig = async (config: Config): Promise<Required<Config>> =>
   Object.assign(
     {
-      changelogFormat: (fmt: typeof format) => fmt.changelog.bind(fmt),
+      changelogEntryPattern: /^##/m,
+      changelogFormat,
+      changelogIntro: `# Changelog\n`,
       changelogSections: ['feat', 'fix', 'perf', 'revert'],
       changelogTitles: {},
       context: (ctx: Context) => ctx,

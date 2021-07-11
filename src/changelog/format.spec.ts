@@ -3,9 +3,9 @@ import { beforeEach, describe, it } from 'mocha'
 import { Commit, CommitMessage } from '../commits'
 import { Context, getContext } from '../config/context'
 
-import { format } from './format'
+import { formatChangelog } from './format'
 
-describe('format.changelog', () => {
+describe('formatChangelog', () => {
   const date = new Date()
   const dateStr = date.toISOString().substring(0, 10)
 
@@ -39,23 +39,57 @@ describe('format.changelog', () => {
     )
   ]
 
-  it('stringifies empty commit list as bare title', () => {
-    expect(format.changelog(ctx, '1.2.3', [])).to.equal(
-      `## 1.2.3 (${dateStr})\n`
-    )
+  describe('header', () => {
+    it('stringifies only version', () => {
+      expect(formatChangelog.header(ctx, '1.2.3')).to.equal(`## 1.2.3 (${dateStr})\n`)
+    })
+
+    it('stringifies version with title', () => {
+      expect(formatChangelog.header(ctx, '1.2.3', 'title')).to.equal(
+        `## 1.2.3 "title" (${dateStr})\n`
+      )
+    })
+
+    it('stringifies only title', () => {
+      expect(formatChangelog.header(ctx, null, 'title')).to.equal(
+        `## title (${dateStr})\n`
+      )
+    })
+
+    it('uses "unreleased" as default title', () => {
+      expect(formatChangelog.header(ctx, null)).to.equal(
+        `## Unreleased Changes (${dateStr})\n`
+      )
+    })
+
+    it('linkifies version', () => {
+      ctx.package = {
+        name: '@eemeli/version',
+        version: '1.0.0',
+        repository: { type: 'git', url: 'https://github.com/eemeli/version' },
+        readme: '',
+        _id: ''
+      }
+      expect(formatChangelog.header(ctx, '1.2.3')).to.equal(
+        `## [https://github.com/eemeli/version/compare/1.0.0...1.2.3](1.2.3) (${dateStr})\n`
+      )
+    })
+
+    it('accepts config options', () => {
+      ctx.config.changelogTitles = { UNRELEASED: 'unreleased-title' }
+      expect(formatChangelog.header(ctx, null)).to.equal(
+        `## unreleased-title (${dateStr})\n`
+      )
+    })
   })
 
-  it('uses "unreleased" as default title', () => {
-    expect(format.changelog(ctx, null, [])).to.equal(
-      `## Unreleased Changes (${dateStr})\n`
-    )
-  })
+  describe('changes', () => {
+    it('stringifies empty commit list as empty string', () => {
+      expect(formatChangelog.changes(ctx, [])).to.equal('')
+    })
 
-  it('stringifies various commits', () => {
-    expect(format.changelog(ctx, '1.2.3', getCommits())).to
-      .equal(`## 1.2.3 (${dateStr})
-
-### ⚠ Breaking Changes
+    it('stringifies various commits', () => {
+      expect(formatChangelog.changes(ctx, getCommits())).to.equal(`### ⚠ Breaking Changes
 
 * some breaking change
 
@@ -71,20 +105,17 @@ describe('format.changelog', () => {
 
 * **template:** tweak (2064a93)
 `)
-  })
+    })
 
-  it('linkifies various commits', () => {
-    ctx.package = {
-      name: '@eemeli/version',
-      version: '1.0.0',
-      repository: { type: 'git', url: 'https://github.com/eemeli/version' },
-      readme: '',
-      _id: ''
-    }
-    expect(format.changelog(ctx, '1.2.3', getCommits())).to
-      .equal(`## [https://github.com/eemeli/version/compare/1.0.0...1.2.3](1.2.3) (${dateStr})
-
-### ⚠ Breaking Changes
+    it('linkifies various commits', () => {
+      ctx.package = {
+        name: '@eemeli/version',
+        version: '1.0.0',
+        repository: { type: 'git', url: 'https://github.com/eemeli/version' },
+        readme: '',
+        _id: ''
+      }
+      expect(formatChangelog.changes(ctx, getCommits())).to.equal(`### ⚠ Breaking Changes
 
 * some breaking change
 
@@ -100,20 +131,16 @@ describe('format.changelog', () => {
 
 * **template:** tweak ([https://github.com/eemeli/version/commit/2064a9346c550c9b5dbd17eee7f0b7dd2cde9cf7](2064a93))
 `)
-  })
+    })
 
-  it('accepts config options', () => {
-    ctx.config.changelogSections = ['perf', 'feat']
-    ctx.config.changelogTitles = {
-      BREAKING: 'breaking-title',
-      UNRELEASED: 'unreleased-title',
-      feat: 'feat-title',
-      perf: 'perf-title'
-    }
-    expect(format.changelog(ctx, null, getCommits())).to
-      .equal(`## unreleased-title (${dateStr})
-
-### breaking-title
+    it('accepts config options', () => {
+      ctx.config.changelogSections = ['perf', 'feat']
+      ctx.config.changelogTitles = {
+        BREAKING: 'breaking-title',
+        feat: 'feat-title',
+        perf: 'perf-title'
+      }
+      expect(formatChangelog.changes(ctx, getCommits())).to.equal(`### breaking-title
 
 * some breaking change
 
@@ -125,5 +152,6 @@ describe('format.changelog', () => {
 
 * **scope:** broadcast $destroy event on scope destruction (9b1aff9), closes #1, closes #2, closes #3
 `)
+    })
   })
 })
