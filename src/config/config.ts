@@ -29,7 +29,7 @@ export interface Config {
     | false
   linkReference?: ((context: Context, ref: Reference) => string | null) | false
   shortHashLength?: number
-  tag?: (name: string | null, version: string) => string
+  tag?: (context: Context, version?: string | null) => string
 }
 
 function changelogFormat(
@@ -66,6 +66,13 @@ function linkReference(ctx: Context, ref: Reference) {
   return String(url)
 }
 
+function tag(ctx: Context, version?: string | null) {
+  if (!version) version = ctx.package?.version || '[NO_VERSION]'
+  return ctx.package && !ctx.gitRoot
+    ? `${ctx.package.name}@${version}`
+    : `v${version}`
+}
+
 export const getRequiredConfig = async (
   config: Config
 ): Promise<Required<Config>> =>
@@ -85,7 +92,7 @@ export const getRequiredConfig = async (
       linkCompare,
       linkReference,
       shortHashLength: await gitAbbrevLength(),
-      tag: (name: string | null, version: string) => `${name}@${version}`
+      tag
     },
     config
   )

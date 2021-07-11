@@ -1,6 +1,8 @@
-import { promisify } from 'util'
 import { execFile as execFileCb } from 'child_process'
-export const execFile = promisify(execFileCb)
+import { resolve } from 'path'
+import { promisify } from 'util'
+
+const execFile = promisify(execFileCb)
 
 export async function gitAbbrevLength(): Promise<number> {
   const { stdout } = await execFile('git', ['rev-parse', '--short', 'HEAD'])
@@ -18,9 +20,18 @@ export function checkRefShape(ref: string | null): void {
 
 export async function gitRefExists(ref: string): Promise<boolean> {
   if (!ref || invalidGitRef.test(ref)) return false
-  return execFile('git', ['rev-parse', ref])
+  return execFile('git', ['rev-parse', '--verify', ref])
     .then(() => true)
     .catch(() => false)
+}
+
+export async function isGitRoot(path: string): Promise<boolean> {
+  try {
+    const { stdout } = await execFile('git', ['rev-parse', '--show-toplevel'])
+    return stdout.trim() === resolve(path)
+  } catch (_) {
+    return false
+  }
 }
 
 export async function gitLog(

@@ -4,6 +4,7 @@ import normalize, { Package } from 'normalize-package-data'
 import { resolve } from 'path'
 import { HostContext, hostData } from './host-data'
 import { Config, getRequiredConfig } from './config'
+import { isGitRoot } from '../commits/git'
 
 // 'fs/promises' is only available from Node.js 14.0.0
 const { readFile } = promises
@@ -13,6 +14,7 @@ export { HostContext, Package }
 export interface Context {
   config: Required<Config>
   cwd: string | null
+  gitRoot: boolean
   package: Package | null
   get hostContext(): HostContext
   get hostInfo(): {
@@ -21,7 +23,6 @@ export interface Context {
     type: 'bitbucket' | 'gist' | 'github' | 'gitlab' | null
     user: string
   } | null
-  get tag(): string
 }
 
 async function getPackage(cwd: string) {
@@ -47,6 +48,7 @@ export async function createContext(
   const context: Context = {
     config: await getRequiredConfig(config),
     cwd,
+    gitRoot: await isGitRoot(cwd || ''),
     package: typeof cwd === 'string' ? await getPackage(cwd) : null,
 
     get hostContext() {
@@ -65,15 +67,6 @@ export async function createContext(
         this.package && this.package.repository
           ? fromUrl(this.package.repository.url) || null
           : null)
-    },
-
-    get tag() {
-      if (!this.package)
-        throw new Error(
-          `For default tag resolution, context must include a valid package`
-        )
-      const { name, version } = this.package
-      return this.config.tag(name, version)
     }
   }
 
