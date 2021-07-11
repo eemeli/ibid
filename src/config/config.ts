@@ -14,6 +14,7 @@ export type changelogFormatter = (
 
 export interface Config {
   changelogEntryPattern?: RegExp
+  changelogFilename?: string
   changelogFormat?: changelogFormatter
   changelogIntro?: string
   changelogSections?: string[]
@@ -71,6 +72,7 @@ export const getRequiredConfig = async (
   Object.assign(
     {
       changelogEntryPattern: /^##/m,
+      changelogFilename: 'CHANGELOG.md',
       changelogFormat,
       changelogIntro: `# Changelog\n`,
       changelogSections: ['feat', 'fix', 'perf', 'revert'],

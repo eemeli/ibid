@@ -1,4 +1,5 @@
 import { constants, promises } from 'fs'
+import { resolve } from 'path'
 
 import { Commit } from '../commits'
 import { Context } from '../config/context'
@@ -20,7 +21,6 @@ export function mergeChangelogEntries(
 
 export async function writeChangelog(
   ctx: Context,
-  path: string,
   init: boolean | null,
   version: string | null,
   commits: Commit[]
@@ -33,6 +33,7 @@ export async function writeChangelog(
   )
   if (!entry) return false
 
+  const path = resolve(ctx.cwd || '', ctx.config.changelogFilename)
   let prev: string
   if (init) {
     let exists: boolean
