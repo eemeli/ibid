@@ -1,7 +1,4 @@
 .*
 node_modules/
-src/changelog/*.js
-src/commits/*.js
-src/config/*.js
-src/recommend-bump/*.js
+src/**/*.js
 tmp/
