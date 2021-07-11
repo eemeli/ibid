@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    //"declaration": true,
+    "declaration": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "lib": ["ES2020"], // req. Node.js 12.9.0
@@ -8,6 +8,8 @@
     "moduleResolution": "node",
     "noUnusedLocals": true,
     "noUnusedParameters": true,
+    "outDir": "lib",
+    "rootDir": "src",
     "skipLibCheck": true,
     "strict": true,
     "target": "ES2019"

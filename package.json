@@ -3,11 +3,14 @@
   "version": "0.0.1",
   "description": "Package versioning for monorepos",
   "bin": "./version",
+  "files": [
+    "lib/"
+  ],
   "scripts": {
     "build": "tsc",
     "lint": "eslint src/",
-    "prettier": "prettier . --ignore-unknown --write",
-    "test": "mocha 'src/**/*.spec.js'"
+    "prettier": "prettier src/ --ignore-unknown --write",
+    "test": "mocha 'lib/**/*.spec.js'"
   },
   "repository": {
     "type": "git",
