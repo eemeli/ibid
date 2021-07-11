@@ -7,7 +7,7 @@ export interface Revert {
 }
 
 export class CommitMessage {
-  context: Context | null
+  #context: Context | null
 
   raw: string
   header: string
@@ -25,7 +25,7 @@ export class CommitMessage {
       .trimStart()
       .split(/(?:\r?\n){2,}/)
 
-    this.context = ctx || null
+    this.#context = ctx || null
     this.raw = raw
     this.header = parts.shift() || ''
 
@@ -74,7 +74,9 @@ export class CommitMessage {
   }
 
   get references(): Reference[] {
-    return this.context ? getReferences(this.raw, this.context.hostContext) : []
+    return this.#context
+      ? getReferences(this.raw, this.#context.hostContext)
+      : []
   }
 
   get revert(): Revert | null {

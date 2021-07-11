@@ -42,5 +42,5 @@ export async function gitLog(
   if (range) args.push(range)
   if (path) args.push('--', path)
   const { stdout } = await execFile('git', args)
-  return stdout.split(/^(?=commit )/m)
+  return stdout ? stdout.split(/^(?=commit )/m) : []
 }
