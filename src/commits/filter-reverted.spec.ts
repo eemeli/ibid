@@ -6,7 +6,7 @@ import { Commit } from './parse-commit'
 
 describe('filterReverted()', () => {
   it('should error if `commits` is not `array`', () => {
-    expect(() => filterReverted((null as unknown) as Commit[])).to.throw()
+    expect(() => filterReverted(null as unknown as Commit[])).to.throw()
   })
 
   it('should filter reverted commits that exist in the commits array', () => {

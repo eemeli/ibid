@@ -11,7 +11,7 @@ export interface Commit {
   message: CommitMessage
 }
 
-export function parseCommit(src: string, ctx?: Context): Commit  {
+export function parseCommit(src: string, ctx?: Context): Commit {
   const headMatch = src.match(
     /^commit ([0-9a-f]+)(?: \((.*?)\))?\s+(?:Merge:(.*)\s+)?Author:\s*(.*?)\s+Date:\s*(\d+)\s+\n/
   )

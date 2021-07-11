@@ -41,7 +41,9 @@ describe('formatChangelog', () => {
 
   describe('header', () => {
     it('stringifies only version', () => {
-      expect(formatChangelog.header(ctx, '1.2.3')).to.equal(`## 1.2.3 (${dateStr})\n`)
+      expect(formatChangelog.header(ctx, '1.2.3')).to.equal(
+        `## 1.2.3 (${dateStr})\n`
+      )
     })
 
     it('stringifies version with title', () => {
@@ -89,7 +91,8 @@ describe('formatChangelog', () => {
     })
 
     it('stringifies various commits', () => {
-      expect(formatChangelog.changes(ctx, getCommits())).to.equal(`### ⚠ Breaking Changes
+      expect(formatChangelog.changes(ctx, getCommits())).to
+        .equal(`### ⚠ Breaking Changes
 
 * some breaking change
 
@@ -115,7 +118,8 @@ describe('formatChangelog', () => {
         readme: '',
         _id: ''
       }
-      expect(formatChangelog.changes(ctx, getCommits())).to.equal(`### ⚠ Breaking Changes
+      expect(formatChangelog.changes(ctx, getCommits())).to
+        .equal(`### ⚠ Breaking Changes
 
 * some breaking change
 
@@ -140,7 +144,8 @@ describe('formatChangelog', () => {
         feat: 'feat-title',
         perf: 'perf-title'
       }
-      expect(formatChangelog.changes(ctx, getCommits())).to.equal(`### breaking-title
+      expect(formatChangelog.changes(ctx, getCommits())).to
+        .equal(`### breaking-title
 
 * some breaking change
 

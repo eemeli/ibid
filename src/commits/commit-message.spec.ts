@@ -702,7 +702,14 @@ kills stevemao/conventional-commits-parser#1`
           issue: '1',
           prefix: '#'
         },
-        { raw: '#123', ref: '#123', action: null, scope: null, issue: '123', prefix: '#' }
+        {
+          raw: '#123',
+          ref: '#123',
+          action: null,
+          scope: null,
+          issue: '123',
+          prefix: '#'
+        }
       ])
       expect(msg.breaking).to.equal('some breaking change')
     })
