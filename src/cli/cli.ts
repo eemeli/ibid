@@ -15,8 +15,9 @@ async function findPackageRoots(patterns: string[]) {
       if (roots.has(root)) continue
       const pkgPath = resolve(root, 'package.json')
       try {
-        await readFile(pkgPath, 'utf8')
-        roots.add(root)
+        const pkgSrc = await readFile(pkgPath, 'utf8')
+        const { name, version } = JSON.parse(pkgSrc)
+        if (name && version) roots.add(root)
       } catch (error) {
         if (error.code !== 'ENOENT') throw error
       }
