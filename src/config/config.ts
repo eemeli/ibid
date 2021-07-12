@@ -13,6 +13,7 @@ export type changelogFormatter = (
 ) => string | Promise<string>
 
 export interface Config {
+  bumpAllChanges?: boolean
   changelogEntryPattern?: RegExp
   changelogFilename?: string
   changelogFormat?: changelogFormatter
@@ -78,6 +79,7 @@ export const getRequiredConfig = async (
 ): Promise<Required<Config>> =>
   Object.assign(
     {
+      bumpAllChanges: false,
       changelogEntryPattern: /^##/m,
       changelogFilename: 'CHANGELOG.md',
       changelogFormat,

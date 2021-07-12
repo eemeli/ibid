@@ -32,7 +32,7 @@ export async function getCurrentUpdate(
   if (!context.package) throw new Error(`Failed to read package data in ${cwd}`)
 
   const commits = await getCurrentCommits(context)
-  const bump = recommendBump(commits)
+  const bump = recommendBump(context, commits)
   const version = bump ? applyBump(context.package.version, bump, null) : null
   return { context, commits, bump, version }
 }

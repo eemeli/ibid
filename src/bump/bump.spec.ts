@@ -1,7 +1,8 @@
 import { expect } from 'chai'
-import { describe, it } from 'mocha'
+import { beforeEach, describe, it } from 'mocha'
 
 import { parseCommit } from '../commits'
+import { Context, createContext } from '../config/context'
 import { applyBump, recommendBump } from './bump'
 
 const choreCommit = parseCommit(`commit 730a7ec18af253b0b73d2932980d795efb6f8bec
@@ -31,29 +32,55 @@ Date:   0
     BREAKING CHANGE: I broke the API`)
 
 describe('recommend-bump', () => {
-  it('returns null', () => {
-    const bump = recommendBump([choreCommit])
+  let ctx: Context
+  beforeEach(async () => (ctx = await createContext()))
+
+  it('returns null for a chore', () => {
+    const bump = recommendBump(ctx, [choreCommit])
     expect(bump).to.equal(null)
   })
 
-  it('returns "patch"', () => {
-    const bump = recommendBump([choreCommit, fixCommit])
+  it('returns "patch" for a fix', () => {
+    const bump = recommendBump(ctx, [choreCommit, fixCommit])
     expect(bump).to.equal('patch')
   })
 
-  it('returns "minor"', () => {
-    const bump = recommendBump([choreCommit, featCommit, fixCommit])
+  it('returns "minor" for a feat', () => {
+    const bump = recommendBump(ctx, [choreCommit, featCommit, fixCommit])
     expect(bump).to.equal('minor')
   })
 
-  it('returns "major"', () => {
-    const bump = recommendBump([
+  it('returns "major" for a breaking change', () => {
+    const bump = recommendBump(ctx, [
       choreCommit,
       featCommit,
       breakCommit,
       fixCommit
     ])
     expect(bump).to.equal('major')
+  })
+
+  it('returns "patch" for a chore, if included in changelog', () => {
+    ctx.config.changelogSections = ['chore']
+    const bump = recommendBump(ctx, [choreCommit])
+    expect(bump).to.equal('patch')
+  })
+
+  it('returns "patch" for a chore, if including all changes', () => {
+    ctx.config.bumpAllChanges = true
+    const bump = recommendBump(ctx, [choreCommit])
+    expect(bump).to.equal('patch')
+  })
+
+  it('returns null for an empty list', () => {
+    const bump = recommendBump(ctx, [])
+    expect(bump).to.equal(null)
+  })
+
+  it('always returns null for an empty list', () => {
+    ctx.config.bumpAllChanges = true
+    const bump = recommendBump(ctx, [])
+    expect(bump).to.equal(null)
   })
 })
 

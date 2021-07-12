@@ -1,22 +1,21 @@
 import { inc, parse, ReleaseType } from 'semver'
 import { Commit } from '../commits'
+import { Context } from '../config/context'
 
 export function recommendBump(
+  ctx: Context,
   commits: Commit[]
 ): 'major' | 'minor' | 'patch' | null {
+  const { bumpAllChanges, changelogSections } = ctx.config
   let isMinor = false
   let isPatch = false
   for (const commit of commits) {
-    if (commit.message.breaking) return 'major'
+    const { breaking, type } = commit.message
+    if (breaking) return 'major'
     if (isMinor) continue
-    switch (commit.message.type) {
-      case 'feat':
-        isMinor = true
-        break
-      case 'fix':
-        isPatch = true
-        break
-    }
+    if (type === 'feat') isMinor = true
+    else if (bumpAllChanges || changelogSections.includes(type || 'other'))
+      isPatch = true
   }
   return isMinor ? 'minor' : isPatch ? 'patch' : null
 }
