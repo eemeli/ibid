@@ -1,5 +1,5 @@
 import { resolve } from 'path'
-import { applyBump, recommendBump } from './bump/bump'
+import { applyBump, recommendBump, ReleaseType } from './bump/bump'
 import { Commit, getCurrentCommits } from './commits'
 import { Config } from './config/config'
 import { Context, createContext } from './config/context'
@@ -19,7 +19,7 @@ export { Context, createContext, HostContext, Package } from './config/context'
 export interface PackageUpdate {
   context: Context
   commits: Commit[]
-  bump: ReturnType<typeof recommendBump>
+  bump: ReleaseType | 'set' | null
   version: string | null
 }
 
@@ -33,6 +33,7 @@ export async function getCurrentUpdate(
 
   const commits = await getCurrentCommits(context)
   const bump = recommendBump(context, commits)
-  const version = bump ? applyBump(context.package.version, bump, null) : null
+  const version = applyBump(context, bump)
+
   return { context, commits, bump, version }
 }

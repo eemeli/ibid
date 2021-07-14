@@ -29,6 +29,7 @@ export interface Config {
     | ((context: Context, from: string, to: string) => string | null)
     | false
   linkReference?: ((context: Context, ref: Reference) => string | null) | false
+  prerelease?: boolean | string | null
   shortHashLength?: number
   tag?: (context: Context, version?: string | null) => string
 }
@@ -93,6 +94,7 @@ export const getRequiredConfig = async (
       linkCommit,
       linkCompare,
       linkReference,
+      prerelease: null,
       shortHashLength: await gitAbbrevLength(),
       tag
     },

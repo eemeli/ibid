@@ -1,54 +1,67 @@
-import { inc, parse, ReleaseType } from 'semver'
+import { inc, parse } from 'semver'
 import { Commit } from '../commits'
 import { Context } from '../config/context'
+
+// Copied from @types/semver to avoid runtime dependency
+export type ReleaseType =
+  | 'major'
+  | 'premajor'
+  | 'minor'
+  | 'preminor'
+  | 'patch'
+  | 'prepatch'
+  | 'prerelease'
 
 export function recommendBump(
   ctx: Context,
   commits: Commit[]
-): 'major' | 'minor' | 'patch' | null {
-  const { bumpAllChanges, changelogSections } = ctx.config
-  let isMinor = false
-  let isPatch = false
+): ReleaseType | null {
+  const { bumpAllChanges, changelogSections, prerelease } = ctx.config
+
+  let major = false
+  let minor = false
+  let patch = false
   for (const commit of commits) {
     const { breaking, type } = commit.message
-    if (breaking) return 'major'
-    if (isMinor) continue
-    if (type === 'feat') isMinor = true
+    if (breaking) {
+      major = true
+      break
+    } else if (type === 'feat') minor = true
     else if (bumpAllChanges || changelogSections.includes(type || 'other'))
-      isPatch = true
+      patch = true
   }
-  return isMinor ? 'minor' : isPatch ? 'patch' : null
+  if (!major && !minor && !patch) return null
+
+  const version = ctx.package ? parse(ctx.package.version) : null
+  const prePrev = version ? version.prerelease.length > 0 : false
+
+  if (version?.major === 0) {
+    if (major) {
+      major = false
+      minor = true
+    } else if (minor) {
+      minor = false
+      patch = true
+    }
+  }
+
+  if (prerelease === false || (prerelease == null && !prePrev))
+    return major ? 'major' : minor ? 'minor' : 'patch'
+  if (prePrev && version?.patch === 0)
+    return major && version.minor !== 0 ? 'premajor' : 'prerelease'
+  return major ? 'premajor' : minor ? 'preminor' : 'prerelease'
 }
 
 export function applyBump(
-  prev: string,
-  bump: 'major' | 'minor' | 'patch' | 'v1',
-  prerelease: boolean | string | null
-): string {
-  const version = parse(prev)
-  if (!version) throw new Error(`Not a valid semver version: ${prev}`)
-  const { major, minor, patch } = version
-
-  let rt: ReleaseType
-  if (major > 0) {
-    if (bump === 'v1')
-      throw new Error(`Invalid bump for version ${prev}: ${bump}`)
-    rt = bump
-  } else {
-    rt = bump === 'v1' ? 'major' : bump === 'major' ? 'minor' : 'patch'
-  }
-
-  const prePrev = version.prerelease.length > 0
-  if (prerelease || (prerelease === null && prePrev)) {
-    if (rt === 'major')
-      rt = prePrev && patch === 0 && minor === 0 ? 'prerelease' : 'premajor'
-    else if (rt === 'minor')
-      rt = prePrev && patch === 0 ? 'prerelease' : 'preminor'
-    else rt = 'prerelease'
-  }
-
-  const id = typeof prerelease === 'string' ? prerelease : undefined
-  const next = inc(version, rt, id)
-  if (!next) throw new Error(`Invalid bump for version ${prev}: ${bump}`)
-  return next
+  ctx: Context,
+  bump: ReleaseType | null
+): string | null {
+  const { version } = ctx.package || {}
+  if (!bump || !version) return null
+  const { prerelease } = ctx.config
+  const identifier =
+    typeof prerelease === 'string'
+      ? prerelease
+      : parse(version)?.prerelease.slice(0, -1).join('.') || undefined
+  return inc(version, bump, identifier)
 }

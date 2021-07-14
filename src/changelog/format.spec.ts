@@ -68,9 +68,7 @@ describe('formatChangelog', () => {
       ctx.package = {
         name: '@eemeli/version',
         version: '1.0.0',
-        repository: { type: 'git', url: 'https://github.com/eemeli/version' },
-        readme: '',
-        _id: ''
+        repository: { type: 'git', url: 'https://github.com/eemeli/version' }
       }
       expect(formatChangelog.header(ctx, '1.2.3')).to.equal(
         `## [https://github.com/eemeli/version/compare/1.0.0...1.2.3](1.2.3) (${dateStr})\n`
@@ -114,9 +112,7 @@ describe('formatChangelog', () => {
       ctx.package = {
         name: '@eemeli/version',
         version: '1.0.0',
-        repository: { type: 'git', url: 'https://github.com/eemeli/version' },
-        readme: '',
-        _id: ''
+        repository: { type: 'git', url: 'https://github.com/eemeli/version' }
       }
       expect(formatChangelog.changes(ctx, getCommits())).to
         .equal(`### ⚠ Breaking Changes

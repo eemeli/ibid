@@ -1,6 +1,6 @@
 import { promises } from 'fs'
 import { fromUrl } from 'hosted-git-info'
-import normalize, { Package } from 'normalize-package-data'
+import normalize from 'normalize-package-data'
 import { resolve } from 'path'
 import { HostContext, hostData } from './host-data'
 import { Config, getRequiredConfig } from './config'
@@ -9,7 +9,20 @@ import { isGitRoot } from '../commits/git'
 // 'fs/promises' is only available from Node.js 14.0.0
 const { readFile } = promises
 
-export { HostContext, Package }
+export { HostContext }
+
+export type Dependencies = Record<string, string>
+
+export interface Package {
+  name: string
+  version: string
+  repository?: { type: string; url: string }
+  bundleDependencies?: Record<string, string>
+  dependencies?: Record<string, string>
+  devDependencies?: Record<string, string>
+  optionalDependencies?: Record<string, string>
+  [key: string]: unknown
+}
 
 export interface Context {
   config: Required<Config>

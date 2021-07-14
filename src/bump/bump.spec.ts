@@ -50,14 +50,25 @@ describe('recommend-bump', () => {
     expect(bump).to.equal('minor')
   })
 
-  it('returns "major" for a breaking change', () => {
-    const bump = recommendBump(ctx, [
-      choreCommit,
-      featCommit,
-      breakCommit,
-      fixCommit
-    ])
-    expect(bump).to.equal('major')
+  describe('breaking changes', () => {
+    for (const [version, exp] of [
+      ['1.2.3', 'major'],
+      ['1.2.3-4', 'premajor'],
+      ['2.0.0-4', 'prerelease'],
+      ['0.1.2', 'minor'],
+      ['0.1.2-3', 'preminor']
+    ]) {
+      it(`returns "${exp}" for a breaking change on ${version}`, () => {
+        ctx.package = { name: 'foo', version }
+        const bump = recommendBump(ctx, [
+          choreCommit,
+          featCommit,
+          breakCommit,
+          fixCommit
+        ])
+        expect(bump).to.equal(exp)
+      })
+    }
   })
 
   it('returns "patch" for a chore, if included in changelog', () => {
@@ -85,74 +96,22 @@ describe('recommend-bump', () => {
 })
 
 describe('apply-bump', () => {
-  describe('valid', () => {
-    for (const { prev, bump, pr: prerelease, exp } of [
-      { prev: '1.2.3', bump: 'patch', pr: null, exp: '1.2.4' },
-      { prev: '1.2.3', bump: 'minor', pr: null, exp: '1.3.0' },
-      { prev: '1.2.3', bump: 'major', pr: null, exp: '2.0.0' },
-      { prev: '1.2.3', bump: 'patch', pr: true, exp: '1.2.4-0' },
-      { prev: '1.2.3', bump: 'minor', pr: true, exp: '1.3.0-0' },
-      { prev: '1.2.3', bump: 'major', pr: true, exp: '2.0.0-0' },
-      { prev: '1.2.3', bump: 'patch', pr: 'foo', exp: '1.2.4-foo.0' },
-      { prev: '1.2.3', bump: 'minor', pr: 'foo', exp: '1.3.0-foo.0' },
-      { prev: '1.2.3', bump: 'major', pr: 'foo', exp: '2.0.0-foo.0' },
+  let ctx: Context
+  beforeEach(async () => (ctx = await createContext()))
 
-      { prev: '1.2.3-4', bump: 'patch', pr: null, exp: '1.2.3-5' },
-      { prev: '1.2.3-4', bump: 'minor', pr: null, exp: '1.3.0-0' },
-      { prev: '1.2.3-4', bump: 'major', pr: null, exp: '2.0.0-0' },
-      { prev: '1.2.3-4', bump: 'patch', pr: true, exp: '1.2.3-5' },
-      { prev: '1.2.3-4', bump: 'minor', pr: true, exp: '1.3.0-0' },
-      { prev: '1.2.3-4', bump: 'major', pr: true, exp: '2.0.0-0' },
-      { prev: '1.2.3-4', bump: 'patch', pr: false, exp: '1.2.3' },
-      { prev: '1.2.3-4', bump: 'minor', pr: false, exp: '1.3.0' },
-      { prev: '1.2.3-4', bump: 'major', pr: false, exp: '2.0.0' },
-      { prev: '1.2.3-4', bump: 'patch', pr: 'foo', exp: '1.2.3-foo.0' },
-      { prev: '1.2.3-4', bump: 'minor', pr: 'foo', exp: '1.3.0-foo.0' },
-      { prev: '1.2.3-4', bump: 'major', pr: 'foo', exp: '2.0.0-foo.0' },
-
-      { prev: '1.2.3-foo.4', bump: 'patch', pr: 'foo', exp: '1.2.3-foo.5' },
-      { prev: '1.2.3-foo.4', bump: 'minor', pr: 'foo', exp: '1.3.0-foo.0' },
-      { prev: '1.2.3-foo.4', bump: 'major', pr: 'foo', exp: '2.0.0-foo.0' },
-      { prev: '1.2.3-foo.4', bump: 'patch', pr: 'bar', exp: '1.2.3-bar.0' },
-      { prev: '1.2.3-foo.4', bump: 'minor', pr: 'bar', exp: '1.3.0-bar.0' },
-      { prev: '1.2.3-foo.4', bump: 'major', pr: 'bar', exp: '2.0.0-bar.0' },
-
-      { prev: '1.2.0-4', bump: 'patch', pr: null, exp: '1.2.0-5' },
-      { prev: '1.2.0-4', bump: 'minor', pr: null, exp: '1.2.0-5' },
-      { prev: '1.2.0-4', bump: 'major', pr: null, exp: '2.0.0-0' },
-      { prev: '2.0.0-4', bump: 'patch', pr: null, exp: '2.0.0-5' },
-      { prev: '2.0.0-4', bump: 'minor', pr: null, exp: '2.0.0-5' },
-      { prev: '2.0.0-4', bump: 'major', pr: null, exp: '2.0.0-5' },
-
-      { prev: '0.2.3', bump: 'patch', pr: null, exp: '0.2.4' },
-      { prev: '0.2.3', bump: 'minor', pr: null, exp: '0.2.4' },
-      { prev: '0.2.3', bump: 'major', pr: null, exp: '0.3.0' },
-      { prev: '0.2.3', bump: 'v1', pr: null, exp: '1.0.0' },
-      { prev: '0.2.3', bump: 'patch', pr: true, exp: '0.2.4-0' },
-      { prev: '0.2.3', bump: 'minor', pr: true, exp: '0.2.4-0' },
-      { prev: '0.2.3', bump: 'major', pr: true, exp: '0.3.0-0' },
-      { prev: '0.2.3', bump: 'v1', pr: true, exp: '1.0.0-0' },
-      { prev: '0.2.3', bump: 'patch', pr: 'foo', exp: '0.2.4-foo.0' },
-      { prev: '0.2.3', bump: 'minor', pr: 'foo', exp: '0.2.4-foo.0' },
-      { prev: '0.2.3', bump: 'major', pr: 'foo', exp: '0.3.0-foo.0' },
-      { prev: '0.2.3', bump: 'v1', pr: 'foo', exp: '1.0.0-foo.0' }
-    ] as const) {
-      it(`${prev}/${bump}/${prerelease}`, () => {
-        const res = applyBump(prev, bump, prerelease)
-        expect(res).to.equal(exp)
-      })
-    }
+  it('returns null for no version in context', () => {
+    ctx.package = null
+    expect(applyBump(ctx, 'minor')).to.equal(null)
   })
 
-  describe('errors', () => {
-    for (const { prev, bump } of [
-      { prev: '1.2', bump: 'patch' },
-      { prev: '1.2.3', bump: 'v1' },
-      { prev: '1.2.3', bump: 'foo' as 'major' }
-    ] as const) {
-      it(`${prev}/${bump}`, () => {
-        expect(() => applyBump(prev, bump, null)).to.throw()
-      })
-    }
-  })
+  for (const [version, bump, exp] of [
+    ['1.2.3', null, null],
+    ['1.2.3', 'minor', '1.3.0'],
+    ['1.2.3-foo.4', 'preminor', '1.3.0-foo.0']
+  ] as const) {
+    it(`returns ${exp} for ${bump} bump on ${version}`, () => {
+      ctx.package = { name: 'foo', version }
+      expect(applyBump(ctx, bump)).to.equal(exp)
+    })
+  }
 })
