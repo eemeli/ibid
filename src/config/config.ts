@@ -1,7 +1,7 @@
 import { URL } from 'url'
 import type { formatChangelog } from '../changelog/format'
 import type { Commit, Reference } from '../commits'
-import { gitAbbrevLength } from '../commits/git'
+import { gitAbbrevLength } from '../shell/git'
 import type { Context } from './context'
 import type { HostContext } from './host-data'
 

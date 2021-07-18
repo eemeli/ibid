@@ -2,9 +2,9 @@ import { promises } from 'fs'
 import { fromUrl } from 'hosted-git-info'
 import normalize from 'normalize-package-data'
 import { resolve } from 'path'
+import { isGitRoot } from '../shell/git'
 import { HostContext, hostData } from './host-data'
 import { Config, getRequiredConfig } from './config'
-import { isGitRoot } from '../commits/git'
 
 // 'fs/promises' is only available from Node.js 14.0.0
 const { readFile } = promises

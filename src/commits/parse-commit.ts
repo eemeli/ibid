@@ -1,5 +1,5 @@
 import { Context } from '../config/context'
-import { checkRefShape } from './git'
+import { checkRefShape } from '../shell/git'
 import { CommitMessage } from './commit-message'
 
 export interface Commit {

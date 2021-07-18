@@ -1,6 +1,6 @@
 import { Context } from '../config/context'
+import { gitLog, gitRefExists } from '../shell/git'
 import { filterReverted } from './filter-reverted'
-import { gitLog, gitRefExists } from './git'
 import { Commit, parseCommit } from './parse-commit'
 
 export { CommitMessage } from './commit-message'
