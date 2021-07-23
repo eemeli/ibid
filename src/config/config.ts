@@ -81,7 +81,7 @@ export const getRequiredConfig = async (
   Object.assign(
     {
       bumpAllChanges: false,
-      changelogEntryPattern: /^##/m,
+      changelogEntryPattern: /^#(?!\s*change)/im,
       changelogFilename: 'CHANGELOG.md',
       changelogFormat,
       changelogIntro: `# Changelog\n`,
