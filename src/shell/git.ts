@@ -55,3 +55,43 @@ export async function gitLog(
   const { stdout } = await execFile('git', args)
   return stdout ? stdout.split(/^(?=commit )/m) : []
 }
+
+export async function gitAdd(path: string): Promise<void> {
+  await execFile('git', ['add', '--', path])
+}
+
+export async function gitAddPackageFiles(dir: string | null): Promise<void> {
+  const cwd = resolve(dir || '')
+  const args = ['add', '--update']
+  for (const file of [
+    'package.json',
+    'package-lock.json',
+    'npm-shrinkwrap.json'
+  ]) {
+    try {
+      await execFile('git', ['ls-files', '--error-unmatch', file], { cwd })
+      args.push(file)
+    } catch (_) {
+      // Ignore files not in repo
+    }
+  }
+  await execFile('git', args, { cwd })
+}
+
+export async function gitCheckTag(tag: string): Promise<boolean> {
+  if (!tag || tag.startsWith('-')) return false
+  try {
+    await execFile('git', ['check-ref-format', `tags/${tag}`])
+    return true
+  } catch (_) {
+    return false
+  }
+}
+
+export async function gitCommit(
+  message: string,
+  tags: string[]
+): Promise<void> {
+  await execFile('git', ['commit', '--message', message])
+  for (const tag of tags) await execFile('git', ['tag', '--message', tag, tag])
+}

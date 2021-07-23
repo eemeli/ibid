@@ -8,7 +8,7 @@ export { Reference } from './commit-message-references'
 export { Commit, parseCommit }
 
 export async function getCurrentCommits(ctx: Context): Promise<Commit[]> {
-  const tag = ctx.config.tag(ctx, null)
+  const tag = ctx.config.tagFormat(ctx, null)
   if (!(await gitRefExists(tag)))
     throw new Error(`Current git tag not found: ${tag}`)
 

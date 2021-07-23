@@ -24,14 +24,14 @@ export async function writeChangelog(
   init: boolean | null,
   version: string | null,
   commits: Commit[]
-): Promise<boolean> {
+): Promise<string | null> {
   const entry = await ctx.config.changelogFormat(
     ctx,
     formatChangelog,
     version,
     commits
   )
-  if (!entry) return false
+  if (!entry) return null
 
   const path = resolve(ctx.cwd || '', ctx.config.changelogFilename)
   let prev: string
@@ -58,5 +58,5 @@ export async function writeChangelog(
 
   const text = mergeChangelogEntries(ctx, prev, entry)
   await writeFile(path, text)
-  return true
+  return path
 }

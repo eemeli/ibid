@@ -20,6 +20,7 @@ export interface Config {
   changelogIntro?: string
   changelogSections?: string[]
   changelogTitles?: Record<string, string>
+  commitFormat?: ((tags: string[]) => string) | false
   context?: (context: Context) => Context | Promise<Context>
   hostContext?: Partial<HostContext> | null
   includeMergeCommits?: boolean
@@ -31,7 +32,7 @@ export interface Config {
   linkReference?: ((context: Context, ref: Reference) => string | null) | false
   prerelease?: boolean | string | null
   shortHashLength?: number
-  tag?: (context: Context, version?: string | null) => string
+  tagFormat?: (context: Context, version?: string | null) => string
 }
 
 function changelogFormat(
@@ -42,6 +43,11 @@ function changelogFormat(
 ) {
   const body = fmt.changes(ctx, commits)
   return body ? `${fmt.header(ctx, version)}\n${body}` : ''
+}
+
+function commitFormat(tags: string[]) {
+  const body = tags.map(tag => `- ${tag}`).join('\n')
+  return `chore: Publish\n\n${body}`
 }
 
 function linkCommit(ctx: Context, hash: string) {
@@ -68,7 +74,7 @@ function linkReference(ctx: Context, ref: Reference) {
   return String(url)
 }
 
-function tag(ctx: Context, version?: string | null) {
+function tagFormat(ctx: Context, version?: string | null) {
   if (!version) version = ctx.package?.version || '[NO_VERSION]'
   return ctx.package && !ctx.gitRoot
     ? `${ctx.package.name}@${version}`
@@ -87,6 +93,7 @@ export const getRequiredConfig = async (
       changelogIntro: `# Changelog\n`,
       changelogSections: ['feat', 'fix', 'perf', 'revert'],
       changelogTitles: {},
+      commitFormat,
       context: (ctx: Context) => ctx,
       hostContext: null,
       includeMergeCommits: false,
@@ -96,7 +103,7 @@ export const getRequiredConfig = async (
       linkReference,
       prerelease: null,
       shortHashLength: await gitAbbrevLength(),
-      tag
+      tagFormat
     },
     config
   )

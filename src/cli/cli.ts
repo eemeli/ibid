@@ -3,7 +3,14 @@ import { relative, resolve } from 'path'
 import glob from 'tiny-glob'
 import yargsParser from 'yargs-parser'
 import { writeChangelog } from '../changelog/write'
+import { Config } from '../config/config'
 import { getCurrentUpdate, PackageUpdate } from '../index'
+import {
+  gitAdd,
+  gitAddPackageFiles,
+  gitCheckTag,
+  gitCommit
+} from '../shell/git'
 import { npmVersion } from '../shell/npm'
 import { filterUpdates } from './filter'
 
@@ -52,21 +59,40 @@ async function findPackageRoots(patterns: string[]) {
   }
 
   const apply = await filterUpdates(updates)
+  console.error()
   if (!apply) {
     console.error('Not applying any updates.')
     return
   }
 
-  let updated = 0
+  let commitFormat: Config['commitFormat']
+  const tags: string[] = []
   for (const { context, commits, bump, version } of updates) {
     if (!bump || !version) continue
     const name =
-      context.package?.name || relative(process.cwd(), context.cwd || '.') || '.'
-    console.error(`Updating ${name} to ${version}...`)
+      context.package?.name || relative(process.cwd(), context.cwd || '') || '.'
+    console.error(`Updating ${name} to ${version} ...`)
+    commitFormat ??= context.config.commitFormat
+
+    const tag = context.config.tagFormat(context, version)
+    if (await gitCheckTag(tag)) tags.push(tag)
+    else throw new Error(`Invalid tag: ${tag}`)
+
+    const cf = await writeChangelog(context, false, version, commits)
+    if (cf) await gitAdd(cf)
+    else console.error(`No changelog added for ${name}.`)
+
     await npmVersion(context.cwd, version)
-    await writeChangelog(context, false, version, commits)
-    updated += 1
+    await gitAddPackageFiles(context.cwd)
   }
-  if (updated === 0) console.error(`No packages to update.`)
-  else console.error('Done!')
+
+  if (tags.length === 0) console.error('No packages to update.')
+  else {
+    const msg = commitFormat && commitFormat(tags)
+    if (!msg) console.error('Skipping git commit.')
+    else {
+      console.error('Done!')
+      await gitCommit(msg, tags)
+    }
+  }
 })()
