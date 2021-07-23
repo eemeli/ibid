@@ -1,9 +1,10 @@
 import { promises } from 'fs'
-import { resolve } from 'path'
+import { relative, resolve } from 'path'
 import glob from 'tiny-glob'
 import yargsParser from 'yargs-parser'
-
+import { writeChangelog } from '../changelog/write'
 import { getCurrentUpdate, PackageUpdate } from '../index'
+import { npmVersion } from '../shell/npm'
 import { filterUpdates } from './filter'
 
 // 'fs/promises' is only available from Node.js 14.0.0
@@ -33,10 +34,18 @@ async function findPackageRoots(patterns: string[]) {
     boolean: ['all-commits']
   })
   const updates: PackageUpdate[] = []
-  for (const root of await findPackageRoots(argv._))
-    updates.push(
-      await getCurrentUpdate(root, { bumpAllChanges: !!argv.allCommits })
-    )
+  try {
+    for (const root of await findPackageRoots(argv._)) {
+      updates.push(
+        await getCurrentUpdate(root, { bumpAllChanges: !!argv.allCommits })
+      )
+    }
+  } catch (error) {
+    console.error('Failed reading current package state, no changes applied.')
+    console.error(error)
+    process.exit(1)
+  }
+
   if (updates.length === 0) {
     console.error(`No packages found in: ${argv._.join(', ')}`)
     process.exit(1)
@@ -48,9 +57,16 @@ async function findPackageRoots(patterns: string[]) {
     return
   }
 
-  const bumps = updates.filter(up => up.bump)
-  if (bumps.length === 0) {
-    console.error(`No packages to update.`)
-    return
+  let updated = 0
+  for (const { context, commits, bump, version } of updates) {
+    if (!bump || !version) continue
+    const name =
+      context.package?.name || relative(process.cwd(), context.cwd || '.') || '.'
+    console.error(`Updating ${name} to ${version}...`)
+    await npmVersion(context.cwd, version)
+    await writeChangelog(context, false, version, commits)
+    updated += 1
   }
+  if (updated === 0) console.error(`No packages to update.`)
+  else console.error('Done!')
 })()
