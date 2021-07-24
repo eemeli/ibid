@@ -37,8 +37,8 @@ async function findPackageRoots(patterns: string[]) {
 
 ;(async function main() {
   const argv = yargsParser(process.argv.slice(2), {
-    alias: { 'all-commits': ['a'], prerelease: ['p'] },
-    boolean: ['all-commits']
+    alias: { 'all-commits': ['a'], prerelease: ['p'], yes: ['y'] },
+    boolean: ['all-commits', 'yes']
   })
   const updates: PackageUpdate[] = []
   try {
@@ -58,11 +58,13 @@ async function findPackageRoots(patterns: string[]) {
     process.exit(1)
   }
 
-  const apply = await filterUpdates(updates)
-  console.error()
-  if (!apply) {
-    console.error('Not applying any updates.')
-    return
+  if (!argv.yes) {
+    const apply = await filterUpdates(updates)
+    console.error()
+    if (!apply) {
+      console.error('Not applying any updates.')
+      return
+    }
   }
 
   let commitFormat: Config['commitFormat']
