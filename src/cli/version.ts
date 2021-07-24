@@ -54,7 +54,11 @@ export async function version(args: string[], out: Writable): Promise<void> {
     throw new InputError(`No packages found in: ${argv._.join(', ')}`)
 
   if (!argv.yes) {
-    const apply = await filterUpdates(updates)
+    if (out !== process.stderr && out !== process.stdout)
+      throw new Error(
+        'Always use the --yes option if output is not stderr or stdout'
+      )
+    const apply = await filterUpdates(updates, out as NodeJS.WriteStream)
     out.write('\n')
     if (!apply) {
       out.write('Not applying any updates.\n')

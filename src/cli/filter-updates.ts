@@ -1,4 +1,4 @@
-import { prompt } from 'inquirer'
+import { createPromptModule } from 'inquirer'
 import { applyBump, ReleaseType } from '../bump/bump'
 
 import type { PackageUpdate } from '../index'
@@ -17,7 +17,7 @@ const isBump = (bump: string): bump is ReleaseType =>
 const plural = (count: number, name: string) =>
   count === 1 ? `1 ${name}` : `${count} ${name}s`
 
-export function updateStrings(updates: PackageUpdate[]): {
+function updateStrings(updates: PackageUpdate[]): {
   print: string
   edit: string
 } {
@@ -39,8 +39,7 @@ export function updateStrings(updates: PackageUpdate[]): {
       edit += `${cmd} ${name} (${version}, ${cs})\n`
     } else {
       let vs = version
-      if (commits.length > 0)
-        vs += `, ${plural(commits.length, 'commit')}`
+      if (commits.length > 0) vs += `, ${plural(commits.length, 'commit')}`
       unchanged.push(`keep ${name} (${vs})`)
     }
   }
@@ -50,7 +49,7 @@ export function updateStrings(updates: PackageUpdate[]): {
     (printChanged.length === 0
       ? '.'
       : ':\n\n    ' + printChanged.join('\n    ')) +
-    '\n'
+    '\n\n'
 
   if (unchanged.length > 0) {
     edit += '\n'
@@ -79,10 +78,12 @@ export function updateStrings(updates: PackageUpdate[]): {
 }
 
 export async function filterUpdates(
-  updates: PackageUpdate[]
+  updates: PackageUpdate[],
+  out: NodeJS.WriteStream
 ): Promise<boolean> {
   const { print, edit } = updateStrings(updates)
-  console.log(print)
+  out.write(print)
+  const prompt = createPromptModule({ output: out })
   const answers = await prompt<{
     action: 'Edit updates' | 'Yes' | 'No'
     edit?: string
@@ -116,7 +117,7 @@ export async function filterUpdates(
     const [command, name] = line.split(/\s+/)
     const [bump, id] = command.split('=')
     if (bump === 'set' || isBump(bump)) commands.set(name, { bump, id, line })
-    else console.error(`Invalid bump ${bump}: ${line}`)
+    else out.write(`Invalid bump ${bump}: ${line}\n`)
   }
 
   for (const up of updates) {
@@ -129,7 +130,7 @@ export async function filterUpdates(
 
       if (bump === 'set') {
         if (!id || /[^\w.-]/.test(id))
-          console.error(`Ignoring invalid version ${id}: ${line}`)
+          out.write(`Ignoring invalid version ${id}: ${line}\n`)
         else {
           up.bump = bump
           up.version = id
@@ -138,11 +139,11 @@ export async function filterUpdates(
         const { config } = up.context
         if (typeof id === 'string') {
           if (/[^\w.-]/.test(id))
-            console.error(`Ignoring invalid identifier ${id}: ${line}`)
+            out.write(`Ignoring invalid identifier ${id}: ${line}\n`)
           if (bump.startsWith('pre')) config.prerelease = id
           else
-            console.error(
-              `Ignoring identifier ${id} for ${bump} release: ${line}`
+            out.write(
+              `Ignoring identifier ${id} for ${bump} release: ${line}\n`
             )
         } else if (typeof config.prerelease === 'string') {
           config.prerelease = bump.startsWith('pre')
@@ -156,6 +157,6 @@ export async function filterUpdates(
     }
   }
 
-  console.log('')
-  return filterUpdates(updates)
+  out.write('\n')
+  return filterUpdates(updates, out)
 }
