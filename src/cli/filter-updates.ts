@@ -1,6 +1,6 @@
 import { createPromptModule } from 'inquirer'
+import type { Writable } from 'stream'
 import { applyBump, ReleaseType } from '../bump/bump'
-
 import type { PackageUpdate } from '../index'
 
 const isBump = (bump: string): bump is ReleaseType =>
@@ -17,25 +17,36 @@ const isBump = (bump: string): bump is ReleaseType =>
 const plural = (count: number, name: string) =>
   count === 1 ? `1 ${name}` : `${count} ${name}s`
 
-function updateStrings(updates: PackageUpdate[]): {
-  print: string
-  edit: string
-} {
+function prettyPrint(updates: PackageUpdate[]): string {
+  const changed: string[] = []
+  for (const { context, commits, bump, version: next } of updates) {
+    if (bump) {
+      const { name, version } = context.package || {}
+      const cs = plural(commits.length, 'commit')
+      changed.push(`${name}: ${bump} (${version} -> ${next}, ${cs})`)
+    }
+  }
+
+  return (
+    `Updating ${changed.length}/${plural(updates.length, 'package')}` +
+    (changed.length === 0 ? '.' : ':\n\n    ' + changed.join('\n    ')) +
+    '\n\n'
+  )
+}
+
+function editTemplate(updates: PackageUpdate[]): string {
   let edit = ''
-  const printChanged: string[] = []
   const unchanged: string[] = []
   for (const { context, commits, bump, version: next } of updates) {
     const { name, version } = context.package || {}
     if (bump) {
-      const cs = plural(commits.length, 'commit')
-      printChanged.push(`${name}: ${bump} (${version} -> ${next}, ${cs})`)
-
       let cmd: string = bump
       if (bump === 'set') cmd = `set=${next}`
       else {
         const { prerelease } = context.config
         if (typeof prerelease === 'string') cmd = `${bump}=${prerelease}`
       }
+      const cs = plural(commits.length, 'commit')
       edit += `${cmd} ${name} (${version}, ${cs})\n`
     } else {
       let vs = version
@@ -44,19 +55,14 @@ function updateStrings(updates: PackageUpdate[]): {
     }
   }
 
-  const print =
-    `Updating ${printChanged.length}/${plural(updates.length, 'package')}` +
-    (printChanged.length === 0
-      ? '.'
-      : ':\n\n    ' + printChanged.join('\n    ')) +
-    '\n\n'
-
   if (unchanged.length > 0) {
     edit += '\n'
     for (const u of unchanged) edit += `${u}\n`
   }
 
-  edit += `
+  return (
+    edit +
+    `
 # Update package versions
 #
 # Commands:
@@ -73,41 +79,10 @@ function updateStrings(updates: PackageUpdate[]): {
 #     preminor=bar <name>    # would update 1.2.3-foo.4 -> 1.3.0-bar.0
 # Identifiers must contain only . - and word characters. An empty string is a valid identifier.
 `
-
-  return { print, edit }
+  )
 }
 
-export async function filterUpdates(
-  updates: PackageUpdate[],
-  out: NodeJS.WriteStream
-): Promise<boolean> {
-  const { print, edit } = updateStrings(updates)
-  out.write(print)
-  const prompt = createPromptModule({ output: out })
-  const answers = await prompt<{
-    action: 'Edit updates' | 'Yes' | 'No'
-    edit?: string
-  }>([
-    {
-      name: 'action',
-      message: 'Apply these updates?',
-      type: 'list',
-      choices: ['Edit updates', 'Yes', 'No'],
-      default: 'Yes'
-    },
-    {
-      name: 'edit',
-      type: 'editor',
-      when: answers => answers.action === 'Edit updates',
-      message: 'Edit list of updates',
-      default: edit
-    }
-  ])
-
-  if (answers.action === 'Yes') return true
-  if (answers.action === 'No') return false
-
-  const editSrc = answers.edit?.trim() || ''
+function applyEdits(out: Writable, updates: PackageUpdate[], editSrc: string) {
   const commands = new Map<
     string,
     { bump: ReleaseType | 'set'; id?: string; line: string }
@@ -156,7 +131,45 @@ export async function filterUpdates(
       up.version = null
     }
   }
-
-  out.write('\n')
-  return filterUpdates(updates, out)
 }
+
+export async function filterUpdates(
+  updates: PackageUpdate[],
+  out: NodeJS.WriteStream
+): Promise<boolean> {
+  out.write(prettyPrint(updates))
+  const prompt = createPromptModule({ output: out })
+
+  const answers = await prompt<{
+    action: 'Edit updates' | 'Yes' | 'No'
+    edit?: string
+  }>([
+    {
+      name: 'action',
+      message: 'Apply these updates?',
+      type: 'list',
+      choices: ['Edit updates', 'Yes', 'No'],
+      default: 'Yes'
+    },
+    {
+      name: 'edit',
+      type: 'editor',
+      when: answers => answers.action === 'Edit updates',
+      message: 'Edit list of updates',
+      default: editTemplate(updates)
+    }
+  ])
+
+  switch (answers.action) {
+    case 'Yes':
+      return true
+    case 'No':
+      return false
+    default:
+      applyEdits(out, updates, answers.edit?.trim() || '')
+      out.write('\n')
+      return filterUpdates(updates, out)
+  }
+}
+
+export const _test_internals = { prettyPrint, editTemplate, applyEdits }
