@@ -15,7 +15,7 @@ import { source } from '../test-helpers/source'
 import { version } from './version'
 
 // 'fs/promises' is only available from Node.js 14.0.0
-const { mkdir, readFile } = promises
+const { mkdir, readFile, writeFile } = promises
 const execFile = promisify(execFileCb)
 
 const DATE = new Date().toISOString().substring(0, 10)
@@ -199,28 +199,55 @@ describe('CLI end-to-end', () => {
       await cleanupTmpRepo(cwd)
     })
 
-    it('patch release from chores with --all-commits', async () => {
-      const cwd = await setup('foo', '1.2.3', null)
-      process.chdir(cwd)
+    describe('--all-commits', () => {
+      it('patch with no changelog', async () => {
+        const cwd = await setup('foo', '1.2.3', null)
+        process.chdir(cwd)
 
-      const out = new MockOut()
-      await version(['.', '--yes', '--all-commits'], out)
-      expect(out.calls).to.deep.equal([
-        'Updating foo to 1.2.4 ...\n',
-        'No changelog added for foo.\n',
-        'Done!\n'
-      ])
+        const out = new MockOut()
+        await version(['.', '--yes', '--all-commits'], out)
+        expect(out.calls).to.deep.equal([
+          'Updating foo to 1.2.4 ...\n',
+          'Done!\n'
+        ])
 
-      expect(await getTags()).to.deep.equal(['v1.2.4'])
+        expect(await getTags()).to.deep.equal(['v1.2.4'])
 
-      try {
-        await readFile('CHANGELOG.md', 'utf8')
-        throw new Error('CHANGELOG.md should not exist')
-      } catch (error) {
-        if (error.code !== 'ENOENT') throw error
-      }
+        const log = await readFile('CHANGELOG.md', 'utf8')
+        expect(normalise(log)).to.equal(source`
+          # Changelog
 
-      await cleanupTmpRepo(cwd)
+          ## [${URL}/compare/1.2.3...1.2.4](1.2.4) (${DATE})
+        `)
+
+        await cleanupTmpRepo(cwd)
+      })
+
+      it('patch with changelog', async () => {
+        const cwd = await setup('foo', '1.2.3', null)
+        process.chdir(cwd)
+        await writeFile('CHANGELOG.md', '# Change Log\n\n## Release 1.2.3\n')
+
+        const out = new MockOut()
+        await version(['.', '--yes', '--all-commits'], out)
+        expect(out.calls).to.deep.equal([
+          'Updating foo to 1.2.4 ...\n',
+          'Done!\n'
+        ])
+
+        expect(await getTags()).to.deep.equal(['v1.2.4'])
+
+        const log = await readFile('CHANGELOG.md', 'utf8')
+        expect(normalise(log)).to.equal(source`
+          # Change Log
+
+          ## [${URL}/compare/1.2.3...1.2.4](1.2.4) (${DATE})
+
+          ## Release 1.2.3
+        `)
+
+        await cleanupTmpRepo(cwd)
+      })
     })
   })
 

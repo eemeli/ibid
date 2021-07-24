@@ -41,8 +41,9 @@ function changelogFormat(
   version: string | null,
   commits: Commit[]
 ) {
+  const head = fmt.header(ctx, version)
   const body = fmt.changes(ctx, commits)
-  return body ? `${fmt.header(ctx, version)}\n${body}` : ''
+  return body ? `${head}\n${body}` : version ? head : ''
 }
 
 function commitFormat(tags: string[]) {
