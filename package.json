@@ -11,7 +11,7 @@
     "build": "tsc",
     "lint": "eslint src/",
     "prettier": "prettier src/ --ignore-unknown --write",
-    "test": "nyc mocha 'lib/**/*.spec.js'"
+    "test": "nyc mocha"
   },
   "repository": {
     "type": "git",
@@ -48,6 +48,7 @@
     "mocha": "^8.3.2",
     "nyc": "^15.1.0",
     "prettier": "^2.3.2",
+    "ts-node": "^10.1.0",
     "typescript": "^4.3.5"
   },
   "engines": {

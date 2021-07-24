@@ -1,5 +1,5 @@
 all: true
 include:
-  - 'lib/**/*.js'
+  - 'src/**/*.ts'
 exclude:
-  - '**/*.spec.js'
+  - '**/*.spec.ts'
