@@ -13,7 +13,9 @@ import {
   gitCommit
 } from '../shell/git'
 import { npmVersion } from '../shell/npm'
+import { amendVersion } from './amend-version'
 import { filterUpdates } from './filter-updates'
+import { InputError } from './input-error'
 
 // 'fs/promises' is only available from Node.js 14.0.0
 const { readFile } = promises
@@ -36,13 +38,20 @@ async function findPackageRoots(patterns: string[]) {
   return roots
 }
 
-export class InputError extends Error {}
-
 export async function version(args: string[], out: Writable): Promise<void> {
   const argv = yargsParser(args, {
     alias: { 'all-commits': ['a'], init: ['i'], yes: ['y'] },
-    boolean: ['all-commits', 'init', 'yes']
+    boolean: ['all-commits', 'amend', 'init', 'yes']
   })
+
+  if (argv.amend) {
+    if (args.length > 1)
+      throw new InputError('Do not use other arguments with --amend')
+    await amendVersion()
+    out.write('Release commit amended and tags moved.\n')
+    return
+  }
+
   const updates: PackageUpdate[] = []
   for (const root of await findPackageRoots(argv._)) {
     updates.push(

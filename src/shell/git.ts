@@ -4,10 +4,14 @@ import { promisify } from 'util'
 
 const execFile = promisify(execFileCb)
 
+// INFO
+
 export async function gitAbbrevLength(): Promise<number> {
   const { stdout } = await execFile('git', ['rev-parse', '--short', 'HEAD'])
   return stdout.trim().length || 7
 }
+
+// VALIDATE
 
 /** Source: https://git-scm.com/docs/git-check-ref-format */
 // eslint-disable-next-line no-control-regex
@@ -34,6 +38,8 @@ export async function isGitRoot(path: string): Promise<boolean> {
   }
 }
 
+// LOG
+
 export async function gitLog(
   from: string | null,
   to: string | null,
@@ -55,6 +61,8 @@ export async function gitLog(
   const { stdout } = await execFile('git', args)
   return stdout ? stdout.split(/^(?=commit )/m) : []
 }
+
+// ADD
 
 export async function gitAdd(path: string): Promise<void> {
   await execFile('git', ['add', '--', path])
@@ -78,6 +86,30 @@ export async function gitAddPackageFiles(dir: string | null): Promise<void> {
   await execFile('git', args, { cwd })
 }
 
+export async function gitListStagedFiles(): Promise<string[]> {
+  const { stdout } = await execFile('git', ['diff', '--name-only', '--cached'])
+  return stdout.split('\n').filter(Boolean).sort()
+}
+
+// COMMIT
+
+export async function gitCommit(
+  message: string,
+  tags: string[]
+): Promise<void> {
+  await execFile('git', ['commit', '--message', message])
+  for (const tag of tags)
+    await execFile('git', ['tag', '--message', tag, '--', tag])
+}
+
+export async function gitAmendCommit(tags: string[]): Promise<void> {
+  await execFile('git', ['commit', '--amend', '--no-edit'])
+  for (const tag of tags)
+    await execFile('git', ['tag', '--force', '--message', tag, '--', tag])
+}
+
+// TAGS
+
 export async function gitCheckTag(tag: string): Promise<boolean> {
   if (!tag || tag.startsWith('-')) return false
   try {
@@ -88,10 +120,18 @@ export async function gitCheckTag(tag: string): Promise<boolean> {
   }
 }
 
-export async function gitCommit(
-  message: string,
-  tags: string[]
-): Promise<void> {
-  await execFile('git', ['commit', '--message', message])
-  for (const tag of tags) await execFile('git', ['tag', '--message', tag, tag])
+export async function gitCurrentTags(): Promise<string[]> {
+  const { stdout } = await execFile('git', ['tag', '--points-at', 'HEAD'])
+  return stdout.split('\n').filter(Boolean).sort()
+}
+
+export async function gitTagMessage(tag: string): Promise<string> {
+  const { stdout } = await execFile('git', [
+    'tag',
+    '--list',
+    '--format=%(contents)',
+    '--',
+    tag
+  ])
+  return stdout.trim()
 }

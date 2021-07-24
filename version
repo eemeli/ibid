@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
-const { InputError, version } = require('./lib/cli/version')
+const { InputError } = require('./lib/cli/input-error')
+const { version } = require('./lib/cli/version')
 
 version(process.argv.slice(2), process.stderr).catch(error => {
   if (error instanceof InputError) {
