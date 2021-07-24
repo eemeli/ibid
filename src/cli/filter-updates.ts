@@ -82,7 +82,11 @@ function editTemplate(updates: PackageUpdate[]): string {
   )
 }
 
-function applyEdits(out: Writable, updates: PackageUpdate[], editSrc: string) {
+function applyEdits(
+  out: Writable,
+  updates: PackageUpdate[],
+  editSrc: string
+): void {
   const commands = new Map<
     string,
     { bump: ReleaseType | 'set'; id?: string; line: string }

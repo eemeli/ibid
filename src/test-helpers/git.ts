@@ -8,13 +8,13 @@ import { promisify } from 'util'
 const { mkdtemp, rm, rmdir, writeFile } = promises
 const execFile = promisify(execFileCb)
 
-export async function initTmpRepo(name: string) {
+export async function initTmpRepo(name: string): Promise<string> {
   const cwd = await mkdtemp(join(tmpdir(), `${name}-`))
   await execFile('git', ['init'], { cwd })
   return cwd
 }
 
-export async function firstCommit(cwd: string, tags: string[]) {
+export async function firstCommit(cwd: string, tags: string[]): Promise<void> {
   await execFile(
     'git',
     ['commit', '--allow-empty', '--message', 'chore!: First commit'],
@@ -30,7 +30,7 @@ export async function updateFile(
   path: string,
   data: string | null,
   message: string | null
-) {
+): Promise<void> {
   if (!data) {
     data = String(seed + Math.random()) + EOL
     seed += 2
@@ -40,13 +40,13 @@ export async function updateFile(
   if (message) await execFile('git', ['commit', '--message', message], { cwd })
 }
 
-export async function clone(srcDir: string) {
+export async function clone(srcDir: string): Promise<string> {
   const cwd = await mkdtemp(join(tmpdir(), 'clone-'))
   await execFile('git', ['clone', srcDir, '.'], { cwd })
   return cwd
 }
 
-export async function cleanupTmpRepo(cwd: string) {
+export async function cleanupTmpRepo(cwd: string): Promise<void> {
   const rel = relative(tmpdir(), cwd)
   if (!rel || rel[0] === '.')
     throw new Error(`Not removing ${cwd} not within tmp dir ${tmpdir()}`)

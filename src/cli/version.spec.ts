@@ -262,7 +262,7 @@ describe('CLI end-to-end', () => {
       const root = await initTmpRepo('multi')
       await firstCommit(root, [])
       for (const { name, version, bump } of packages) {
-        const cwd = join(root, name.replace(/^.*[\/\\]/, ''))
+        const cwd = join(root, name.replace(/^.*[/\\]/, ''))
         await mkdir(cwd)
 
         const pkg = getPackage(name, version)
