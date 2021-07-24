@@ -1,9 +1,10 @@
 import { promises } from 'fs'
 import { relative, resolve } from 'path'
+import type { Writable } from 'stream'
 import glob from 'tiny-glob'
 import yargsParser from 'yargs-parser'
 import { writeChangelog } from '../changelog/write'
-import { Config } from '../config/config'
+import type { Config } from '../config/config'
 import { getCurrentUpdate, PackageUpdate } from '../index'
 import {
   gitAdd,
@@ -37,10 +38,10 @@ async function findPackageRoots(patterns: string[]) {
 
 export class InputError extends Error {}
 
-export async function version(args: string[]): Promise<void> {
+export async function version(args: string[], out: Writable): Promise<void> {
   const argv = yargsParser(args, {
-    alias: { 'all-commits': ['a'], prerelease: ['p'], yes: ['y'] },
-    boolean: ['all-commits', 'yes']
+    alias: { 'all-commits': ['a'], init: ['i'], yes: ['y'] },
+    boolean: ['all-commits', 'init', 'yes']
   })
   const updates: PackageUpdate[] = []
   for (const root of await findPackageRoots(argv._)) {
@@ -54,9 +55,9 @@ export async function version(args: string[]): Promise<void> {
 
   if (!argv.yes) {
     const apply = await filterUpdates(updates)
-    console.error()
+    out.write('\n')
     if (!apply) {
-      console.error('Not applying any updates.')
+      out.write('Not applying any updates.\n')
       return
     }
   }
@@ -67,27 +68,32 @@ export async function version(args: string[]): Promise<void> {
     if (!bump || !version) continue
     const name =
       context.package?.name || relative(process.cwd(), context.cwd || '') || '.'
-    console.error(`Updating ${name} to ${version} ...`)
+    out.write(`Updating ${name} to ${version} ...\n`)
     commitFormat ??= context.config.commitFormat
 
     const tag = context.config.tagFormat(context, version)
     if (await gitCheckTag(tag)) tags.push(tag)
     else throw new InputError(`Invalid tag: ${tag}`)
 
-    const cf = await writeChangelog(context, false, version, commits)
+    const cf = await writeChangelog(
+      context,
+      argv.init ?? null,
+      version,
+      commits
+    )
     if (cf) await gitAdd(cf)
-    else console.error(`No changelog added for ${name}.`)
+    else out.write(`No changelog added for ${name}.\n`)
 
     await npmVersion(context.cwd, version)
     await gitAddPackageFiles(context.cwd)
   }
 
-  if (tags.length === 0) console.error('No packages to update.')
+  if (tags.length === 0) out.write('No packages to update.\n')
   else {
     const msg = commitFormat && commitFormat(tags)
-    if (!msg) console.error('Skipping git commit.')
+    if (!msg) out.write('Skipping git commit.\n')
     else {
-      console.error('Done!')
+      out.write('Done!\n')
       await gitCommit(msg, tags)
     }
   }

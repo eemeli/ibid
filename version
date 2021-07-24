@@ -2,7 +2,7 @@
 
 const { InputError, version } = require('./lib/cli/version')
 
-version(process.argv.slice(2)).catch(error => {
+version(process.argv.slice(2), process.stderr).catch(error => {
   if (error instanceof InputError) {
     console.error(error.message)
     process.exit(1)

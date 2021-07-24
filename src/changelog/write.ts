@@ -50,9 +50,13 @@ export async function writeChangelog(
     try {
       prev = await readFile(path, 'utf8')
     } catch (error) {
-      if (init === null && error.code === 'ENOENT')
-        prev = ctx.config.changelogIntro
-      else throw error
+      if (error.code === 'ENOENT') {
+        if (init == null) prev = ctx.config.changelogIntro
+        else
+          throw Error(
+            `Changelog not found at ${path}. To start a new changelog, use init: true or null.`
+          )
+      } else throw error
     }
   }
 
