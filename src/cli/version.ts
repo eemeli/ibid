@@ -12,7 +12,7 @@ import {
   gitCommit
 } from '../shell/git'
 import { npmVersion } from '../shell/npm'
-import { filterUpdates } from './filter'
+import { filterUpdates } from './filter-updates'
 
 // 'fs/promises' is only available from Node.js 14.0.0
 const { readFile } = promises
@@ -35,28 +35,22 @@ async function findPackageRoots(patterns: string[]) {
   return roots
 }
 
-;(async function main() {
-  const argv = yargsParser(process.argv.slice(2), {
+export class InputError extends Error {}
+
+export async function version(args: string[]): Promise<void> {
+  const argv = yargsParser(args, {
     alias: { 'all-commits': ['a'], prerelease: ['p'], yes: ['y'] },
     boolean: ['all-commits', 'yes']
   })
   const updates: PackageUpdate[] = []
-  try {
-    for (const root of await findPackageRoots(argv._)) {
-      updates.push(
-        await getCurrentUpdate(root, { bumpAllChanges: !!argv.allCommits })
-      )
-    }
-  } catch (error) {
-    console.error('Failed reading current package state, no changes applied.')
-    console.error(error)
-    process.exit(1)
+  for (const root of await findPackageRoots(argv._)) {
+    updates.push(
+      await getCurrentUpdate(root, { bumpAllChanges: !!argv.allCommits })
+    )
   }
 
-  if (updates.length === 0) {
-    console.error(`No packages found in: ${argv._.join(', ')}`)
-    process.exit(1)
-  }
+  if (updates.length === 0)
+    throw new InputError(`No packages found in: ${argv._.join(', ')}`)
 
   if (!argv.yes) {
     const apply = await filterUpdates(updates)
@@ -78,7 +72,7 @@ async function findPackageRoots(patterns: string[]) {
 
     const tag = context.config.tagFormat(context, version)
     if (await gitCheckTag(tag)) tags.push(tag)
-    else throw new Error(`Invalid tag: ${tag}`)
+    else throw new InputError(`Invalid tag: ${tag}`)
 
     const cf = await writeChangelog(context, false, version, commits)
     if (cf) await gitAdd(cf)
@@ -97,4 +91,4 @@ async function findPackageRoots(patterns: string[]) {
       await gitCommit(msg, tags)
     }
   }
-})()
+}
