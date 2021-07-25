@@ -2,13 +2,14 @@
   "name": "ibid",
   "version": "0.0.1",
   "description": "Package versioning for monorepos",
-  "bin": "./version",
+  "bin": "./lib/cli.js",
   "files": [
     "lib/"
   ],
   "main": "./lib/index.js",
   "scripts": {
     "build": "tsc",
+    "postbuild": "chmod a+x lib/cli.js",
     "lint": "eslint src/",
     "prettier": "prettier src/ --ignore-unknown --write",
     "test": "nyc mocha"
