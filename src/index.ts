@@ -13,7 +13,12 @@ export {
   parseCommit,
   Reference
 } from './commits'
-export { changelogFormatter, Config, getRequiredConfig } from './config/config'
+export {
+  changelogFormatter,
+  Config,
+  getBaseConfig,
+  validateConfig
+} from './config/config'
 export { Context, createContext, HostContext, Package } from './config/context'
 
 export interface PackageUpdate {

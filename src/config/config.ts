@@ -35,6 +35,27 @@ export interface Config {
   tagFormat?: (context: Context, version?: string | null) => string
 }
 
+const configShape = {
+  bumpAllChanges: ['boolean'],
+  changelogEntryPattern: [RegExp],
+  changelogFilename: ['string'],
+  changelogFormat: ['function'],
+  changelogIntro: ['string'],
+  changelogSections: [Array],
+  changelogTitles: ['object'],
+  commitFormat: ['function', false],
+  context: ['function'],
+  hostContext: ['object', null],
+  includeMergeCommits: ['boolean'],
+  includeRevertedCommits: ['boolean'],
+  linkCommit: ['function', false],
+  linkCompare: ['function', false],
+  linkReference: ['function', false],
+  prerelease: ['boolean', 'string', null],
+  shortHashLength: ['number'],
+  tagFormat: ['function']
+}
+
 function changelogFormat(
   ctx: Context,
   fmt: typeof formatChangelog,
@@ -82,29 +103,65 @@ function tagFormat(ctx: Context, version?: string | null) {
     : `v${version}`
 }
 
-export const getRequiredConfig = async (
-  config: Config
-): Promise<Required<Config>> =>
-  Object.assign(
-    {
-      bumpAllChanges: false,
-      changelogEntryPattern: /^#(?!\s*change)/im,
-      changelogFilename: 'CHANGELOG.md',
-      changelogFormat,
-      changelogIntro: `# Changelog\n`,
-      changelogSections: ['feat', 'fix', 'perf', 'revert'],
-      changelogTitles: {},
-      commitFormat,
-      context: (ctx: Context) => ctx,
-      hostContext: null,
-      includeMergeCommits: false,
-      includeRevertedCommits: false,
-      linkCommit,
-      linkCompare,
-      linkReference,
-      prerelease: null,
-      shortHashLength: await gitAbbrevLength(),
-      tagFormat
-    },
-    config
-  )
+export const getBaseConfig = async (): Promise<Required<Config>> => ({
+  bumpAllChanges: false,
+  changelogEntryPattern: /^#(?!\s*change)/im,
+  changelogFilename: 'CHANGELOG.md',
+  changelogFormat,
+  changelogIntro: `# Changelog\n`,
+  changelogSections: ['feat', 'fix', 'perf', 'revert'],
+  changelogTitles: {},
+  commitFormat,
+  context: (ctx: Context) => ctx,
+  hostContext: null,
+  includeMergeCommits: false,
+  includeRevertedCommits: false,
+  linkCommit,
+  linkCompare,
+  linkReference,
+  prerelease: null,
+  shortHashLength: await gitAbbrevLength(),
+  tagFormat
+})
+
+export function validateConfig(
+  config: Config | null | undefined,
+  throwOnUnknown: boolean
+): Config {
+  const res: Config = {}
+  if (!config) return res
+  for (const key of Object.keys(config) as (keyof Config)[]) {
+    const expected = configShape[key]
+    if (!expected) {
+      if (throwOnUnknown) throw new Error(`Unknown config key: ${key}`)
+      else continue
+    }
+
+    const value = config[key]
+    const ok = expected.some(shape => {
+      if (typeof shape === 'string') return typeof value === shape
+      if (typeof shape === 'function') return value instanceof shape
+      return value === shape
+    })
+
+    if (ok) {
+      // Let's trust in our runtime checks.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (!throwOnUnknown) res[key] = value as any
+    } else {
+      // TypeScript types don't include Intl.ListFormat yet, but it is
+      // supported from Node.js 12.0.0 onwards.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const lf = new (Intl as any).ListFormat(undefined, {
+        type: 'disjunction'
+      })
+      const ss = expected.map(shape =>
+        typeof shape === 'function' ? shape.name : String(shape)
+      )
+      throw new Error(
+        `Invalid type for ${key} config, expected: ${lf.format(ss)}`
+      )
+    }
+  }
+  return throwOnUnknown ? config : res
+}

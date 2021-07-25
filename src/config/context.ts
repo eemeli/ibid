@@ -4,7 +4,7 @@ import normalize from 'normalize-package-data'
 import { resolve } from 'path'
 import { isGitRoot } from '../shell/git'
 import { HostContext, hostData } from './host-data'
-import { Config, getRequiredConfig } from './config'
+import { Config, getBaseConfig, validateConfig } from './config'
 
 // 'fs/promises' is only available from Node.js 14.0.0
 const { readFile } = promises
@@ -51,7 +51,7 @@ async function getPackage(cwd: string) {
 }
 
 export async function createContext(
-  config: Config = {},
+  config?: Config,
   cwd: string | null = null
 ): Promise<Context> {
   const cache: {
@@ -59,7 +59,7 @@ export async function createContext(
     hostInfo?: Context['hostInfo']
   } = {}
   const context: Context = {
-    config: await getRequiredConfig(config),
+    config: Object.assign(await getBaseConfig(), validateConfig(config, true)),
     cwd,
     gitRoot: await isGitRoot(cwd || ''),
     package: typeof cwd === 'string' ? await getPackage(cwd) : null,
@@ -83,5 +83,5 @@ export async function createContext(
     }
   }
 
-  return config.context ? await config.context(context) : context
+  return config?.context ? config.context(context) : context
 }
