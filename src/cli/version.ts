@@ -5,6 +5,7 @@ import glob from 'tiny-glob'
 import yargsParser from 'yargs-parser'
 import { writeChangelog } from '../changelog/write'
 import type { Config } from '../config/config'
+import { loadConfig } from '../config/load-config'
 import { getCurrentUpdate, PackageUpdate } from '../index'
 import {
   gitAdd,
@@ -40,8 +41,15 @@ async function findPackageRoots(patterns: string[]) {
 
 export async function version(args: string[], out: Writable): Promise<void> {
   const argv = yargsParser(args, {
-    alias: { 'all-commits': ['a'], init: ['i'], yes: ['y'] },
-    boolean: ['all-commits', 'amend', 'init', 'yes']
+    alias: {
+      bumpAllChanges: ['a', 'all-commits'],
+      config: ['c'],
+      init: ['i'],
+      prerelease: ['p'],
+      yes: ['y']
+    },
+    boolean: ['amend', 'init', 'yes'],
+    string: ['config']
   })
 
   if (argv.amend) {
@@ -52,11 +60,10 @@ export async function version(args: string[], out: Writable): Promise<void> {
     return
   }
 
+  const config = await loadConfig('.', argv.config, argv)
   const updates: PackageUpdate[] = []
   for (const root of await findPackageRoots(argv._)) {
-    updates.push(
-      await getCurrentUpdate(root, { bumpAllChanges: !!argv.allCommits })
-    )
+    updates.push(await getCurrentUpdate(root, config))
   }
 
   if (updates.length === 0)

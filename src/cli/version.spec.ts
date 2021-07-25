@@ -135,24 +135,24 @@ describe('CLI end-to-end', () => {
       await cleanupTmpRepo(cwd)
     })
 
-    it('minor release', async () => {
+    it('minor prerelease', async () => {
       const cwd = await setup('foo', '1.2.3', 'minor')
       process.chdir(cwd)
 
       const out = new MockOut()
-      await version(['.', '--yes'], out)
+      await version(['.', '--yes', '--prerelease'], out)
       expect(out.calls).to.deep.equal([
-        'Updating foo to 1.3.0 ...\n',
+        'Updating foo to 1.3.0-0 ...\n',
         'Done!\n'
       ])
 
-      expect(await gitCurrentTags()).to.deep.equal(['v1.3.0'])
+      expect(await gitCurrentTags()).to.deep.equal(['v1.3.0-0'])
 
       const log = await readFile('CHANGELOG.md', 'utf8')
       expect(normalise(log)).to.equal(source`
         # Changelog
 
-        ## [${URL}/compare/1.2.3...1.3.0](1.3.0) (${DATE})
+        ## [${URL}/compare/1.2.3...1.3.0-0](1.3.0-0) (${DATE})
 
         ### Features
 
@@ -167,9 +167,17 @@ describe('CLI end-to-end', () => {
       await cleanupTmpRepo(cwd)
     })
 
-    it('major release', async () => {
+    it('major release with config file', async () => {
       const cwd = await setup('foo', '1.2.3', 'major')
       process.chdir(cwd)
+      await writeFile(
+        'ibid.config.cjs',
+        source`
+          module.exports = {
+            changelogFilename: 'RELEASES',
+            changelogSections: ['fix', 'feat'],
+          }`
+      )
 
       const out = new MockOut()
       await version(['.', '--yes'], out)
@@ -180,7 +188,7 @@ describe('CLI end-to-end', () => {
 
       expect(await gitCurrentTags()).to.deep.equal(['v2.0.0'])
 
-      const log = await readFile('CHANGELOG.md', 'utf8')
+      const log = await readFile('RELEASES', 'utf8')
       expect(normalise(log)).to.equal(source`
         # Changelog
 
@@ -191,17 +199,17 @@ describe('CLI end-to-end', () => {
         * Break
         * Major 1
 
-        ### Features
-
-        * Minor 1 ([URL](ID))
-        * Minor 2 ([URL](ID))
-        * Major 1 ([URL](ID))
-
         ### Bug Fixes
 
         * Patch 1 ([URL](ID))
         * Patch 2 ([URL](ID))
         * Major 2 ([URL](ID))
+
+        ### Features
+
+        * Minor 1 ([URL](ID))
+        * Minor 2 ([URL](ID))
+        * Major 1 ([URL](ID))
       `)
       await cleanupTmpRepo(cwd)
     })
