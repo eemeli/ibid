@@ -1,10 +1,10 @@
+import { InputError } from '../cli-helpers/input-error'
 import {
   gitAmendCommit,
   gitCurrentTags,
   gitListStagedFiles,
   gitTagMessage
 } from '../shell/git'
-import { InputError } from './input-error'
 
 export async function amendVersion(): Promise<void> {
   const tags = await gitCurrentTags()

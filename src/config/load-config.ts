@@ -1,5 +1,5 @@
 import { resolve } from 'path'
-import { InputError } from '../version/input-error'
+import { InputError } from '../cli-helpers/input-error'
 import { Config, getBaseConfig, validateConfig } from './config'
 
 async function loadRawConfig(cwd: string, fn: string) {

@@ -1,9 +1,9 @@
-import { promises } from 'fs'
-import { relative, resolve } from 'path'
+import { relative } from 'path'
 import type { Writable } from 'stream'
-import glob from 'tiny-glob'
 import yargsParser from 'yargs-parser'
 import { writeChangelog } from '../changelog/write'
+import { InputError } from '../cli-helpers/input-error'
+import { findPackageRoots } from '../cli-helpers/package-roots'
 import type { Config } from '../config/config'
 import { loadConfig } from '../config/load-config'
 import { getCurrentUpdate, PackageUpdate } from '../index'
@@ -16,28 +16,6 @@ import {
 import { npmVersion } from '../shell/npm'
 import { amendVersion } from './amend-version'
 import { filterUpdates } from './filter-updates'
-import { InputError } from './input-error'
-
-// 'fs/promises' is only available from Node.js 14.0.0
-const { readFile } = promises
-
-async function findPackageRoots(patterns: string[]) {
-  const roots = new Set<string>()
-  for (const pat of patterns) {
-    for (const root of await glob(pat, { absolute: true })) {
-      if (roots.has(root)) continue
-      const pkgPath = resolve(root, 'package.json')
-      try {
-        const pkgSrc = await readFile(pkgPath, 'utf8')
-        const { name, version } = JSON.parse(pkgSrc)
-        if (name && version) roots.add(root)
-      } catch (error) {
-        if (error.code !== 'ENOENT') throw error
-      }
-    }
-  }
-  return roots
-}
 
 export async function version(args: string[], out: Writable): Promise<void> {
   const argv = yargsParser(args, {
