@@ -6,9 +6,13 @@ const execFile = promisify(execFileCb)
 
 // INFO
 
+let abbrevLength = -1
 export async function gitAbbrevLength(): Promise<number> {
-  const { stdout } = await execFile('git', ['rev-parse', '--short', 'HEAD'])
-  return stdout.trim().length || 7
+  if (abbrevLength === -1) {
+    const { stdout } = await execFile('git', ['rev-parse', '--short', 'HEAD'])
+    abbrevLength = stdout.trim().length || 7
+  }
+  return abbrevLength
 }
 
 // VALIDATE
