@@ -17,7 +17,6 @@ export interface Package {
   name: string
   version: string
   repository?: { type: string; url: string }
-  bundleDependencies?: Record<string, string>
   dependencies?: Record<string, string>
   devDependencies?: Record<string, string>
   optionalDependencies?: Record<string, string>

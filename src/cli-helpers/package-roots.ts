@@ -1,12 +1,14 @@
 import { promises } from 'fs'
 import { resolve } from 'path'
 import glob from 'tiny-glob'
+import { Package } from '../config/context'
 
 // 'fs/promises' is only available from Node.js 14.0.0
 const { readFile } = promises
 
 export async function findPackageRoots(
-  patterns: string[]
+  patterns: string[],
+  onPackage?: (root: string, pkg: Package) => void
 ): Promise<Set<string>> {
   const roots = new Set<string>()
   for (const pat of patterns) {
@@ -15,8 +17,11 @@ export async function findPackageRoots(
       const pkgPath = resolve(root, 'package.json')
       try {
         const pkgSrc = await readFile(pkgPath, 'utf8')
-        const { name, version } = JSON.parse(pkgSrc)
-        if (name && version) roots.add(root)
+        const pkg = JSON.parse(pkgSrc)
+        if (pkg.name && pkg.version) {
+          roots.add(root)
+          if (onPackage) onPackage(root, pkg)
+        }
       } catch (error) {
         if (error.code !== 'ENOENT') throw error
       }
