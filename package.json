@@ -1,5 +1,5 @@
 {
-  "name": "@eemeli/version",
+  "name": "ibid",
   "version": "0.0.1",
   "description": "Package versioning for monorepos",
   "bin": "./version",
@@ -15,14 +15,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/eemeli/version.git"
+    "url": "git+https://github.com/eemeli/ibid.git"
   },
   "author": "Eemeli Aro <eemeli@gmail.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/eemeli/version/issues"
+    "url": "https://github.com/eemeli/ibid/issues"
   },
-  "homepage": "https://github.com/eemeli/version#readme",
+  "homepage": "https://github.com/eemeli/ibid#readme",
   "dependencies": {
     "hosted-git-info": "^4.0.2",
     "inquirer": "^8.1.1",

@@ -66,12 +66,12 @@ describe('formatChangelog', () => {
 
     it('linkifies version', () => {
       ctx.package = {
-        name: '@eemeli/version',
+        name: 'ibid',
         version: '1.0.0',
-        repository: { type: 'git', url: 'https://github.com/eemeli/version' }
+        repository: { type: 'git', url: 'https://github.com/eemeli/ibid' }
       }
       expect(formatChangelog.header(ctx, '1.2.3')).to.equal(
-        `## [https://github.com/eemeli/version/compare/1.0.0...1.2.3](1.2.3) (${dateStr})\n`
+        `## [https://github.com/eemeli/ibid/compare/1.0.0...1.2.3](1.2.3) (${dateStr})\n`
       )
     })
 
@@ -110,9 +110,9 @@ describe('formatChangelog', () => {
 
     it('linkifies various commits', () => {
       ctx.package = {
-        name: '@eemeli/version',
+        name: 'ibid',
         version: '1.0.0',
-        repository: { type: 'git', url: 'https://github.com/eemeli/version' }
+        repository: { type: 'git', url: 'https://github.com/eemeli/ibid' }
       }
       expect(formatChangelog.changes(ctx, getCommits())).to
         .equal(`### ⚠ Breaking Changes
@@ -121,15 +121,15 @@ describe('formatChangelog', () => {
 
 ### Features
 
-* **scope:** broadcast $destroy event on scope destruction ([https://github.com/eemeli/version/commit/9b1aff905b638aa274a5fc8f88662df446d374bd](9b1aff9)), closes [https://github.com/eemeli/version/issues/1](#1), closes [https://github.com/eemeli/version/issues/2](#2), closes [https://github.com/eemeli/version/issues/3](#3)
+* **scope:** broadcast $destroy event on scope destruction ([https://github.com/eemeli/ibid/commit/9b1aff905b638aa274a5fc8f88662df446d374bd](9b1aff9)), closes [https://github.com/eemeli/ibid/issues/1](#1), closes [https://github.com/eemeli/ibid/issues/2](#2), closes [https://github.com/eemeli/ibid/issues/3](#3)
 
 ### Bug Fixes
 
-* **ng-list:** Allow custom separator ([https://github.com/eemeli/version/commit/13f31602f396bc269076ab4d389cfd8ca94b20ba](13f3160))
+* **ng-list:** Allow custom separator ([https://github.com/eemeli/ibid/commit/13f31602f396bc269076ab4d389cfd8ca94b20ba](13f3160))
 
 ### Performance Improvements
 
-* **template:** tweak ([https://github.com/eemeli/version/commit/2064a9346c550c9b5dbd17eee7f0b7dd2cde9cf7](2064a93))
+* **template:** tweak ([https://github.com/eemeli/ibid/commit/2064a9346c550c9b5dbd17eee7f0b7dd2cde9cf7](2064a93))
 `)
     })
 
