@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { InputError } from './cli-helpers/input-error'
-import { depend } from './depend/depend'
+import { depend } from './publish/depend'
 import { version } from './version/version'
 
 let command
