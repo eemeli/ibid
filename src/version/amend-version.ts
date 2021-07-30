@@ -1,22 +1,13 @@
 import { InputError } from '../cli-helpers/input-error'
 import {
   gitAmendCommit,
-  gitCurrentTags,
-  gitListStagedFiles,
-  gitTagMessage
+  gitReleaseTags,
+  gitListStagedFiles
 } from '../shell/git'
 
 export async function amendVersion(): Promise<void> {
-  const tags = await gitCurrentTags()
-  let ok = tags.length > 0
-  for (const tag of tags) {
-    const msg = await gitTagMessage(tag)
-    if (msg !== tag) {
-      ok = false
-      break
-    }
-  }
-  if (!ok) {
+  const tags = await gitReleaseTags('HEAD')
+  if (tags.length === 0) {
     throw new InputError(
       'The current commit does not appear to be a release commit.'
     )

@@ -5,7 +5,7 @@ import { before, describe, it } from 'mocha'
 import { join } from 'path'
 import { Writable } from 'stream'
 import { promisify } from 'util'
-import { gitCurrentTags } from '../shell/git'
+import { gitReleaseTags } from '../shell/git'
 import {
   cleanupTmpRepo,
   firstCommit,
@@ -103,7 +103,7 @@ describe('CLI end-to-end', () => {
         'Done!\n'
       ])
 
-      expect(await gitCurrentTags()).to.deep.equal(['v1.2.4'])
+      expect(await gitReleaseTags('HEAD')).to.deep.equal(['v1.2.4'])
 
       const log = await readFile('CHANGELOG.md', 'utf8')
       expect(normalise(log)).to.equal(source`
@@ -127,7 +127,7 @@ describe('CLI end-to-end', () => {
 
       await updateFile(cwd, 'a', null, null)
       await version(['--amend'], out)
-      expect(await gitCurrentTags()).to.deep.equal(['v1.2.4'])
+      expect(await gitReleaseTags('HEAD')).to.deep.equal(['v1.2.4'])
       expect(out.calls).to.deep.equal([
         'Release commit amended and tags moved.\n'
       ])
@@ -146,7 +146,7 @@ describe('CLI end-to-end', () => {
         'Done!\n'
       ])
 
-      expect(await gitCurrentTags()).to.deep.equal(['v1.3.0-0'])
+      expect(await gitReleaseTags('HEAD')).to.deep.equal(['v1.3.0-0'])
 
       const log = await readFile('CHANGELOG.md', 'utf8')
       expect(normalise(log)).to.equal(source`
@@ -186,7 +186,7 @@ describe('CLI end-to-end', () => {
         'Done!\n'
       ])
 
-      expect(await gitCurrentTags()).to.deep.equal(['v2.0.0'])
+      expect(await gitReleaseTags('HEAD')).to.deep.equal(['v2.0.0'])
 
       const log = await readFile('RELEASES', 'utf8')
       expect(normalise(log)).to.equal(source`
@@ -222,7 +222,7 @@ describe('CLI end-to-end', () => {
       await version(['.', '--yes'], out)
       expect(out.calls).to.deep.equal(['No packages to update.\n'])
 
-      expect(await gitCurrentTags()).to.deep.equal([])
+      expect(await gitReleaseTags('HEAD')).to.deep.equal([])
 
       try {
         await readFile('CHANGELOG.md', 'utf8')
@@ -246,7 +246,7 @@ describe('CLI end-to-end', () => {
           'Done!\n'
         ])
 
-        expect(await gitCurrentTags()).to.deep.equal(['v1.2.4'])
+        expect(await gitReleaseTags('HEAD')).to.deep.equal(['v1.2.4'])
 
         const log = await readFile('CHANGELOG.md', 'utf8')
         expect(normalise(log)).to.equal(source`
@@ -270,7 +270,7 @@ describe('CLI end-to-end', () => {
           'Done!\n'
         ])
 
-        expect(await gitCurrentTags()).to.deep.equal(['v1.2.4'])
+        expect(await gitReleaseTags('HEAD')).to.deep.equal(['v1.2.4'])
 
         const log = await readFile('CHANGELOG.md', 'utf8')
         expect(normalise(log)).to.equal(source`
@@ -347,7 +347,10 @@ describe('CLI end-to-end', () => {
         'Done!\n'
       ])
 
-      expect(await gitCurrentTags()).to.deep.equal(['bar@1.3.0', 'foo@0.1.2-4'])
+      expect(await gitReleaseTags('HEAD')).to.deep.equal([
+        'bar@1.3.0',
+        'foo@0.1.2-4'
+      ])
 
       const logFoo = await readFile('foo/CHANGELOG.md', 'utf8')
       expect(normalise(logFoo)).to.equal(source`
@@ -394,7 +397,7 @@ describe('CLI end-to-end', () => {
         'Done!\n'
       ])
 
-      expect(await gitCurrentTags()).to.deep.equal(['bar@2.0.0'])
+      expect(await gitReleaseTags('HEAD')).to.deep.equal(['bar@2.0.0'])
 
       try {
         await readFile('foo/CHANGELOG.md', 'utf8')

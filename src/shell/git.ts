@@ -124,18 +124,19 @@ export async function gitCheckTag(tag: string): Promise<boolean> {
   }
 }
 
-export async function gitCurrentTags(): Promise<string[]> {
-  const { stdout } = await execFile('git', ['tag', '--points-at', 'HEAD'])
-  return stdout.split('\n').filter(Boolean).sort()
-}
+export async function gitReleaseTags(ref: string): Promise<string[]> {
+  checkRefShape(ref)
+  const { stdout } = await execFile('git', ['tag', '--points-at', ref])
+  const tags = stdout.split('\n').filter(Boolean).sort()
 
-export async function gitTagMessage(tag: string): Promise<string> {
-  const { stdout } = await execFile('git', [
-    'tag',
-    '--list',
-    '--format=%(contents)',
-    '--',
-    tag
-  ])
-  return stdout.trim()
+  return tags.filter(async tag => {
+    const { stdout } = await execFile('git', [
+      'tag',
+      '--list',
+      '--format=%(contents)',
+      '--',
+      tag
+    ])
+    return stdout.trim() === tag
+  })
 }
