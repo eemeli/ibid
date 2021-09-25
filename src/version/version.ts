@@ -91,7 +91,11 @@ export async function version(args: string[], out: Writable): Promise<void> {
     const msg = commitFormat && commitFormat(tags)
     if (!msg) out.write('Skipping git commit.\n')
     else {
-      out.write('Done!\n')
+      out.write('Done!\n\n')
+      out.write(
+        'To amend the generated changelogs, edit and git-add them, then run:\n'
+      )
+      out.write('    ibid version --amend\n')
       await gitCommit(msg, tags)
     }
   }

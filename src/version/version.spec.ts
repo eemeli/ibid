@@ -98,10 +98,8 @@ describe('CLI end-to-end', () => {
       expect(out.calls).to.deep.equal([])
 
       await version(['.', '--yes'], out)
-      expect(out.calls).to.deep.equal([
-        'Updating foo to 1.2.4 ...\n',
-        'Done!\n'
-      ])
+      expect(out.calls).to.include('Updating foo to 1.2.4 ...\n')
+      expect(out.calls).to.include('Done!\n\n')
 
       expect(await gitReleaseTags('HEAD')).to.deep.equal(['v1.2.4'])
 
@@ -141,10 +139,8 @@ describe('CLI end-to-end', () => {
 
       const out = new MockOut()
       await version(['.', '--yes', '--prerelease'], out)
-      expect(out.calls).to.deep.equal([
-        'Updating foo to 1.3.0-0 ...\n',
-        'Done!\n'
-      ])
+      expect(out.calls).to.include('Updating foo to 1.3.0-0 ...\n')
+      expect(out.calls).to.include('Done!\n\n')
 
       expect(await gitReleaseTags('HEAD')).to.deep.equal(['v1.3.0-0'])
 
@@ -181,10 +177,8 @@ describe('CLI end-to-end', () => {
 
       const out = new MockOut()
       await version(['.', '--yes'], out)
-      expect(out.calls).to.deep.equal([
-        'Updating foo to 2.0.0 ...\n',
-        'Done!\n'
-      ])
+      expect(out.calls).to.include('Updating foo to 2.0.0 ...\n')
+      expect(out.calls).to.include('Done!\n\n')
 
       expect(await gitReleaseTags('HEAD')).to.deep.equal(['v2.0.0'])
 
@@ -241,10 +235,8 @@ describe('CLI end-to-end', () => {
 
         const out = new MockOut()
         await version(['.', '--yes', '--all-commits'], out)
-        expect(out.calls).to.deep.equal([
-          'Updating foo to 1.2.4 ...\n',
-          'Done!\n'
-        ])
+        expect(out.calls).to.include('Updating foo to 1.2.4 ...\n')
+        expect(out.calls).to.include('Done!\n\n')
 
         expect(await gitReleaseTags('HEAD')).to.deep.equal(['v1.2.4'])
 
@@ -265,10 +257,8 @@ describe('CLI end-to-end', () => {
 
         const out = new MockOut()
         await version(['.', '--yes', '--all-commits'], out)
-        expect(out.calls).to.deep.equal([
-          'Updating foo to 1.2.4 ...\n',
-          'Done!\n'
-        ])
+        expect(out.calls).to.include('Updating foo to 1.2.4 ...\n')
+        expect(out.calls).to.include('Done!\n\n')
 
         expect(await gitReleaseTags('HEAD')).to.deep.equal(['v1.2.4'])
 
@@ -341,11 +331,9 @@ describe('CLI end-to-end', () => {
 
       const out = new MockOut()
       await version(['foo', 'bar', '--yes'], out)
-      expect(out.calls).to.deep.equal([
-        'Updating foo to 0.1.2-4 ...\n',
-        'Updating bar to 1.3.0 ...\n',
-        'Done!\n'
-      ])
+      expect(out.calls).to.include('Updating foo to 0.1.2-4 ...\n')
+      expect(out.calls).to.include('Updating bar to 1.3.0 ...\n')
+      expect(out.calls).to.include('Done!\n\n')
 
       expect(await gitReleaseTags('HEAD')).to.deep.equal([
         'bar@1.3.0',
@@ -392,10 +380,8 @@ describe('CLI end-to-end', () => {
 
       const out = new MockOut()
       await version(['foo', 'bar', '--yes'], out)
-      expect(out.calls).to.deep.equal([
-        'Updating bar to 2.0.0 ...\n',
-        'Done!\n'
-      ])
+      expect(out.calls).to.include('Updating bar to 2.0.0 ...\n')
+      expect(out.calls).to.include('Done!\n\n')
 
       expect(await gitReleaseTags('HEAD')).to.deep.equal(['bar@2.0.0'])
 
