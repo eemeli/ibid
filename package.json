@@ -12,7 +12,7 @@
     "postbuild": "chmod a+x lib/cli.js",
     "lint": "eslint src/",
     "prettier": "prettier src/ --ignore-unknown --write",
-    "test": "nyc mocha"
+    "test": "nyc mocha 'src/**/*.spec.ts'"
   },
   "repository": {
     "type": "git",
