@@ -21,49 +21,57 @@ export async function depend(args: string[], out: Writable): Promise<void> {
       'Exactly one of --exact, --latest or --local must be set.'
     )
 
-  const packages: { root: string; package: Package }[] = []
+  const packages = new Map<string, { root: string; package: Package }>()
   await findPackageRoots(argv._, (root, pkg) =>
-    packages.push({ root, package: pkg })
+    packages.set(pkg.name, { root, package: pkg })
   )
-  if (packages.length === 0)
+  if (packages.size === 0)
     throw new InputError(`No packages found in: ${argv._.join(', ')}`)
 
-  const prefix = mode === 'exact' ? '' : '^'
-  let updated = 0
-  for (const pkg of packages) {
-    let write = false
-    for (const depsName of ['dependencies', 'optionalDependencies'] as const) {
-      const deps = pkg.package[depsName]
-      if (!deps) continue
-      for (const [name, range] of Object.entries(deps)) {
-        const match = packages.find(pkg => pkg.package.name === name)
-        if (match) {
-          const res =
-            mode === 'local'
-              ? `file:${relative(pkg.root, match.root)}`
-              : prefix + match.package.version
-          if (range !== res) {
-            deps[name] = res
-            write = true
-          }
-        } else if (mode !== 'local' && range.startsWith('file:')) {
-          throw new InputError(
-            `Local dependency ${name} (from ${depsName} of ${pkg.package.name}) not found.\n` +
-              'You should include all such dependencies in your `depend --public` config.'
-          )
-        }
-      }
-    }
+  let updated = false
+  for (const pkg of packages.values()) {
+    updated ||= await applyDepend(packages, mode, pkg.root, pkg.package, out)
+  }
+  out.write(updated ? 'No packages to update.\n' : 'Done!\n')
+}
 
-    if (write) {
-      out.write(
-        `Updating ${pkg.package.name} to use ${mode} dependencies ...\n`
-      )
-      const json = JSON.stringify(pkg.package, null, 2) + '\n'
-      await writeFile(resolve(pkg.root, 'package.json'), json)
-      updated += 1
+export async function applyDepend(
+  packages: Map<string, { root: string; package: Package }>,
+  mode: 'exact' | 'latest' | 'local',
+  root: string,
+  pkg: Package,
+  out: Writable
+): Promise<boolean> {
+  let write = false
+  const prefix = mode === 'exact' ? '' : '^'
+  for (const depsName of ['dependencies', 'optionalDependencies'] as const) {
+    const deps = pkg[depsName]
+    if (!deps) continue
+    for (const [name, range] of Object.entries(deps)) {
+      const match = packages.get(name)
+      if (match) {
+        const res =
+          mode === 'local'
+            ? `file:${relative(root, match.root)}`
+            : prefix + match.package.version
+        if (range !== res) {
+          deps[name] = res
+          write = true
+        }
+      } else if (mode !== 'local' && range.startsWith('file:')) {
+        throw new InputError(
+          `Local dependency ${name} (from ${depsName} of ${pkg.name}) not found.\n` +
+            `You should include all such dependencies in your command arguments or workspace config.`
+        )
+      }
     }
   }
 
-  out.write(updated === 0 ? 'No packages to update.\n' : 'Done!\n')
+  if (write) {
+    out.write(`Updating ${pkg.name} to use ${mode} dependencies ...\n`)
+    const json = JSON.stringify(pkg, null, 2) + '\n'
+    await writeFile(resolve(root, 'package.json'), json)
+  }
+
+  return write
 }
