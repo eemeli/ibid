@@ -30,7 +30,7 @@ const getPackage = (name: string, version: string) =>
   })
 
 const normalise = (log: string) =>
-  log.replace(/https?:.*\/commit\/[0-9a-f]+]\([0-9a-f]+/g, 'URL](ID')
+  log.replace(/[0-9a-f]+]\(https?:.*\/commit\/[0-9a-f]+/g, 'ID](URL')
 
 class MockOut extends Writable {
   calls: string[] = []
@@ -109,12 +109,12 @@ describe('CLI end-to-end', () => {
       expect(normalise(log)).to.equal(source`
         # Changelog
 
-        ## [${URL}/compare/1.2.3...1.2.4](1.2.4) (${DATE})
+        ## [1.2.4](${URL}/compare/1.2.3...1.2.4) (${DATE})
 
         ### Bug Fixes
 
-        * Patch 1 ([URL](ID))
-        * Patch 2 ([URL](ID))
+        * Patch 1 ([ID](URL))
+        * Patch 2 ([ID](URL))
       `)
 
       out.calls = []
@@ -152,17 +152,17 @@ describe('CLI end-to-end', () => {
       expect(normalise(log)).to.equal(source`
         # Changelog
 
-        ## [${URL}/compare/1.2.3...1.3.0-0](1.3.0-0) (${DATE})
+        ## [1.3.0-0](${URL}/compare/1.2.3...1.3.0-0) (${DATE})
 
         ### Features
 
-        * Minor 1 ([URL](ID))
-        * Minor 2 ([URL](ID))
+        * Minor 1 ([ID](URL))
+        * Minor 2 ([ID](URL))
 
         ### Bug Fixes
 
-        * Patch 1 ([URL](ID))
-        * Patch 2 ([URL](ID))
+        * Patch 1 ([ID](URL))
+        * Patch 2 ([ID](URL))
       `)
       await cleanupTmpRepo(cwd)
     })
@@ -192,7 +192,7 @@ describe('CLI end-to-end', () => {
       expect(normalise(log)).to.equal(source`
         # Changelog
 
-        ## [${URL}/compare/1.2.3...2.0.0](2.0.0) (${DATE})
+        ## [2.0.0](${URL}/compare/1.2.3...2.0.0) (${DATE})
 
         ### ⚠ Breaking Changes
 
@@ -201,15 +201,15 @@ describe('CLI end-to-end', () => {
 
         ### Bug Fixes
 
-        * Patch 1 ([URL](ID))
-        * Patch 2 ([URL](ID))
-        * Major 2 ([URL](ID))
+        * Patch 1 ([ID](URL))
+        * Patch 2 ([ID](URL))
+        * Major 2 ([ID](URL))
 
         ### Features
 
-        * Minor 1 ([URL](ID))
-        * Minor 2 ([URL](ID))
-        * Major 1 ([URL](ID))
+        * Minor 1 ([ID](URL))
+        * Minor 2 ([ID](URL))
+        * Major 1 ([ID](URL))
       `)
       await cleanupTmpRepo(cwd)
     })
@@ -252,7 +252,7 @@ describe('CLI end-to-end', () => {
         expect(normalise(log)).to.equal(source`
           # Changelog
 
-          ## [${URL}/compare/1.2.3...1.2.4](1.2.4) (${DATE})
+          ## [1.2.4](${URL}/compare/1.2.3...1.2.4) (${DATE})
         `)
 
         await cleanupTmpRepo(cwd)
@@ -276,7 +276,7 @@ describe('CLI end-to-end', () => {
         expect(normalise(log)).to.equal(source`
           # Change Log
 
-          ## [${URL}/compare/1.2.3...1.2.4](1.2.4) (${DATE})
+          ## [1.2.4](${URL}/compare/1.2.3...1.2.4) (${DATE})
 
           ## Release 1.2.3
         `)
@@ -356,29 +356,29 @@ describe('CLI end-to-end', () => {
       expect(normalise(logFoo)).to.equal(source`
         # Changelog
 
-        ## [${URL}/compare/0.1.2-3...0.1.2-4](0.1.2-4) (${DATE})
+        ## [0.1.2-4](${URL}/compare/0.1.2-3...0.1.2-4) (${DATE})
 
         ### Bug Fixes
 
-        * Patch foo 1 ([URL](ID))
-        * Patch foo 2 ([URL](ID))
+        * Patch foo 1 ([ID](URL))
+        * Patch foo 2 ([ID](URL))
       `)
 
       const logBar = await readFile('bar/CHANGELOG.md', 'utf8')
       expect(normalise(logBar)).to.equal(source`
         # Changelog
 
-        ## [${URL}/compare/1.2.3...1.3.0](1.3.0) (${DATE})
+        ## [1.3.0](${URL}/compare/1.2.3...1.3.0) (${DATE})
 
         ### Features
 
-        * Minor bar 1 ([URL](ID))
-        * Minor bar 2 ([URL](ID))
+        * Minor bar 1 ([ID](URL))
+        * Minor bar 2 ([ID](URL))
 
         ### Bug Fixes
 
-        * Patch bar 1 ([URL](ID))
-        * Patch bar 2 ([URL](ID))
+        * Patch bar 1 ([ID](URL))
+        * Patch bar 2 ([ID](URL))
       `)
       await cleanupTmpRepo(cwd)
     })
@@ -410,7 +410,7 @@ describe('CLI end-to-end', () => {
       expect(normalise(logBar)).to.equal(source`
         # Changelog
 
-        ## [${URL}/compare/1.2.3...2.0.0](2.0.0) (${DATE})
+        ## [2.0.0](${URL}/compare/1.2.3...2.0.0) (${DATE})
 
         ### ⚠ Breaking Changes
 
@@ -419,15 +419,15 @@ describe('CLI end-to-end', () => {
 
         ### Features
 
-        * Minor bar 1 ([URL](ID))
-        * Minor bar 2 ([URL](ID))
-        * Major bar 1 ([URL](ID))
+        * Minor bar 1 ([ID](URL))
+        * Minor bar 2 ([ID](URL))
+        * Major bar 1 ([ID](URL))
 
         ### Bug Fixes
 
-        * Patch bar 1 ([URL](ID))
-        * Patch bar 2 ([URL](ID))
-        * Major bar 2 ([URL](ID))
+        * Patch bar 1 ([ID](URL))
+        * Patch bar 2 ([ID](URL))
+        * Major bar 2 ([ID](URL))
       `)
       await cleanupTmpRepo(cwd)
     })

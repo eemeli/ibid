@@ -71,7 +71,7 @@ describe('formatChangelog', () => {
         repository: { type: 'git', url: 'https://github.com/eemeli/ibid' }
       }
       expect(formatChangelog.header(ctx, '1.2.3')).to.equal(
-        `## [https://github.com/eemeli/ibid/compare/1.0.0...1.2.3](1.2.3) (${dateStr})\n`
+        `## [1.2.3](https://github.com/eemeli/ibid/compare/1.0.0...1.2.3) (${dateStr})\n`
       )
     })
 
@@ -121,15 +121,15 @@ describe('formatChangelog', () => {
 
 ### Features
 
-* **scope:** broadcast $destroy event on scope destruction ([https://github.com/eemeli/ibid/commit/9b1aff905b638aa274a5fc8f88662df446d374bd](9b1aff9)), closes [https://github.com/eemeli/ibid/issues/1](#1), closes [https://github.com/eemeli/ibid/issues/2](#2), closes [https://github.com/eemeli/ibid/issues/3](#3)
+* **scope:** broadcast $destroy event on scope destruction ([9b1aff9](https://github.com/eemeli/ibid/commit/9b1aff905b638aa274a5fc8f88662df446d374bd)), closes [#1](https://github.com/eemeli/ibid/issues/1), closes [#2](https://github.com/eemeli/ibid/issues/2), closes [#3](https://github.com/eemeli/ibid/issues/3)
 
 ### Bug Fixes
 
-* **ng-list:** Allow custom separator ([https://github.com/eemeli/ibid/commit/13f31602f396bc269076ab4d389cfd8ca94b20ba](13f3160))
+* **ng-list:** Allow custom separator ([13f3160](https://github.com/eemeli/ibid/commit/13f31602f396bc269076ab4d389cfd8ca94b20ba))
 
 ### Performance Improvements
 
-* **template:** tweak ([https://github.com/eemeli/ibid/commit/2064a9346c550c9b5dbd17eee7f0b7dd2cde9cf7](2064a93))
+* **template:** tweak ([2064a93](https://github.com/eemeli/ibid/commit/2064a9346c550c9b5dbd17eee7f0b7dd2cde9cf7))
 `)
     })
 

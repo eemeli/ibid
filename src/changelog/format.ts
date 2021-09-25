@@ -25,7 +25,7 @@ export const formatChangelog = {
     const url =
       prev && version && linkCompare ? linkCompare(ctx, prev, version) : null
     let fmt = url
-      ? `[${url}](${version})`
+      ? `[${version}](${url})`
       : version ||
         title ||
         ctx.config.changelogTitles.UNRELEASED ||
@@ -114,13 +114,13 @@ export const formatChangelog = {
     const { linkCommit, shortHashLength } = ctx.config
     const url = linkCommit ? linkCommit(ctx, hash) : null
     const text = hash.substring(0, shortHashLength)
-    return url ? `[${url}](${text})` : text
+    return url ? `[${text}](${url})` : text
   },
 
   reference(ctx: Context, ref: Reference): string {
     const { linkReference } = ctx.config
     const url = linkReference ? linkReference(ctx, ref) : null
     const text = (ref.scope || '') + ref.prefix + ref.issue
-    return url ? `[${url}](${text})` : text
+    return url ? `[${text}](${url})` : text
   }
 }
