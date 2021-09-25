@@ -112,6 +112,18 @@ export async function gitAmendCommit(tags: string[]): Promise<void> {
     await execFile('git', ['tag', '--force', '--message', tag, '--', tag])
 }
 
+export async function gitCommitContents(ref: string): Promise<string[]> {
+  checkRefShape(ref)
+  const { stdout } = await execFile('git', [
+    'diff-tree',
+    '--no-commit-id',
+    '--name-only',
+    '-r',
+    ref
+  ])
+  return stdout.split('\n').filter(Boolean)
+}
+
 // TAGS
 
 export async function gitCheckTag(tag: string): Promise<boolean> {

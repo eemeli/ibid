@@ -36,7 +36,7 @@ export async function findPackageRoots(
       const pkg = await readPackage(root)
       if (pkg && pkg.name && pkg.version) {
         roots.add(root)
-        if (onPackage) onPackage(root, pkg)
+        if (onPackage) await onPackage(root, pkg)
       }
     }
   }
