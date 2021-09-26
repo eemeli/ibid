@@ -1,33 +1,50 @@
 #!/usr/bin/env node
 
+import yargs from 'yargs'
 import { InputError } from './cli-helpers/input-error'
-import { depend } from './publish/depend'
-import { publish } from './publish/publish'
-import { version } from './version/version'
+import { depend, dependOptions } from './publish/depend'
+import { publish, publishOptions } from './publish/publish'
+import { version, versionOptions } from './version/version'
 
-let command
-switch (process.argv[2]) {
-  case 'depend':
-    command = depend
-    break
-  case 'publish':
-    command = publish
-    break
-  case 'version':
-    command = version
-    break
-  default:
-    console.error(`Usage: ibid depend|publish|version [options]`)
-    process.exit(1)
+export interface CmdArgs {
+  path?: string[]
+  '--'?: string[]
+  [key: string]: unknown
 }
 
-const args = process.argv.slice(3)
-command(args, process.stderr).catch(error => {
-  if (error instanceof InputError) {
-    console.error(error.message)
-    process.exit(1)
-  } else {
-    console.error(error)
-    process.exit(2)
+export async function main(argv: string[]): Promise<void> {
+  const cmd = yargs(argv)
+    .parserConfiguration({ 'populate--': true })
+    .command(
+      'depend [path..]',
+      'Update internal dependency style',
+      dependOptions,
+      args => depend(args, process.stderr)
+    )
+    .command(
+      'publish [path..]',
+      'Publish packages, using correct dependencies',
+      publishOptions,
+      args => publish(args, process.stderr)
+    )
+    .command(
+      'version [path..]',
+      'Update the versions & changelogs of packages according to git history',
+      versionOptions,
+      args => version(args, process.stderr)
+    )
+
+  try {
+    await cmd.parse()
+  } catch (error) {
+    if (error instanceof InputError) {
+      console.error(error.message)
+      process.exit(1)
+    } else {
+      console.error(error)
+      process.exit(2)
+    }
   }
-})
+}
+
+main(process.argv.slice(2))

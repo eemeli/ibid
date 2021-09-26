@@ -1,32 +1,37 @@
 import { promises } from 'fs'
 import { relative, resolve } from 'path'
-import { Writable } from 'stream'
-import yargsParser from 'yargs-parser'
+import type { Writable } from 'stream'
+import type { CmdArgs } from '../cli'
 import { InputError } from '../cli-helpers/input-error'
 import { findPackageRoots } from '../cli-helpers/package-roots'
-import { Package } from '../config/context'
+import type { Package } from '../config/context'
 
 // 'fs/promises' is only available from Node.js 14.0.0
 const { writeFile } = promises
 
-export async function depend(args: string[], out: Writable): Promise<void> {
-  const argv = yargsParser(args, { boolean: ['exact', 'latest', 'local'] })
+export const dependOptions = {
+  exact: { boolean: true },
+  latest: { boolean: true },
+  local: { boolean: true }
+}
 
+export async function depend(args: CmdArgs, out: Writable): Promise<void> {
   let mode: 'exact' | 'latest' | 'local' | 'error' | null = null
-  if (argv.exact) mode = 'exact'
-  if (argv.latest) mode = mode ? 'error' : 'latest'
-  if (argv.local) mode = mode ? 'error' : 'local'
+  if (args.exact) mode = 'exact'
+  if (args.latest) mode = mode ? 'error' : 'latest'
+  if (args.local) mode = mode ? 'error' : 'local'
   if (mode === null || mode === 'error')
     throw new InputError(
       'Exactly one of --exact, --latest or --local must be set.'
     )
 
+  const path = args.path || []
   const packages = new Map<string, { root: string; package: Package }>()
-  await findPackageRoots(argv._, (root, pkg) =>
+  await findPackageRoots(path, (root, pkg) =>
     packages.set(pkg.name, { root, package: pkg })
   )
   if (packages.size === 0)
-    throw new InputError(`No packages found in: ${argv._.join(', ')}`)
+    throw new InputError(`No packages found in: ${path.join(', ')}`)
 
   let updated = false
   for (const pkg of packages.values()) {

@@ -84,20 +84,20 @@ describe('CLI end-to-end', () => {
 
       const out = new MockOut()
       try {
-        await version(['--amend', '--yes'], out)
+        await version({ amend: true, init: true }, out)
         throw new Error('Expected an error')
       } catch (error) {
         if (!/other arguments/.test(error.message)) throw error
       }
       try {
-        await version(['--amend'], out)
+        await version({ amend: true }, out)
         throw new Error('Expected an error')
       } catch (error) {
         if (!/does not appear/.test(error.message)) throw error
       }
       expect(out.calls).to.deep.equal([])
 
-      await version(['.', '--yes'], out)
+      await version({ path: ['.'], yes: true }, out)
       expect(out.calls).to.include('Updating foo to 1.2.4 ...\n')
       expect(out.calls).to.include('Done!\n\n')
 
@@ -117,14 +117,14 @@ describe('CLI end-to-end', () => {
 
       out.calls = []
       try {
-        await version(['--amend'], out)
+        await version({ amend: true }, out)
         throw new Error('Expected an error')
       } catch (error) {
         if (!/first stage/.test(error.message)) throw error
       }
 
       await updateFile(cwd, 'a', null, null)
-      await version(['--amend'], out)
+      await version({ amend: true }, out)
       expect(await gitReleaseTags('HEAD')).to.deep.equal(['v1.2.4'])
       expect(out.calls).to.deep.equal([
         'Release commit amended and tags moved.\n'
@@ -138,7 +138,7 @@ describe('CLI end-to-end', () => {
       process.chdir(cwd)
 
       const out = new MockOut()
-      await version(['.', '--yes', '--prerelease'], out)
+      await version({ path: ['.'], prerelease: true, yes: true }, out)
       expect(out.calls).to.include('Updating foo to 1.3.0-0 ...\n')
       expect(out.calls).to.include('Done!\n\n')
 
@@ -176,7 +176,7 @@ describe('CLI end-to-end', () => {
       )
 
       const out = new MockOut()
-      await version(['.', '--yes'], out)
+      await version({ path: ['.'], yes: true }, out)
       expect(out.calls).to.include('Updating foo to 2.0.0 ...\n')
       expect(out.calls).to.include('Done!\n\n')
 
@@ -213,7 +213,7 @@ describe('CLI end-to-end', () => {
       process.chdir(cwd)
 
       const out = new MockOut()
-      await version(['.', '--yes'], out)
+      await version({ path: ['.'], yes: true }, out)
       expect(out.calls).to.deep.equal(['No packages to update.\n'])
 
       expect(await gitReleaseTags('HEAD')).to.deep.equal([])
@@ -228,13 +228,13 @@ describe('CLI end-to-end', () => {
       await cleanupTmpRepo(cwd)
     })
 
-    describe('--all-commits', () => {
+    describe('bumpAllChanges', () => {
       it('patch with no changelog', async () => {
         const cwd = await setup('foo', '1.2.3', null)
         process.chdir(cwd)
 
         const out = new MockOut()
-        await version(['.', '--yes', '--all-commits'], out)
+        await version({ path: ['.'], bumpAllChanges: true, yes: true }, out)
         expect(out.calls).to.include('Updating foo to 1.2.4 ...\n')
         expect(out.calls).to.include('Done!\n\n')
 
@@ -256,7 +256,7 @@ describe('CLI end-to-end', () => {
         await writeFile('CHANGELOG.md', '# Change Log\n\n## Release 1.2.3\n')
 
         const out = new MockOut()
-        await version(['.', '--yes', '--all-commits'], out)
+        await version({ path: ['.'], bumpAllChanges: true, yes: true }, out)
         expect(out.calls).to.include('Updating foo to 1.2.4 ...\n')
         expect(out.calls).to.include('Done!\n\n')
 
@@ -330,7 +330,7 @@ describe('CLI end-to-end', () => {
       process.chdir(cwd)
 
       const out = new MockOut()
-      await version(['foo', 'bar', '--yes'], out)
+      await version({ path: ['foo', 'bar'], yes: true }, out)
       expect(out.calls).to.include('Updating foo to 0.1.2-4 ...\n')
       expect(out.calls).to.include('Updating bar to 1.3.0 ...\n')
       expect(out.calls).to.include('Done!\n\n')
@@ -379,7 +379,7 @@ describe('CLI end-to-end', () => {
       process.chdir(cwd)
 
       const out = new MockOut()
-      await version(['foo', 'bar', '--yes'], out)
+      await version({ path: ['foo', 'bar'], yes: true }, out)
       expect(out.calls).to.include('Updating bar to 2.0.0 ...\n')
       expect(out.calls).to.include('Done!\n\n')
 

@@ -1,7 +1,7 @@
 import { relative } from 'path'
 import type { Writable } from 'stream'
-import yargsParser from 'yargs-parser'
 import { writeChangelog } from '../changelog/write'
+import type { CmdArgs } from '../cli'
 import { InputError } from '../cli-helpers/input-error'
 import { findPackageRoots } from '../cli-helpers/package-roots'
 import type { Config } from '../config/config'
@@ -17,37 +17,55 @@ import { npmVersion } from '../shell/npm'
 import { amendVersion } from './amend-version'
 import { filterUpdates } from './filter-updates'
 
-export async function version(args: string[], out: Writable): Promise<void> {
-  const argv = yargsParser(args, {
-    alias: {
-      bumpAllChanges: ['a', 'all-commits'],
-      config: ['c'],
-      init: ['i'],
-      prerelease: ['p'],
-      yes: ['y']
-    },
-    boolean: ['amend', 'init', 'yes'],
-    string: ['config']
-  })
+export const versionOptions = {
+  amend: {
+    boolean: true,
+    desc: 'Run after a new version to commit changelog fixes & retarget git tags'
+  },
+  'bump-all-changes': {
+    alias: ['a', 'all-commits']
+  },
+  config: {
+    alias: 'c',
+    desc: 'Load config from a custom path, rather than the default ibid.config.{js,mjs,cjs}',
+    string: true
+  },
+  init: {
+    alias: 'i',
+    boolean: true,
+    desc: 'Explicitly initialise (or not) a changelog file. If unset, init if required.'
+  },
+  prerelease: {
+    alias: 'p'
+  },
+  yes: {
+    alias: 'y',
+    boolean: true,
+    desc: 'Skip interactive verification'
+  }
+}
 
-  if (argv.amend) {
-    if (args.length > 1)
+export async function version(args: CmdArgs, out: Writable): Promise<void> {
+  if (args.amend) {
+    if (args.bumpAllChanges || args.config || args.init || args.prerelease)
       throw new InputError('Do not use other arguments with --amend')
     await amendVersion()
     out.write('Release commit amended and tags moved.\n')
     return
   }
 
-  const config = await loadConfig('.', argv.config, argv)
+  const path = args.path || []
+  const cfgArg = args.config ? String(args.config) : null
+  const config = await loadConfig('.', cfgArg, args)
   const updates: PackageUpdate[] = []
-  for (const root of await findPackageRoots(argv._)) {
+  for (const root of await findPackageRoots(path)) {
     updates.push(await getCurrentUpdate(root, config))
   }
 
   if (updates.length === 0)
-    throw new InputError(`No packages found in: ${argv._.join(', ')}`)
+    throw new InputError(`No packages found in: ${path.join(', ')}`)
 
-  if (!argv.yes) {
+  if (!args.yes) {
     if (out !== process.stderr && out !== process.stdout)
       throw new Error(
         'Always use the --yes option if output is not stderr or stdout'
@@ -75,7 +93,7 @@ export async function version(args: string[], out: Writable): Promise<void> {
 
     const cf = await writeChangelog(
       context,
-      argv.init ?? null,
+      typeof args.init === 'boolean' ? args.init : null,
       version,
       commits
     )

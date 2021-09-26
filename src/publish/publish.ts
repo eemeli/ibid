@@ -1,19 +1,31 @@
 import { createPromptModule } from 'inquirer'
 import type { Writable } from 'stream'
-import yargsParser from 'yargs-parser'
+import type { CmdArgs } from '../cli'
 import { InputError } from '../cli-helpers/input-error'
 import { findPackageRoots } from '../cli-helpers/package-roots'
 import { Package } from '../config/context'
 import { npmGetVersions, npmPublish } from '../shell/npm'
 import { applyDepend } from './depend'
 
-export async function publish(args: string[], out: Writable): Promise<void> {
-  const argv = yargsParser(args, {
-    alias: { exact: ['e'], ignorePublished: ['i'], yes: ['y'] },
-    boolean: ['exact', 'ignore-published', 'yes'],
-    configuration: { 'populate--': true }
-  })
+export const publishOptions = {
+  exact: {
+    alias: 'e',
+    boolean: true,
+    desc: 'Use exact rather than ^ dependencies'
+  },
+  'ignore-published': {
+    alias: 'i',
+    boolean: true,
+    desc: 'Ignore rather than fail if a package has already been published'
+  },
+  yes: {
+    alias: 'y',
+    boolean: true,
+    desc: 'Skip interactive verification'
+  }
+}
 
+export async function publish(args: CmdArgs, out: Writable): Promise<void> {
   for (const arg of [
     'access',
     'dry-run',
@@ -25,27 +37,26 @@ export async function publish(args: string[], out: Writable): Promise<void> {
     'w',
     'workspaces'
   ]) {
-    if (argv[arg])
+    if (args[arg])
       throw new InputError(
         'Arguments meant for `npm publish` must be separated from ibid options by --'
       )
   }
 
+  const path = args.path || []
   const packages = new Map<string, { root: string; package: Package }>()
-  await findPackageRoots(argv._, async (root, pkg) => {
+  await findPackageRoots(path, async (root, pkg) => {
     const prev = await npmGetVersions(pkg.name)
     if (prev.includes(pkg.version)) {
       const msg = `${pkg.name}@${pkg.version} has already been published.`
-      if (argv.ignorePublished) out.write(msg + '\n')
+      if (args.ignorePublished) out.write(msg + '\n')
       else throw new InputError(msg)
     } else packages.set(pkg.name, { root, package: pkg })
   })
   if (packages.size === 0)
-    throw new InputError(
-      `No unpublished packages found in: ${argv._.join(', ')}`
-    )
+    throw new InputError(`No unpublished packages found in: ${path.join(', ')}`)
 
-  if (!argv.yes) {
+  if (!args.yes) {
     if (out !== process.stderr && out !== process.stdout)
       throw new Error(
         'Always use the --yes option if output is not stderr or stdout'
@@ -72,12 +83,12 @@ export async function publish(args: string[], out: Writable): Promise<void> {
   for (const pkg of packages.values()) {
     const updatedDepend = await applyDepend(
       packages,
-      argv.exact ? 'exact' : 'latest',
+      args.exact ? 'exact' : 'latest',
       pkg.root,
       pkg.package,
       out
     )
-    await npmPublish(pkg.root, argv['--'] || [])
+    await npmPublish(pkg.root, args['--'] || [])
     if (updatedDepend)
       await applyDepend(packages, 'local', pkg.root, pkg.package, out)
   }

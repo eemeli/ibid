@@ -18,7 +18,7 @@ async function readPackage(dir: string, name = 'package.json') {
 }
 
 export async function findPackageRoots(
-  patterns: string[],
+  patterns: (string | number)[],
   onPackage?: (root: string, pkg: Package) => void
 ): Promise<Set<string>> {
   const roots = new Set<string>()
@@ -31,7 +31,7 @@ export async function findPackageRoots(
     }
   }
   for (const pat of patterns) {
-    for (const root of await glob(pat, { absolute: true })) {
+    for (const root of await glob(String(pat), { absolute: true })) {
       if (roots.has(root)) continue
       const pkg = await readPackage(root)
       if (pkg && pkg.name && pkg.version) {
