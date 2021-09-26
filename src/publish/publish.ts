@@ -1,9 +1,9 @@
 import { createPromptModule } from 'inquirer'
 import type { Writable } from 'stream'
 import type { CmdArgs } from '../cli'
-import { InputError } from '../cli-helpers/input-error'
+import { InputError } from '../cli-helpers/errors'
 import { findPackageRoots } from '../cli-helpers/package-roots'
-import { Package } from '../config/context'
+import type { Package } from '../config/context'
 import { npmGetVersions, npmPublish } from '../shell/npm'
 import { applyDepend } from './depend'
 

@@ -1,6 +1,7 @@
 import { constants, promises } from 'fs'
 import { resolve } from 'path'
 
+import { hasErrorCode } from '../cli-helpers/errors'
 import { Commit } from '../commits'
 import { Context } from '../config/context'
 import { formatChangelog } from './format'
@@ -41,7 +42,7 @@ export async function writeChangelog(
       await access(path, constants.F_OK)
       exists = true
     } catch (error) {
-      if (error.code === 'ENOENT') exists = false
+      if (hasErrorCode(error, 'ENOENT')) exists = false
       else throw error
     }
     if (exists) throw new Error(`Changelog file already exists: ${path}`)
@@ -50,7 +51,7 @@ export async function writeChangelog(
     try {
       prev = await readFile(path, 'utf8')
     } catch (error) {
-      if (error.code === 'ENOENT') {
+      if (hasErrorCode(error, 'ENOENT')) {
         if (init == null) prev = ctx.config.changelogIntro
         else
           throw Error(

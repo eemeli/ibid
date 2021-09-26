@@ -1,5 +1,5 @@
 import { resolve } from 'path'
-import { InputError } from '../cli-helpers/input-error'
+import { hasErrorCode, InputError } from '../cli-helpers/errors'
 import { Config, getBaseConfig, validateConfig } from './config'
 
 async function loadRawConfig(cwd: string, fn: string) {
@@ -10,7 +10,7 @@ async function loadRawConfig(cwd: string, fn: string) {
     if (cfg && typeof cfg === 'object') return cfg
     else throw new InputError(`Config file does not export an object: ${path}`)
   } catch (error) {
-    if (error.code === 'MODULE_NOT_FOUND') return null
+    if (hasErrorCode(error, 'MODULE_NOT_FOUND')) return null
     throw error
   }
 }

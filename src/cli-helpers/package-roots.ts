@@ -2,6 +2,7 @@ import { promises } from 'fs'
 import { resolve } from 'path'
 import glob from 'tiny-glob'
 import { Package } from '../config/context'
+import { hasErrorCode } from './errors'
 
 // 'fs/promises' is only available from Node.js 14.0.0
 const { readFile } = promises
@@ -12,7 +13,7 @@ async function readPackage(dir: string, name = 'package.json') {
     const pkgSrc = await readFile(pkgPath, 'utf8')
     return JSON.parse(pkgSrc) as Package
   } catch (error) {
-    if (error.code === 'ENOENT') return null
+    if (hasErrorCode(error, 'ENOENT')) return null
     throw error
   }
 }

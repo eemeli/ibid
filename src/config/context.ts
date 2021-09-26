@@ -2,9 +2,10 @@ import { promises } from 'fs'
 import { fromUrl } from 'hosted-git-info'
 import normalize from 'normalize-package-data'
 import { resolve } from 'path'
+import { hasErrorCode } from '../cli-helpers/errors'
 import { isGitRoot } from '../shell/git'
-import { HostContext, hostData } from './host-data'
 import { Config, getBaseConfig, validateConfig } from './config'
+import { HostContext, hostData } from './host-data'
 
 // 'fs/promises' is only available from Node.js 14.0.0
 const { readFile } = promises
@@ -44,7 +45,7 @@ async function getPackage(cwd: string) {
     normalize(pkgData)
     return pkgData
   } catch (error) {
-    if (error && error.code === 'ENOENT') return null
+    if (hasErrorCode(error, 'ENOENT')) return null
     else throw error
   }
 }

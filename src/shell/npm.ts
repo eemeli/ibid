@@ -2,7 +2,7 @@ import { execFile as execFileCb } from 'child_process'
 import { resolve } from 'path'
 import { valid } from 'semver'
 import { promisify } from 'util'
-import { InputError } from '../cli-helpers/input-error'
+import { InputError } from '../cli-helpers/errors'
 
 const execFile = promisify(execFileCb)
 

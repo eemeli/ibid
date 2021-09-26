@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import yargs from 'yargs'
-import { InputError } from './cli-helpers/input-error'
+import { InputError } from './cli-helpers/errors'
 import { depend, dependOptions } from './publish/depend'
 import { publish, publishOptions } from './publish/publish'
 import { version, versionOptions } from './version/version'
