@@ -35,9 +35,10 @@ export async function depend(args: CmdArgs, out: Writable): Promise<void> {
 
   let updated = false
   for (const pkg of packages.values()) {
-    updated ||= await applyDepend(packages, mode, pkg.root, pkg.package, out)
+    const write = await applyDepend(packages, mode, pkg.root, pkg.package, out)
+    if (write) updated = true
   }
-  out.write(updated ? 'No packages to update.\n' : 'Done!\n')
+  out.write(updated ? 'Done!\n' : 'No packages to update.\n')
 }
 
 export async function applyDepend(
