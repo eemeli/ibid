@@ -20,10 +20,15 @@ const cli = (args: string[], out: Writable) =>
 const DATE = new Date().toISOString().substring(0, 10)
 const URL = 'https://github.com/eemeli/foo'
 
-const getPackage = (name: string, version: string) =>
+const getPackage = (
+  name: string,
+  version: string,
+  dependencies: Record<string, string>
+) =>
   JSON.stringify({
     name,
     version,
+    dependencies,
     repository: { type: 'git', url: `${URL}.git` }
   })
 
@@ -57,7 +62,7 @@ describe('CLI end-to-end', () => {
       process.chdir(cwd)
 
       const pkgPath = resolve(cwd, 'package.json')
-      await writeFile(pkgPath, getPackage(name, version))
+      await writeFile(pkgPath, getPackage(name, version, {}))
 
       const fp = resolve(cwd, 'a')
       const commits: MockCommit[] = [
@@ -99,22 +104,46 @@ describe('CLI end-to-end', () => {
       return { cwd, gitCommits: commits, gitStaged, npmRegistry }
     }
 
+    it('early errors', async () => {
+      const { cwd } = await setup('foo', '1.2.3', 'patch')
+
+      const out = new MockOut()
+      for (const { args, exp } of [
+        { args: ['version', '--amend'], exp: /does not appear/ },
+        { args: ['publish'], exp: /Always use the --yes option/ },
+        { args: ['publish', '--yes'], exp: /No unpublished packages found/ },
+        { args: ['publish', '.', '--yes'], exp: /has already been published/ },
+        { args: ['publish', '--yes', '--tag'], exp: /npm publish/ },
+        { args: ['depend'], exp: /Exactly one of .* must be set/ },
+        {
+          args: ['depend', '--exact', '--latest', '--local'],
+          exp: /Exactly one of .* must be set/
+        }
+      ]) {
+        try {
+          await cli(args, out)
+          throw new Error('Expected an error')
+        } catch (error) {
+          if (!exp.test(error.message)) {
+            error.message = `[${args.join(',')}]: ${error.message}`
+            throw error
+          }
+        }
+        expect(out.calls).to.deep.equal([])
+      }
+
+      await cleanupTmpDir(cwd)
+    })
+
     it('patch release with --amend', async () => {
-      const { cwd, gitCommits, gitStaged } = await setup(
-        'foo',
+      const name = 'foo'
+      const { cwd, gitCommits, gitStaged, npmRegistry } = await setup(
+        name,
         '1.2.3',
         'patch'
       )
 
       const out = new MockOut()
-      try {
-        await cli(['version', '--amend'], out)
-        throw new Error('Expected an error')
-      } catch (error) {
-        if (!/does not appear/.test(error.message)) throw error
-      }
-      expect(out.calls).to.deep.equal([])
-
       await cli(['version', '--path', '.', '--yes'], out)
       expect(out.calls).to.include('Updating foo to 1.2.4 ...\n')
       expect(out.calls).to.include('Done!\n\n')
@@ -151,11 +180,21 @@ describe('CLI end-to-end', () => {
         'Release commit amended and tags moved.\n'
       ])
 
+      out.calls = []
+      await cli(['publish', '.', '--yes'], out)
+      expect(out.calls).to.deep.equal(['Done!\n'])
+      expect(npmRegistry[name].versions).to.deep.equal(['1.2.3', '1.2.4'])
+
       await cleanupTmpDir(cwd)
     })
 
     it('minor prerelease', async () => {
-      const { cwd, gitCommits } = await setup('foo', '1.2.3', 'minor')
+      const name = 'foo'
+      const { cwd, gitCommits, npmRegistry } = await setup(
+        name,
+        '1.2.3',
+        'minor'
+      )
 
       const out = new MockOut()
       await cli(['version', '--path', '.', '--prerelease', '--yes'], out)
@@ -181,11 +220,26 @@ describe('CLI end-to-end', () => {
         * Patch 1 ([ID](URL))
         * Patch 2 ([ID](URL))
       `)
+
+      out.calls = []
+      await cli(['publish', '.', '--yes', '--', '--tag', 'next'], out)
+      expect(out.calls).to.deep.equal(['Done!\n'])
+      expect(npmRegistry[name].versions).to.deep.equal(['1.2.3', '1.3.0-0'])
+      expect(npmRegistry[name].tags).to.deep.equal({
+        latest: '1.2.3',
+        next: '1.3.0-0'
+      })
+
       await cleanupTmpDir(cwd)
     })
 
     it('major release with config file', async () => {
-      const { cwd, gitCommits } = await setup('foo', '1.2.3', 'major')
+      const name = 'foo'
+      const { cwd, gitCommits, npmRegistry } = await setup(
+        name,
+        '1.2.3',
+        'major'
+      )
 
       await writeFile(
         'ibid.config.cjs',
@@ -227,6 +281,13 @@ describe('CLI end-to-end', () => {
         * Minor 2 ([ID](URL))
         * Major 1 ([ID](URL))
       `)
+
+      out.calls = []
+      await cli(['publish', '.', '--yes'], out)
+      expect(out.calls).to.deep.equal(['Done!\n'])
+      expect(npmRegistry[name].versions).to.deep.equal(['1.2.3', '2.0.0'])
+      expect(npmRegistry[name].tags).to.deep.equal({ latest: '2.0.0' })
+
       await cleanupTmpDir(cwd)
     })
 
@@ -310,6 +371,7 @@ describe('CLI end-to-end', () => {
       packages: {
         name: string
         version: string
+        dependencies: Record<string, string>
         bump: 'major' | 'minor' | 'patch' | null
       }[]
     ) {
@@ -318,12 +380,12 @@ describe('CLI end-to-end', () => {
 
       const gitCommits: MockCommit[] = [mockCommit('chore!: First commit', [])]
       const npmRegistry: MockNpmRegistry = {}
-      for (const { name, version, bump } of packages) {
+      for (const { name, version, dependencies, bump } of packages) {
         const cwd = join(root, name.replace(/^.*[/\\]/, ''))
         await mkdir(cwd)
 
         const pkgPath = resolve(cwd, 'package.json')
-        await writeFile(pkgPath, getPackage(name, version))
+        await writeFile(pkgPath, getPackage(name, version, dependencies))
 
         npmRegistry[name] = { tags: { latest: version }, versions: [version] }
 
@@ -364,9 +426,14 @@ describe('CLI end-to-end', () => {
     }
 
     it('patch + minor releases', async () => {
-      const { cwd, gitCommits } = await setup([
-        { name: 'foo', version: '0.1.2-3', bump: 'patch' },
-        { name: 'bar', version: '1.2.3', bump: 'minor' }
+      const { cwd, gitCommits, npmRegistry } = await setup([
+        { name: 'foo', version: '0.1.2-3', dependencies: {}, bump: 'patch' },
+        {
+          name: 'bar',
+          version: '1.2.3',
+          dependencies: { foo: 'file:../foo' },
+          bump: 'minor'
+        }
       ])
 
       const out = new MockOut()
@@ -406,13 +473,34 @@ describe('CLI end-to-end', () => {
         * Patch bar 1 ([ID](URL))
         * Patch bar 2 ([ID](URL))
       `)
+
+      out.calls = []
+      await cli(['publish', 'foo', 'bar', '--yes'], out)
+      expect(out.calls).to.deep.equal([
+        'Updating bar to use latest dependencies ...\n',
+        'Updating bar to use local dependencies ...\n',
+        'Done!\n'
+      ])
+      expect(npmRegistry.foo.versions).to.deep.equal(['0.1.2-3', '0.1.2-4'])
+      expect(npmRegistry.bar.versions).to.deep.equal(['1.2.3', '1.3.0'])
+
       await cleanupTmpDir(cwd)
     })
 
     it('none + major release', async () => {
-      const { cwd, gitCommits } = await setup([
-        { name: 'foo', version: '0.1.2-3', bump: null },
-        { name: 'bar', version: '1.2.3', bump: 'major' }
+      const { cwd, gitCommits, npmRegistry } = await setup([
+        {
+          name: 'foo',
+          version: '0.1.2-3',
+          dependencies: { bar: 'file:../bar' },
+          bump: null
+        },
+        {
+          name: 'bar',
+          version: '1.2.3',
+          dependencies: { foo: 'file:../foo' },
+          bump: 'major'
+        }
       ])
 
       const out = new MockOut()
@@ -453,6 +541,194 @@ describe('CLI end-to-end', () => {
         * Patch bar 2 ([ID](URL))
         * Major bar 2 ([ID](URL))
       `)
+
+      out.calls = []
+      await cli(
+        [
+          'publish',
+          'foo',
+          'bar',
+          '--yes',
+          '--exact',
+          '--ignore-published',
+          '--',
+          '--tag',
+          'next'
+        ],
+        out
+      )
+      expect(out.calls).to.deep.equal([
+        'foo@0.1.2-3 has already been published.\n',
+        'Updating bar to use exact dependencies ...\n',
+        'Updating bar to use local dependencies ...\n',
+        'Done!\n'
+      ])
+      expect(npmRegistry.foo.versions).to.deep.equal(['0.1.2-3'])
+      expect(npmRegistry.bar.versions).to.deep.equal(['1.2.3', '2.0.0'])
+      expect(npmRegistry.bar.tags).to.deep.equal({
+        latest: '1.2.3',
+        next: '2.0.0'
+      })
+
+      await cleanupTmpDir(cwd)
+    })
+  })
+
+  describe('update dependency styles', () => {
+    async function setup(
+      packages: {
+        name: string
+        version: string
+        dependencies: Record<string, string>
+      }[]
+    ) {
+      const root = await initTmpDir('depend')
+      process.chdir(root)
+
+      for (const { name, version, dependencies } of packages) {
+        const cwd = join(root, name.replace(/^.*[/\\]/, ''))
+        await mkdir(cwd)
+        const pkgPath = resolve(cwd, 'package.json')
+        await writeFile(pkgPath, getPackage(name, version, dependencies))
+      }
+
+      mockGit([], [])
+      mockNpm({})
+      return root
+    }
+
+    it('depend --latest', async () => {
+      const cwd = await setup([
+        {
+          name: 'foo',
+          version: '0.1.2-3',
+          dependencies: { bar: 'file:../bar' }
+        },
+        {
+          name: 'bar',
+          version: '1.2.3',
+          dependencies: { foo: 'file:../foo' }
+        }
+      ])
+
+      const out = new MockOut()
+      await cli(['depend', '--latest', '--path', 'foo', 'bar', '--yes'], out)
+      expect(out.calls).to.deep.equal([
+        'Updating foo to use latest dependencies ...\n',
+        'Updating bar to use latest dependencies ...\n',
+        'Done!\n'
+      ])
+
+      const fooPkg = await readFile(join('foo', 'package.json'), 'utf8')
+      expect(JSON.parse(fooPkg).dependencies).to.deep.equal({ bar: '^1.2.3' })
+
+      const barPkg = await readFile(join('bar', 'package.json'), 'utf8')
+      expect(JSON.parse(barPkg).dependencies).to.deep.equal({ foo: '^0.1.2-3' })
+
+      await cleanupTmpDir(cwd)
+    })
+
+    it('depend --exact', async () => {
+      const cwd = await setup([
+        {
+          name: 'foo',
+          version: '0.1.2-3',
+          dependencies: { bar: 'file:../bar' }
+        },
+        {
+          name: 'bar',
+          version: '1.2.3',
+          dependencies: { foo: 'file:../foo' }
+        }
+      ])
+
+      const out = new MockOut()
+      await cli(['depend', '--exact', '--path', 'foo', 'bar', '--yes'], out)
+      expect(out.calls).to.deep.equal([
+        'Updating foo to use exact dependencies ...\n',
+        'Updating bar to use exact dependencies ...\n',
+        'Done!\n'
+      ])
+
+      const fooPkg = await readFile(join('foo', 'package.json'), 'utf8')
+      expect(JSON.parse(fooPkg).dependencies).to.deep.equal({ bar: '1.2.3' })
+
+      const barPkg = await readFile(join('bar', 'package.json'), 'utf8')
+      expect(JSON.parse(barPkg).dependencies).to.deep.equal({ foo: '0.1.2-3' })
+
+      await cleanupTmpDir(cwd)
+    })
+
+    it('depend --local', async () => {
+      const cwd = await setup([
+        {
+          name: 'foo',
+          version: '0.1.2-3',
+          dependencies: { bar: '^1.2.3' }
+        },
+        {
+          name: 'bar',
+          version: '1.2.3',
+          dependencies: { foo: '9.9.9' } // not checked
+        }
+      ])
+
+      const out = new MockOut()
+      await cli(['depend', '--local', '--path', 'foo', 'bar', '--yes'], out)
+      expect(out.calls).to.deep.equal([
+        'Updating foo to use local dependencies ...\n',
+        'Updating bar to use local dependencies ...\n',
+        'Done!\n'
+      ])
+
+      const fooPkg = await readFile(join('foo', 'package.json'), 'utf8')
+      expect(JSON.parse(fooPkg).dependencies).to.deep.equal({
+        bar: 'file:../bar'
+      })
+
+      const barPkg = await readFile(join('bar', 'package.json'), 'utf8')
+      expect(JSON.parse(barPkg).dependencies).to.deep.equal({
+        foo: 'file:../foo'
+      })
+
+      await cleanupTmpDir(cwd)
+    })
+
+    it('Errors', async () => {
+      const cwd = await setup([
+        {
+          name: 'foo',
+          version: '0.1.2-3',
+          dependencies: { bar: 'file:../bar' }
+        },
+        {
+          name: 'bar',
+          version: '1.2.3',
+          dependencies: { qux: 'file:../qux'}
+        }
+      ])
+      const out = new MockOut()
+
+      try {
+        await cli(['depend', '--latest', '--path', '.', '--yes'], out)
+        throw new Error('Expected an error')
+      } catch (error) {
+        if (!/No packages found/.test(error.message)) throw error
+      }
+      expect(out.calls).to.deep.equal([])
+
+      try {
+        await cli(['depend', '--latest', '--path', 'foo', '--yes'], out)
+        throw new Error('Expected an error')
+      } catch (error) {
+        if (!/Local dependency bar .* not found/.test(error.message))
+          throw error
+      }
+      expect(out.calls).to.deep.equal([])
+
+      await cli(['depend', '--local', '--path', 'bar', '--yes'], out)
+      expect(out.calls).to.deep.equal(['No packages to update.\n'])
+
       await cleanupTmpDir(cwd)
     })
   })
