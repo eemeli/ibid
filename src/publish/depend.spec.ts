@@ -7,7 +7,7 @@ import { Writable } from 'stream'
 import { applyDepend } from './depend'
 
 import { promises } from 'fs'
-const { mkdtemp, readFile, rm } = promises
+const { mkdtemp, readFile, rm, rmdir } = promises
 
 class MockOut extends Writable {
   calls: string[] = []
@@ -25,7 +25,7 @@ describe('applyDepend', () => {
   })
   after(async () => {
     expect(root).to.satisfy((root: string) => root.startsWith(tmpdir()))
-    await rm(root, { recursive: true })
+    await (rm || rmdir)(root, { recursive: true })
   })
 
   it('no dependencies', async () => {
