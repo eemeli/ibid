@@ -11,11 +11,21 @@ export async function initTmpDir(name: string): Promise<string> {
 }
 
 export async function cleanupTmpDir(cwd: string): Promise<void> {
-  const rel = relative(await realpath(tmpdir()), await realpath(cwd))
+  const root = await realpath(tmpdir())
+  const rel = relative(root, await realpath(cwd))
   if (!rel || rel[0] === '.')
     throw new Error(`Not removing ${cwd} not within tmp dir ${tmpdir()}`)
   // The recursive option was introduced for rmdir() in Node.js 12.10.0 and
   // deprecated in 16.0.0. As rm() was only introduced in 14.14.0, use that
   // when possible but fall back to rmdir().
-  await (rm || rmdir)(cwd, { recursive: true })
+  try {
+    await(rm || rmdir)(cwd, { recursive: true })
+  } catch (error) {
+    if (error.code === 'EBUSY') {
+      // On Windows, the current directory is locked and cannot be removed.
+      // So let's try to move elsewhere and try again.
+      process.chdir(root)
+      await(rm || rmdir)(cwd, { recursive: true })
+    }
+  }
 }
