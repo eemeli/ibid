@@ -1,7 +1,7 @@
 import { constants, promises } from 'fs'
 import { resolve } from 'path'
 
-import { hasErrorCode } from '../cli-helpers/errors'
+import { hasErrorCode } from '../cli'
 import { Commit } from '../commits'
 import { Context } from '../config/context'
 import { formatChangelog } from './format'

@@ -1,9 +1,7 @@
 import { promises } from 'fs'
 import { relative, resolve } from 'path'
 import type { Writable } from 'stream'
-import type { CmdArgs } from '../cli'
-import { InputError } from '../cli-helpers/errors'
-import { findPackageRoots } from '../cli-helpers/package-roots'
+import { CmdArgs, findPackageRoots, InputError } from '../cli'
 import type { Package } from '../config/context'
 
 // 'fs/promises' is only available from Node.js 14.0.0

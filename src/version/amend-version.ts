@@ -1,4 +1,4 @@
-import { InputError } from '../cli-helpers/errors'
+import { InputError } from '../cli'
 import {
   gitAmendCommit,
   gitReleaseTags,
