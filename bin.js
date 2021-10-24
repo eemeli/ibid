@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-import { cliCommand, InputError } from './cli'
+const { cliCommand, InputError } = require('./lib/cli')
 
-async function main(argv: string[]) {
+async function main(argv) {
   try {
     await cliCommand(argv, process.stderr).parse()
   } catch (error) {
