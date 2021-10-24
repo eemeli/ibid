@@ -1,5 +1,5 @@
 import { promises } from 'fs'
-import { relative, resolve } from 'path'
+import { posix, resolve } from 'path'
 import type { Writable } from 'stream'
 import { CmdArgs, findPackageRoots, InputError } from '../cli'
 import type { Package } from '../config/context'
@@ -60,7 +60,7 @@ export async function applyDepend(
       if (match) {
         const res =
           mode === 'local'
-            ? `file:${relative(root, match.root)}`
+            ? `file:${posix.relative(root, match.root)}`
             : prefix + match.package.version
         if (range !== res) {
           deps[name] = res
