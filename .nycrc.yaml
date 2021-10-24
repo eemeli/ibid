@@ -2,4 +2,8 @@ all: true
 include:
   - 'src/**/*.ts'
 exclude:
+  - '**/*.mock.ts'
   - '**/*.spec.ts'
+reporter:
+  - html
+  - text
