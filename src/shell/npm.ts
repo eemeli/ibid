@@ -11,7 +11,7 @@ function checkPkgName(pkgName: string) {
     throw new InputError(`Invalid package name: ${pkgName}`)
 }
 
-export async function npmVersion(
+export async function npmSetVersion(
   dir: string | null,
   version: string
 ): Promise<void> {

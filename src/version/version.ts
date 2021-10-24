@@ -11,7 +11,7 @@ import {
   gitCheckTag,
   gitCommit
 } from '../shell/git'
-import { npmVersion } from '../shell/npm'
+import { npmSetVersion } from '../shell/npm'
 import { amendVersion } from './amend-version'
 import { filterUpdates } from './filter-updates'
 
@@ -100,7 +100,7 @@ export async function version(args: CmdArgs, out: Writable): Promise<void> {
     if (cf) await gitAdd(cf)
     else out.write(`No changelog added for ${name}.\n`)
 
-    await npmVersion(context.cwd, version)
+    await npmSetVersion(context.cwd, version)
     await gitAddPackageFiles(context.cwd)
   }
 
