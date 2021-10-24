@@ -52,6 +52,12 @@ export async function version(args: CmdArgs, out: Writable): Promise<void> {
     return
   }
 
+  if (out !== process.stderr && out !== process.stdout && !args.yes) {
+    throw new Error(
+      'Always use the --yes option if output is not stderr or stdout'
+    )
+  }
+
   const path = args.path || []
   const cfgArg = args.config ? String(args.config) : null
   const config = await loadConfig('.', cfgArg, args)
@@ -64,10 +70,6 @@ export async function version(args: CmdArgs, out: Writable): Promise<void> {
     throw new InputError(`No packages found in: ${path.join(', ')}`)
 
   if (!args.yes) {
-    if (out !== process.stderr && out !== process.stdout)
-      throw new Error(
-        'Always use the --yes option if output is not stderr or stdout'
-      )
     const apply = await filterUpdates(updates, out as NodeJS.WriteStream)
     out.write('\n')
     if (!apply) {
