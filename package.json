@@ -1,7 +1,7 @@
 {
   "name": "ibid",
   "version": "0.0.1",
-  "description": "Package versioning for monorepos",
+  "description": "Tools to automate your releases and changelogs, esp. for monorepos",
   "bin": "./bin.js",
   "files": [
     "bin.js",

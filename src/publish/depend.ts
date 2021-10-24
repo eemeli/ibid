@@ -8,9 +8,9 @@ import type { Package } from '../config/context'
 const { writeFile } = promises
 
 export const dependOptions = {
-  exact: { boolean: true },
-  latest: { boolean: true },
-  local: { boolean: true }
+  exact: { boolean: true, desc: 'Use exact dependencies (e.g. "1.2.3").' },
+  latest: { boolean: true, desc: 'Use latest dependencies (e.g. "^1.2.3").' },
+  local: { boolean: true, desc: 'Use local dependencies (e.g. "file:../foo").' }
 }
 
 export async function depend(args: CmdArgs, out: Writable): Promise<void> {

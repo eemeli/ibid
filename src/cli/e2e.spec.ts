@@ -144,7 +144,7 @@ describe('CLI end-to-end', () => {
       )
 
       const out = new MockOut()
-      await cli(['version', '--path', '.', '--yes'], out)
+      await cli(['version', '.', '--yes'], out)
       expect(out.calls).to.include('Updating foo to 1.2.4 ...\n')
       expect(out.calls).to.include('Done!\n\n')
 
@@ -197,7 +197,7 @@ describe('CLI end-to-end', () => {
       )
 
       const out = new MockOut()
-      await cli(['version', '--path', '.', '--prerelease', '--yes'], out)
+      await cli(['version', '.', '--prerelease', '--yes'], out)
       expect(out.calls).to.include('Updating foo to 1.3.0-0 ...\n')
       expect(out.calls).to.include('Done!\n\n')
 
@@ -251,7 +251,7 @@ describe('CLI end-to-end', () => {
       )
 
       const out = new MockOut()
-      await cli(['version', '--path', '.', '--yes'], out)
+      await cli(['version', '.', '--yes'], out)
       expect(out.calls).to.include('Updating foo to 2.0.0 ...\n')
       expect(out.calls).to.include('Done!\n\n')
 
@@ -295,7 +295,7 @@ describe('CLI end-to-end', () => {
       const { cwd, gitCommits } = await setup('foo', '1.2.3', null)
 
       const out = new MockOut()
-      await cli(['version', '--path', '.', '--yes'], out)
+      await cli(['version', '.', '--yes'], out)
       expect(out.calls).to.deep.equal(['No packages to update.\n'])
 
       const head = gitCommits[gitCommits.length - 1]
@@ -316,10 +316,7 @@ describe('CLI end-to-end', () => {
         const { cwd, gitCommits } = await setup('foo', '1.2.3', null)
 
         const out = new MockOut()
-        await cli(
-          ['version', '--path', '.', '--bump-all-changes', '--yes'],
-          out
-        )
+        await cli(['version', '.', '--bump-all-changes', '--yes'], out)
         expect(out.calls).to.include('Updating foo to 1.2.4 ...\n')
         expect(out.calls).to.include('Done!\n\n')
 
@@ -342,10 +339,7 @@ describe('CLI end-to-end', () => {
         await writeFile('CHANGELOG.md', '# Change Log\n\n## Release 1.2.3\n')
 
         const out = new MockOut()
-        await cli(
-          ['version', '--path', '.', '--bump-all-changes', '--yes'],
-          out
-        )
+        await cli(['version', '.', '--bump-all-changes', '--yes'], out)
         expect(out.calls).to.include('Updating foo to 1.2.4 ...\n')
         expect(out.calls).to.include('Done!\n\n')
 
@@ -437,7 +431,7 @@ describe('CLI end-to-end', () => {
       ])
 
       const out = new MockOut()
-      await cli(['version', '--path', 'foo', 'bar', '--yes'], out)
+      await cli(['version', 'foo', 'bar', '--yes'], out)
       expect(out.calls).to.include('Updating foo to 0.1.2-4 ...\n')
       expect(out.calls).to.include('Updating bar to 1.3.0 ...\n')
       expect(out.calls).to.include('Done!\n\n')
@@ -504,7 +498,7 @@ describe('CLI end-to-end', () => {
       ])
 
       const out = new MockOut()
-      await cli(['version', '--path', 'foo', 'bar', '--yes'], out)
+      await cli(['version', 'foo', 'bar', '--yes'], out)
       expect(out.calls).to.include('Updating bar to 2.0.0 ...\n')
       expect(out.calls).to.include('Done!\n\n')
 
@@ -612,7 +606,7 @@ describe('CLI end-to-end', () => {
       ])
 
       const out = new MockOut()
-      await cli(['depend', '--latest', '--path', 'foo', 'bar', '--yes'], out)
+      await cli(['depend', '--latest', 'foo', 'bar', '--yes'], out)
       expect(out.calls).to.deep.equal([
         'Updating foo to use latest dependencies ...\n',
         'Updating bar to use latest dependencies ...\n',
@@ -643,7 +637,7 @@ describe('CLI end-to-end', () => {
       ])
 
       const out = new MockOut()
-      await cli(['depend', '--exact', '--path', 'foo', 'bar', '--yes'], out)
+      await cli(['depend', '--exact', 'foo', 'bar', '--yes'], out)
       expect(out.calls).to.deep.equal([
         'Updating foo to use exact dependencies ...\n',
         'Updating bar to use exact dependencies ...\n',
@@ -674,7 +668,7 @@ describe('CLI end-to-end', () => {
       ])
 
       const out = new MockOut()
-      await cli(['depend', '--local', '--path', 'foo', 'bar', '--yes'], out)
+      await cli(['depend', '--local', 'foo', 'bar', '--yes'], out)
       expect(out.calls).to.deep.equal([
         'Updating foo to use local dependencies ...\n',
         'Updating bar to use local dependencies ...\n',
@@ -704,13 +698,13 @@ describe('CLI end-to-end', () => {
         {
           name: 'bar',
           version: '1.2.3',
-          dependencies: { qux: 'file:../qux'}
+          dependencies: { qux: 'file:../qux' }
         }
       ])
       const out = new MockOut()
 
       try {
-        await cli(['depend', '--latest', '--path', '.', '--yes'], out)
+        await cli(['depend', '--latest', '.', '--yes'], out)
         throw new Error('Expected an error')
       } catch (error) {
         if (!/No packages found/.test(error.message)) throw error
@@ -718,7 +712,7 @@ describe('CLI end-to-end', () => {
       expect(out.calls).to.deep.equal([])
 
       try {
-        await cli(['depend', '--latest', '--path', 'foo', '--yes'], out)
+        await cli(['depend', '--latest', 'foo', '--yes'], out)
         throw new Error('Expected an error')
       } catch (error) {
         if (!/Local dependency bar .* not found/.test(error.message))
@@ -726,7 +720,7 @@ describe('CLI end-to-end', () => {
       }
       expect(out.calls).to.deep.equal([])
 
-      await cli(['depend', '--local', '--path', 'bar', '--yes'], out)
+      await cli(['depend', '--local', 'bar', '--yes'], out)
       expect(out.calls).to.deep.equal(['No packages to update.\n'])
 
       await cleanupTmpDir(cwd)

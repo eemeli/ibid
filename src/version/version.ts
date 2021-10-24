@@ -21,7 +21,8 @@ export const versionOptions = {
     desc: 'Run after a new version to commit changelog fixes & retarget git tags'
   },
   'bump-all-changes': {
-    alias: ['a', 'all-commits']
+    alias: 'a',
+    desc: 'Increment version for any changes, even if they are excluded from the changelog.'
   },
   config: {
     alias: 'c',
@@ -34,12 +35,13 @@ export const versionOptions = {
     desc: 'Explicitly initialise (or not) a changelog file. If unset, init if required.'
   },
   prerelease: {
-    alias: 'p'
+    alias: 'p',
+    desc: 'If true, use the current or an empty prerelease id. If false, promote a previous prerelease. If a string, use it as the prerelease id.'
   },
   yes: {
     alias: 'y',
     boolean: true,
-    desc: 'Skip interactive verification'
+    desc: 'Skip interactive verification.'
   }
 }
 
