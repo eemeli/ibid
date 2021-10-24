@@ -8,11 +8,12 @@
   ],
   "main": "./lib/index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc -p ./tsconfig.build.json",
     "postbuild": "chmod a+x lib/bin.js",
     "lint": "eslint src/",
     "prettier": "prettier src/ --ignore-unknown --write",
-    "test": "nyc mocha 'src/**/*.spec.ts'"
+    "test": "nyc mocha 'src/**/*.spec.ts'",
+    "test:types": "tsc --noEmit"
   },
   "repository": {
     "type": "git",
