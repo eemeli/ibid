@@ -23,7 +23,11 @@ export async function depend(args: CmdArgs, out: Writable): Promise<void> {
       'Exactly one of --exact, --latest or --local must be set.'
     )
 
-  const path = args.path || []
+  const path = !args.path
+    ? []
+    : Array.isArray(args.path)
+    ? args.path
+    : [args.path]
   const packages = new Map<string, { root: string; package: Package }>()
   await findPackageRoots(path, (root, pkg) =>
     packages.set(pkg.name, { root, package: pkg })

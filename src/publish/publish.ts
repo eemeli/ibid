@@ -41,27 +41,40 @@ export async function publish(args: CmdArgs, out: Writable): Promise<void> {
       )
   }
 
-  const path = args.path || []
-  const packages = new Map<string, { root: string; package: Package }>()
+  if (out !== process.stderr && out !== process.stdout && !args.yes)
+    throw new Error(
+      'Always use the --yes option if output is not stderr or stdout'
+    )
+
+  const path = !args.path
+    ? []
+    : Array.isArray(args.path)
+    ? args.path
+    : [args.path]
+  const packages = new Map<
+    string,
+    { root: string; package: Package; publish: boolean }
+  >()
+  let publishNone = true
   await findPackageRoots(path, async (root, pkg) => {
     const prev = await npmGetVersions(pkg.name)
+    let publish = true
     if (prev.includes(pkg.version)) {
       const msg = `${pkg.name}@${pkg.version} has already been published.`
-      if (args.ignorePublished) out.write(msg + '\n')
-      else throw new InputError(msg)
-    } else packages.set(pkg.name, { root, package: pkg })
+      if (!args.ignorePublished) throw new InputError(msg)
+      out.write(msg + '\n')
+      publish = false
+    } else publishNone = false
+    packages.set(pkg.name, { root, package: pkg, publish })
   })
-  if (packages.size === 0)
+  if (publishNone)
     throw new InputError(`No unpublished packages found in: ${path.join(', ')}`)
 
+  /* istanbul ignore if */
   if (!args.yes) {
-    if (out !== process.stderr && out !== process.stdout)
-      throw new Error(
-        'Always use the --yes option if output is not stderr or stdout'
-      )
-
     out.write('Packages to publish:\n\n')
     for (const pkg of packages.values()) {
+      if (!pkg.publish) continue
       const { name, version } = pkg.package
       out.write(`    ${name} @ ${version}\n`)
     }
@@ -79,6 +92,7 @@ export async function publish(args: CmdArgs, out: Writable): Promise<void> {
   }
 
   for (const pkg of packages.values()) {
+    if (!pkg.publish) continue
     const updatedDepend = await applyDepend(
       packages,
       args.exact ? 'exact' : 'latest',

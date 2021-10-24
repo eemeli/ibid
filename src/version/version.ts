@@ -58,7 +58,11 @@ export async function version(args: CmdArgs, out: Writable): Promise<void> {
     )
   }
 
-  const path = args.path || []
+  const path = !args.path
+    ? []
+    : Array.isArray(args.path)
+    ? args.path
+    : [args.path]
   const cfgArg = args.config ? String(args.config) : null
   const config = await loadConfig('.', cfgArg, args)
   const updates: PackageUpdate[] = []
@@ -69,6 +73,7 @@ export async function version(args: CmdArgs, out: Writable): Promise<void> {
   if (updates.length === 0)
     throw new InputError(`No packages found in: ${path.join(', ')}`)
 
+  /* istanbul ignore if */
   if (!args.yes) {
     const apply = await filterUpdates(updates, out as NodeJS.WriteStream)
     out.write('\n')
