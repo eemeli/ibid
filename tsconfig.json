@@ -12,7 +12,8 @@
     "rootDir": "src",
     "skipLibCheck": true,
     "strict": true,
-    "target": "ES2019"
+    "target": "ES2019",
+    "useUnknownInCatchVariables": false
   },
   "include": ["src/**/*.ts"]
 }
