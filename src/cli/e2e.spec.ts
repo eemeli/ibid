@@ -1,23 +1,18 @@
 import { expect } from 'chai'
-import { execFile as execFileCb } from 'child_process'
 import { promises } from 'fs'
 import { before, describe, it } from 'mocha'
-import { join } from 'path'
+import { join, resolve } from 'path'
 import { Writable } from 'stream'
-import { promisify } from 'util'
-import { gitReleaseTags } from '../shell/git'
-import {
-  cleanupTmpRepo,
-  firstCommit,
-  initTmpRepo,
-  updateFile
-} from '../test-helpers/git'
+import { setGitExecFile } from '../shell/git'
+import { mockCommit, MockCommit, mockGit } from '../shell/git.mock'
+import { setNpmExecFile } from '../shell/npm'
+import { mockNpm, MockNpmRegistry } from '../shell/npm.mock'
 import { source } from '../test-helpers/source'
+import { cleanupTmpDir, initTmpDir } from '../test-helpers/tmp-dir'
 import { cliCommand } from './command'
 
 // 'fs/promises' is only available from Node.js 14.0.0
 const { mkdir, readFile, writeFile } = promises
-const execFile = promisify(execFileCb)
 
 const cli = (args: string[], out: Writable) =>
   cliCommand(args, out).fail(false).parse()
@@ -46,7 +41,11 @@ class MockOut extends Writable {
 describe('CLI end-to-end', () => {
   let dir: string
   before(() => (dir = process.cwd()))
-  after(() => process.chdir(dir))
+  after(() => {
+    process.chdir(dir)
+    setGitExecFile(null)
+    setNpmExecFile(null)
+  })
 
   describe('single package at root', () => {
     async function setup(
@@ -54,36 +53,58 @@ describe('CLI end-to-end', () => {
       version: string,
       bump: 'major' | 'minor' | 'patch' | null
     ) {
-      const cwd = await initTmpRepo(name)
-      await updateFile(cwd, 'package.json', getPackage(name, version), null)
-      await firstCommit(cwd, [`v${version}`])
+      const cwd = await initTmpDir(name)
+      process.chdir(cwd)
 
-      await updateFile(cwd, 'a', null, 'chore: Ignore 1')
+      const pkgPath = resolve(cwd, 'package.json')
+      await writeFile(pkgPath, getPackage(name, version))
+
+      const fp = resolve(cwd, 'a')
+      const commits: MockCommit[] = [
+        mockCommit('chore!: First commit', [pkgPath], `v${version}`),
+        mockCommit('chore: Ignore 1', [fp])
+      ]
 
       if (bump) {
-        await updateFile(cwd, 'a', null, 'fix: Patch 1')
-        await updateFile(cwd, 'a', null, 'fix: Patch 2')
+        commits.push(
+          mockCommit('fix: Patch 1', [fp]),
+          mockCommit('fix: Patch 2', [fp])
+        )
       }
 
       if (bump === 'minor' || bump === 'major') {
-        await updateFile(cwd, 'a', null, 'feat: Minor 1')
-        await updateFile(cwd, 'a', null, 'feat: Minor 2')
+        commits.push(
+          mockCommit('feat: Minor 1', [fp]),
+          mockCommit('feat: Minor 2', [fp])
+        )
       }
 
       if (bump === 'major') {
-        await updateFile(cwd, 'a', null, 'feat!: Major 1')
-        const msg = 'fix: Major 2\n\nBREAKING CHANGE: Break'
-        await updateFile(cwd, 'a', null, msg)
+        commits.push(
+          mockCommit('feat!: Major 1', [fp]),
+          mockCommit('fix: Major 2\n\nBREAKING CHANGE: Break', [fp])
+        )
       }
 
-      await updateFile(cwd, 'a', null, 'chore: Ignore 2')
+      commits.push(mockCommit('chore: Ignore 2', [fp]))
 
-      return cwd
+      const gitStaged: string[] = []
+      mockGit(commits, gitStaged)
+
+      const npmRegistry: MockNpmRegistry = {
+        [name]: { tags: { latest: version }, versions: [version] }
+      }
+      mockNpm(npmRegistry)
+
+      return { cwd, gitCommits: commits, gitStaged, npmRegistry }
     }
 
     it('patch release with --amend', async () => {
-      const cwd = await setup('foo', '1.2.3', 'patch')
-      process.chdir(cwd)
+      const { cwd, gitCommits, gitStaged } = await setup(
+        'foo',
+        '1.2.3',
+        'patch'
+      )
 
       const out = new MockOut()
       try {
@@ -98,7 +119,8 @@ describe('CLI end-to-end', () => {
       expect(out.calls).to.include('Updating foo to 1.2.4 ...\n')
       expect(out.calls).to.include('Done!\n\n')
 
-      expect(await gitReleaseTags('HEAD')).to.deep.equal(['v1.2.4'])
+      const head1 = gitCommits[gitCommits.length - 1]
+      expect(head1.tags).to.deep.equal(['v1.2.4'])
 
       const log = await readFile('CHANGELOG.md', 'utf8')
       expect(normalise(log)).to.equal(source`
@@ -120,26 +142,28 @@ describe('CLI end-to-end', () => {
         if (!/first stage/.test(error.message)) throw error
       }
 
-      await updateFile(cwd, 'a', null, null)
+      gitStaged.push(resolve(cwd, 'a'))
       await cli(['version', '--amend'], out)
-      expect(await gitReleaseTags('HEAD')).to.deep.equal(['v1.2.4'])
+      const head2 = gitCommits[gitCommits.length - 1]
+      expect(head2.tags).to.deep.equal(['v1.2.4'])
+      expect(head2).to.not.equal(head1)
       expect(out.calls).to.deep.equal([
         'Release commit amended and tags moved.\n'
       ])
 
-      await cleanupTmpRepo(cwd)
+      await cleanupTmpDir(cwd)
     })
 
     it('minor prerelease', async () => {
-      const cwd = await setup('foo', '1.2.3', 'minor')
-      process.chdir(cwd)
+      const { cwd, gitCommits } = await setup('foo', '1.2.3', 'minor')
 
       const out = new MockOut()
       await cli(['version', '--path', '.', '--prerelease', '--yes'], out)
       expect(out.calls).to.include('Updating foo to 1.3.0-0 ...\n')
       expect(out.calls).to.include('Done!\n\n')
 
-      expect(await gitReleaseTags('HEAD')).to.deep.equal(['v1.3.0-0'])
+      const head = gitCommits[gitCommits.length - 1]
+      expect(head.tags).to.deep.equal(['v1.3.0-0'])
 
       const log = await readFile('CHANGELOG.md', 'utf8')
       expect(normalise(log)).to.equal(source`
@@ -157,12 +181,12 @@ describe('CLI end-to-end', () => {
         * Patch 1 ([ID](URL))
         * Patch 2 ([ID](URL))
       `)
-      await cleanupTmpRepo(cwd)
+      await cleanupTmpDir(cwd)
     })
 
     it('major release with config file', async () => {
-      const cwd = await setup('foo', '1.2.3', 'major')
-      process.chdir(cwd)
+      const { cwd, gitCommits } = await setup('foo', '1.2.3', 'major')
+
       await writeFile(
         'ibid.config.cjs',
         source`
@@ -177,7 +201,8 @@ describe('CLI end-to-end', () => {
       expect(out.calls).to.include('Updating foo to 2.0.0 ...\n')
       expect(out.calls).to.include('Done!\n\n')
 
-      expect(await gitReleaseTags('HEAD')).to.deep.equal(['v2.0.0'])
+      const head = gitCommits[gitCommits.length - 1]
+      expect(head.tags).to.deep.equal(['v2.0.0'])
 
       const log = await readFile('RELEASES', 'utf8')
       expect(normalise(log)).to.equal(source`
@@ -202,18 +227,18 @@ describe('CLI end-to-end', () => {
         * Minor 2 ([ID](URL))
         * Major 1 ([ID](URL))
       `)
-      await cleanupTmpRepo(cwd)
+      await cleanupTmpDir(cwd)
     })
 
     it('no release', async () => {
-      const cwd = await setup('foo', '1.2.3', null)
-      process.chdir(cwd)
+      const { cwd, gitCommits } = await setup('foo', '1.2.3', null)
 
       const out = new MockOut()
       await cli(['version', '--path', '.', '--yes'], out)
       expect(out.calls).to.deep.equal(['No packages to update.\n'])
 
-      expect(await gitReleaseTags('HEAD')).to.deep.equal([])
+      const head = gitCommits[gitCommits.length - 1]
+      expect(head.tags).to.deep.equal([])
 
       try {
         await readFile('CHANGELOG.md', 'utf8')
@@ -222,13 +247,12 @@ describe('CLI end-to-end', () => {
         if (error.code !== 'ENOENT') throw error
       }
 
-      await cleanupTmpRepo(cwd)
+      await cleanupTmpDir(cwd)
     })
 
     describe('bumpAllChanges', () => {
       it('patch with no changelog', async () => {
-        const cwd = await setup('foo', '1.2.3', null)
-        process.chdir(cwd)
+        const { cwd, gitCommits } = await setup('foo', '1.2.3', null)
 
         const out = new MockOut()
         await cli(
@@ -238,7 +262,8 @@ describe('CLI end-to-end', () => {
         expect(out.calls).to.include('Updating foo to 1.2.4 ...\n')
         expect(out.calls).to.include('Done!\n\n')
 
-        expect(await gitReleaseTags('HEAD')).to.deep.equal(['v1.2.4'])
+        const head = gitCommits[gitCommits.length - 1]
+        expect(head.tags).to.deep.equal(['v1.2.4'])
 
         const log = await readFile('CHANGELOG.md', 'utf8')
         expect(normalise(log)).to.equal(source`
@@ -247,12 +272,12 @@ describe('CLI end-to-end', () => {
           ## [1.2.4](${URL}/compare/1.2.3...1.2.4) (${DATE})
         `)
 
-        await cleanupTmpRepo(cwd)
+        await cleanupTmpDir(cwd)
       })
 
       it('patch with changelog', async () => {
-        const cwd = await setup('foo', '1.2.3', null)
-        process.chdir(cwd)
+        const { cwd, gitCommits } = await setup('foo', '1.2.3', null)
+
         await writeFile('CHANGELOG.md', '# Change Log\n\n## Release 1.2.3\n')
 
         const out = new MockOut()
@@ -263,7 +288,8 @@ describe('CLI end-to-end', () => {
         expect(out.calls).to.include('Updating foo to 1.2.4 ...\n')
         expect(out.calls).to.include('Done!\n\n')
 
-        expect(await gitReleaseTags('HEAD')).to.deep.equal(['v1.2.4'])
+        const head = gitCommits[gitCommits.length - 1]
+        expect(head.tags).to.deep.equal(['v1.2.4'])
 
         const log = await readFile('CHANGELOG.md', 'utf8')
         expect(normalise(log)).to.equal(source`
@@ -274,7 +300,7 @@ describe('CLI end-to-end', () => {
           ## Release 1.2.3
         `)
 
-        await cleanupTmpRepo(cwd)
+        await cleanupTmpDir(cwd)
       })
     })
   })
@@ -287,50 +313,61 @@ describe('CLI end-to-end', () => {
         bump: 'major' | 'minor' | 'patch' | null
       }[]
     ) {
-      const root = await initTmpRepo('multi')
-      await firstCommit(root, [])
+      const root = await initTmpDir('multi')
+      process.chdir(root)
+
+      const gitCommits: MockCommit[] = [mockCommit('chore!: First commit', [])]
+      const npmRegistry: MockNpmRegistry = {}
       for (const { name, version, bump } of packages) {
         const cwd = join(root, name.replace(/^.*[/\\]/, ''))
         await mkdir(cwd)
 
-        const pkg = getPackage(name, version)
-        await updateFile(cwd, 'package.json', pkg, 'chore!: Add package')
-        await execFile('git', ['tag', `${name}@${version}`], { cwd })
+        const pkgPath = resolve(cwd, 'package.json')
+        await writeFile(pkgPath, getPackage(name, version))
 
-        await updateFile(cwd, 'a', null, `chore: Ignore ${name} 1`)
+        npmRegistry[name] = { tags: { latest: version }, versions: [version] }
+
+        const fp = resolve(cwd, 'a')
+        gitCommits.push(
+          mockCommit('chore!: Add package', [pkgPath], `${name}@${version}`),
+          mockCommit(`chore: Ignore ${name} 1`, [fp])
+        )
 
         if (bump) {
-          await updateFile(cwd, 'a', null, `fix: Patch ${name} 1`)
-          await updateFile(cwd, 'a', null, `fix: Patch ${name} 2`)
-        }
-
-        if (bump === 'minor' || bump === 'major') {
-          await updateFile(cwd, 'a', null, `feat: Minor ${name} 1`)
-          await updateFile(cwd, 'a', null, `feat: Minor ${name} 2`)
-        }
-
-        if (bump === 'major') {
-          await updateFile(cwd, 'a', null, `feat!: Major ${name} 1`)
-          await updateFile(
-            cwd,
-            'a',
-            null,
-            `fix: Major ${name} 2\n\nBREAKING CHANGE: Break`
+          gitCommits.push(
+            mockCommit(`fix: Patch ${name} 1`, [fp]),
+            mockCommit(`fix: Patch ${name} 2`, [fp])
           )
         }
 
-        await updateFile(cwd, 'a', null, `chore: Ignore ${name} 2`)
+        if (bump === 'minor' || bump === 'major') {
+          gitCommits.push(
+            mockCommit(`feat: Minor ${name} 1`, [fp]),
+            mockCommit(`feat: Minor ${name} 2`, [fp])
+          )
+        }
+
+        if (bump === 'major') {
+          gitCommits.push(
+            mockCommit(`feat!: Major ${name} 1`, [fp]),
+            mockCommit(`fix: Major ${name} 2\n\nBREAKING CHANGE: Break`, [fp])
+          )
+        }
+
+        gitCommits.push(mockCommit(`chore: Ignore ${name} 2`, [fp]))
       }
 
-      return root
+      const gitStaged: string[] = []
+      mockGit(gitCommits, gitStaged)
+      mockNpm(npmRegistry)
+      return { cwd: root, gitCommits, gitStaged, npmRegistry }
     }
 
     it('patch + minor releases', async () => {
-      const cwd = await setup([
+      const { cwd, gitCommits } = await setup([
         { name: 'foo', version: '0.1.2-3', bump: 'patch' },
         { name: 'bar', version: '1.2.3', bump: 'minor' }
       ])
-      process.chdir(cwd)
 
       const out = new MockOut()
       await cli(['version', '--path', 'foo', 'bar', '--yes'], out)
@@ -338,10 +375,8 @@ describe('CLI end-to-end', () => {
       expect(out.calls).to.include('Updating bar to 1.3.0 ...\n')
       expect(out.calls).to.include('Done!\n\n')
 
-      expect(await gitReleaseTags('HEAD')).to.deep.equal([
-        'bar@1.3.0',
-        'foo@0.1.2-4'
-      ])
+      const head = gitCommits[gitCommits.length - 1]
+      expect(head.tags).to.deep.equal(['bar@1.3.0', 'foo@0.1.2-4'])
 
       const logFoo = await readFile('foo/CHANGELOG.md', 'utf8')
       expect(normalise(logFoo)).to.equal(source`
@@ -371,22 +406,22 @@ describe('CLI end-to-end', () => {
         * Patch bar 1 ([ID](URL))
         * Patch bar 2 ([ID](URL))
       `)
-      await cleanupTmpRepo(cwd)
+      await cleanupTmpDir(cwd)
     })
 
     it('none + major release', async () => {
-      const cwd = await setup([
+      const { cwd, gitCommits } = await setup([
         { name: 'foo', version: '0.1.2-3', bump: null },
         { name: 'bar', version: '1.2.3', bump: 'major' }
       ])
-      process.chdir(cwd)
 
       const out = new MockOut()
       await cli(['version', '--path', 'foo', 'bar', '--yes'], out)
       expect(out.calls).to.include('Updating bar to 2.0.0 ...\n')
       expect(out.calls).to.include('Done!\n\n')
 
-      expect(await gitReleaseTags('HEAD')).to.deep.equal(['bar@2.0.0'])
+      const head = gitCommits[gitCommits.length - 1]
+      expect(head.tags).to.deep.equal(['bar@2.0.0'])
 
       try {
         await readFile('foo/CHANGELOG.md', 'utf8')
@@ -418,7 +453,7 @@ describe('CLI end-to-end', () => {
         * Patch bar 2 ([ID](URL))
         * Major bar 2 ([ID](URL))
       `)
-      await cleanupTmpRepo(cwd)
+      await cleanupTmpDir(cwd)
     })
   })
 })

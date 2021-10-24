@@ -4,7 +4,18 @@ import { valid } from 'semver'
 import { promisify } from 'util'
 import { InputError } from '../cli'
 
-const execFile = promisify(execFileCb)
+let execFile = promisify(execFileCb)
+
+type NpmExecFile = (
+  cmd: 'npm',
+  args: string[],
+  options?: { cwd: string }
+) => Promise<{ stdout: string }>
+
+// Used by tests to mock npm cli
+export const setNpmExecFile = (next: NpmExecFile | null): NpmExecFile =>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (execFile = next ? (next as any) : promisify(execFileCb))
 
 function checkPkgName(pkgName: string) {
   if (!pkgName || /[^a-z._@/-]/.test(pkgName))

@@ -2,7 +2,18 @@ import { execFile as execFileCb } from 'child_process'
 import { resolve } from 'path'
 import { promisify } from 'util'
 
-const execFile = promisify(execFileCb)
+let execFile = promisify(execFileCb)
+
+type GitExecFile = (
+  cmd: 'git',
+  args: string[],
+  options?: { cwd: string }
+) => Promise<{ stdout: string }>
+
+// Used by tests to mock git cli
+export const setGitExecFile = (next: GitExecFile | null): GitExecFile =>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (execFile = next ? (next as any) : promisify(execFileCb))
 
 // INFO
 
