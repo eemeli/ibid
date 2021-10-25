@@ -2,13 +2,19 @@
   "name": "@ibid/core",
   "version": "0.0.1",
   "description": "Tools to automate your releases and changelogs, esp. for monorepos",
+  "author": "Eemeli Aro <eemeli@gmail.com>",
+  "license": "MIT",
+  "homepage": "https://github.com/eemeli/ibid#readme",
+  "bugs": {
+    "url": "https://github.com/eemeli/ibid/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eemeli/ibid.git"
+  },
   "bin": {
     "ibid": "./bin.js"
   },
-  "files": [
-    "bin.js",
-    "lib/"
-  ],
   "main": "./lib/index.js",
   "scripts": {
     "build": "tsc -p ./tsconfig.build.json",
@@ -19,16 +25,13 @@
     "test": "nyc mocha 'src/**/*.spec.ts'",
     "test:types": "tsc --noEmit"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/eemeli/ibid.git"
+  "publishConfig": {
+    "access": "public"
   },
-  "author": "Eemeli Aro <eemeli@gmail.com>",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/eemeli/ibid/issues"
-  },
-  "homepage": "https://github.com/eemeli/ibid#readme",
+  "files": [
+    "bin.js",
+    "lib/"
+  ],
   "dependencies": {
     "hosted-git-info": "^4.0.2",
     "inquirer": "^8.1.1",
