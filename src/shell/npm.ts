@@ -54,7 +54,7 @@ export async function npmGetVersions(pkgName: string): Promise<string[]> {
 export function npmPublish(
   dir: string | null,
   args: string[]
-): Promise<unknown> {
+): ReturnType<typeof execFile> {
   return execFile(
     'npm',
     ['publish', ...args],

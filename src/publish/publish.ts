@@ -100,7 +100,9 @@ export async function publish(args: CmdArgs, out: Writable): Promise<void> {
       pkg.package,
       out
     )
-    await npmPublish(pkg.root, args['--'] || [])
+    const exec = npmPublish(pkg.root, args['--'] || [])
+    exec.child?.stdout?.pipe(out)
+    await exec
     if (updatedDepend)
       await applyDepend(packages, 'local', pkg.root, pkg.package, out)
   }
