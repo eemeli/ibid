@@ -1,6 +1,6 @@
 {
   "name": "@ibid/core",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Tools to automate your releases and changelogs, esp. for monorepos",
   "author": "Eemeli Aro <eemeli@gmail.com>",
   "license": "MIT",
