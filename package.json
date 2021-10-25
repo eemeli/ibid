@@ -12,7 +12,9 @@
   "main": "./lib/index.js",
   "scripts": {
     "build": "tsc -p ./tsconfig.build.json",
+    "clean": "git clean -fdxe node_modules",
     "lint": "eslint src/",
+    "prepublishOnly": "npm run clean && npm test && npm run test:types && npm run build",
     "prettier": "prettier src/ --ignore-unknown --write",
     "test": "nyc mocha 'src/**/*.spec.ts'",
     "test:types": "tsc --noEmit"
