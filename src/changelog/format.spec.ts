@@ -71,7 +71,7 @@ describe('formatChangelog', () => {
         repository: { type: 'git', url: 'https://github.com/eemeli/ibid' }
       }
       expect(formatChangelog.header(ctx, '1.2.3')).to.equal(
-        `## [1.2.3](https://github.com/eemeli/ibid/compare/1.0.0...1.2.3) (${dateStr})\n`
+        `## [1.2.3](https://github.com/eemeli/ibid/compare/v1.0.0...v1.2.3) (${dateStr})\n`
       )
     })
 

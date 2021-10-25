@@ -20,10 +20,12 @@ const titles: Record<string, string> = {
 
 export const formatChangelog = {
   header(ctx: Context, version: string | null, title?: string | null): string {
-    const { linkCompare } = ctx.config
+    const { linkCompare, tagFormat } = ctx.config
     const prev = ctx.package?.version
     const url =
-      prev && version && linkCompare ? linkCompare(ctx, prev, version) : null
+      prev && version && linkCompare
+        ? linkCompare(ctx, tagFormat(ctx, prev), tagFormat(ctx, version))
+        : null
     let fmt = url
       ? `[${version}](${url})`
       : version ||

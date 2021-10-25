@@ -159,7 +159,7 @@ describe('CLI end-to-end', () => {
       expect(normalise(log)).to.equal(source`
         # Changelog
 
-        ## [0.1.0](${URL}/compare/0.0.1...0.1.0) (${DATE})
+        ## [0.1.0](${URL}/compare/v0.0.1...v0.1.0) (${DATE})
 
         ### ⚠ Breaking Changes
 
@@ -203,7 +203,7 @@ describe('CLI end-to-end', () => {
       expect(normalise(log)).to.equal(source`
         # Changelog
 
-        ## [1.2.4](${URL}/compare/1.2.3...1.2.4) (${DATE})
+        ## [1.2.4](${URL}/compare/v1.2.3...v1.2.4) (${DATE})
 
         ### Bug Fixes
 
@@ -256,7 +256,7 @@ describe('CLI end-to-end', () => {
       expect(normalise(log)).to.equal(source`
         # Changelog
 
-        ## [1.3.0-0](${URL}/compare/1.2.3...1.3.0-0) (${DATE})
+        ## [1.3.0-0](${URL}/compare/v1.2.3...v1.3.0-0) (${DATE})
 
         ### Features
 
@@ -310,7 +310,7 @@ describe('CLI end-to-end', () => {
       expect(normalise(log)).to.equal(source`
         # Changelog
 
-        ## [2.0.0](${URL}/compare/1.2.3...2.0.0) (${DATE})
+        ## [2.0.0](${URL}/compare/v1.2.3...v2.0.0) (${DATE})
 
         ### ⚠ Breaking Changes
 
@@ -375,7 +375,7 @@ describe('CLI end-to-end', () => {
         expect(normalise(log)).to.equal(source`
           # Changelog
 
-          ## [1.2.4](${URL}/compare/1.2.3...1.2.4) (${DATE})
+          ## [1.2.4](${URL}/compare/v1.2.3...v1.2.4) (${DATE})
         `)
 
         await cleanupTmpDir(cwd)
@@ -398,7 +398,7 @@ describe('CLI end-to-end', () => {
         expect(normalise(log)).to.equal(source`
           # Change Log
 
-          ## [1.2.4](${URL}/compare/1.2.3...1.2.4) (${DATE})
+          ## [1.2.4](${URL}/compare/v1.2.3...v1.2.4) (${DATE})
 
           ## Release 1.2.3
         `)
@@ -491,7 +491,7 @@ describe('CLI end-to-end', () => {
       expect(normalise(logFoo)).to.equal(source`
         # Changelog
 
-        ## [0.1.2-4](${URL}/compare/0.1.2-3...0.1.2-4) (${DATE})
+        ## [0.1.2-4](${URL}/compare/foo@0.1.2-3...foo@0.1.2-4) (${DATE})
 
         ### Bug Fixes
 
@@ -503,7 +503,7 @@ describe('CLI end-to-end', () => {
       expect(normalise(logBar)).to.equal(source`
         # Changelog
 
-        ## [1.3.0](${URL}/compare/1.2.3...1.3.0) (${DATE})
+        ## [1.3.0](${URL}/compare/bar@1.2.3...bar@1.3.0) (${DATE})
 
         ### Features
 
@@ -564,7 +564,7 @@ describe('CLI end-to-end', () => {
       expect(normalise(logBar)).to.equal(source`
         # Changelog
 
-        ## [2.0.0](${URL}/compare/1.2.3...2.0.0) (${DATE})
+        ## [2.0.0](${URL}/compare/bar@1.2.3...bar@2.0.0) (${DATE})
 
         ### ⚠ Breaking Changes
 
