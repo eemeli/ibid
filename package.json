@@ -1,8 +1,10 @@
 {
-  "name": "ibid",
+  "name": "@ibid/core",
   "version": "0.0.1",
   "description": "Tools to automate your releases and changelogs, esp. for monorepos",
-  "bin": "./bin.js",
+  "bin": {
+    "ibid": "./bin.js"
+  },
   "files": [
     "bin.js",
     "lib/"

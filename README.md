@@ -10,7 +10,7 @@ Together with [npm workspaces](https://docs.npmjs.com/cli/v7/using-npm/workspace
 it offers a minimal but sufficient alternative to [Lerna](https://lerna.js.org/).
 
 ```
-npm install --save-dev ibid
+npm install --save-dev @ibid/core
 ```
 
 ## Usage
