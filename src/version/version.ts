@@ -32,7 +32,7 @@ export const versionOptions = {
   init: {
     alias: 'i',
     boolean: true,
-    desc: 'Explicitly initialise (or not) a changelog file. If unset, init if required.'
+    desc: 'Explicitly initialise (or not) a changelog file. If unset, init if required. Required for assigning a first version.'
   },
   prerelease: {
     alias: 'p',

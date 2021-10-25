@@ -47,6 +47,7 @@ This command works with the following assumptions:
 - Your project uses git for source code management.
 - Your commit messages follow the [Conventional Commits](https://www.conventionalcommits.org/) specification.
 - The `"version"` field of your `package.json` is set to the latest published version.
+  For a package's first version, use `--init` to include its whole history.
 - There is a git tag set for the latest version, by default
   either `v{version}` if the package is at the root of the repo or
   `{name}@{version}` if it's in a subdirectory.

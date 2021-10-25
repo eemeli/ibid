@@ -25,6 +25,7 @@ export interface Config {
   hostContext?: Partial<HostContext> | null
   includeMergeCommits?: boolean
   includeRevertedCommits?: boolean
+  init?: boolean | null
   linkCommit?: ((context: Context, hash: string) => string | null) | false
   linkCompare?:
     | ((context: Context, from: string, to: string) => string | null)
@@ -48,6 +49,7 @@ const configShape = {
   hostContext: ['object', null],
   includeMergeCommits: ['boolean'],
   includeRevertedCommits: ['boolean'],
+  init: ['boolean', null],
   linkCommit: ['function', false],
   linkCompare: ['function', false],
   linkReference: ['function', false],
@@ -116,6 +118,7 @@ export const getBaseConfig = async (): Promise<Required<Config>> => ({
   hostContext: null,
   includeMergeCommits: false,
   includeRevertedCommits: false,
+  init: null,
   linkCommit,
   linkCompare,
   linkReference,

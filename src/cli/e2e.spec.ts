@@ -135,6 +135,54 @@ describe('CLI end-to-end', () => {
       await cleanupTmpDir(cwd)
     })
 
+    it('first version', async () => {
+      const { cwd, gitCommits } = await setup('foo', '0.0.1', 'major')
+      gitCommits[0].tags.length = 0 // no tag for the current version
+
+      const out = new MockOut()
+      try {
+        await cli(['version', '.', '--yes'], out)
+        throw new Error('Expected an error')
+      } catch (error) {
+        if (!/Current git tag not found/.test(error.message)) throw error
+      }
+      expect(out.calls).to.deep.equal([])
+
+      await cli(['version', '.', '--init', '--yes'], out)
+      expect(out.calls).to.include('Updating foo to 0.1.0 ...\n')
+      expect(out.calls).to.include('Done!\n\n')
+
+      const head = gitCommits[gitCommits.length - 1]
+      expect(head.tags).to.deep.equal(['v0.1.0'])
+
+      const log = await readFile('CHANGELOG.md', 'utf8')
+      expect(normalise(log)).to.equal(source`
+        # Changelog
+
+        ## [0.1.0](${URL}/compare/0.0.1...0.1.0) (${DATE})
+
+        ### ⚠ Breaking Changes
+
+        * Break
+        * Major 1
+        * First commit
+
+        ### Features
+
+        * Minor 1 ([ID](URL))
+        * Minor 2 ([ID](URL))
+        * Major 1 ([ID](URL))
+
+        ### Bug Fixes
+
+        * Patch 1 ([ID](URL))
+        * Patch 2 ([ID](URL))
+        * Major 2 ([ID](URL))
+      `)
+
+      await cleanupTmpDir(cwd)
+    })
+
     it('patch release with --amend', async () => {
       const name = 'foo'
       const { cwd, gitCommits, gitStaged, npmRegistry } = await setup(

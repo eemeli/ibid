@@ -20,7 +20,7 @@ export const mockCommit = (
 ): MockCommit => ({ hash: mockHash(), message, tags, files })
 
 export function mockGit(commits: MockCommit[], staged: string[]): void {
-  setGitExecFile((git, [cmd, ...args], options) => {
+  setGitExecFile(async (git, [cmd, ...args], options) => {
     if (git !== 'git') throw new Error(`Invalid git command: ${git}`)
     const cwd = resolve(options?.cwd || '')
     let stdout = ''
@@ -87,13 +87,24 @@ export function mockGit(commits: MockCommit[], staged: string[]): void {
       case 'log': {
         // gitLog
         assert(args.length >= 5)
-        assert(args[5].endsWith('..'))
-        const from = args[5].slice(0, -2)
-        const path = args[6] === '--' ? resolve(cwd, args[7]) : null
+        let idx = 5
+
+        let from = ''
+        if (args[idx]?.endsWith('..')) {
+          from = args[idx].slice(0, -2)
+          idx += 1
+        }
+
+        let path = ''
+        if (args[idx] === '--') {
+          path = resolve(cwd, args[idx + 1])
+          idx += 2
+        }
+
         const res: string[] = []
         let found = false
         for (const { hash, message, tags, files } of commits) {
-          if (!found) {
+          if (from && !found) {
             if (hash === from || tags.includes(from)) found = true
             continue
           }
@@ -126,7 +137,7 @@ ${message.replace(/^/gm, '    ')}`)
             // gitRefExists
             assert(args.length === 2)
             const found = commits.some(({ tags }) => tags.includes(args[1]))
-            if (!found) throw new Error('ref not found')
+            if (!found) throw new Error(`ref not found: ${args[1]}`)
             stdout = args[1]
             break
           }
@@ -180,6 +191,6 @@ ${message.replace(/^/gm, '    ')}`)
         break
     }
 
-    return Promise.resolve({ stdout: stdout + '\n' })
+    return { stdout: stdout + '\n' }
   })
 }

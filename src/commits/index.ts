@@ -8,11 +8,15 @@ export { Reference } from './commit-message-references'
 export { Commit, parseCommit }
 
 export async function getCurrentCommits(ctx: Context): Promise<Commit[]> {
-  const tag = ctx.config.tagFormat(ctx, null)
-  if (!(await gitRefExists(tag)))
-    throw new Error(`Current git tag not found: ${tag}`)
+  const { includeMergeCommits, includeRevertedCommits, init, tagFormat } =
+    ctx.config
 
-  const { includeMergeCommits, includeRevertedCommits } = ctx.config
+  let tag: string | null = tagFormat(ctx, null)
+  if (!(await gitRefExists(tag))) {
+    if (init) tag = null
+    else throw new Error(`Current git tag not found: ${tag}`)
+  }
+
   const commits: Commit[] = []
   for (const src of await gitLog(tag, null, ctx.cwd)) {
     const commit = parseCommit(src, ctx)
