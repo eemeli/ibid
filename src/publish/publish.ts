@@ -57,14 +57,19 @@ export async function publish(args: CmdArgs, out: Writable): Promise<void> {
   >()
   let publishNone = true
   await findPackageRoots(path, async (root, pkg) => {
-    const prev = await npmGetVersions(pkg.name)
     let publish = true
-    if (prev.includes(pkg.version)) {
-      const msg = `${pkg.name}@${pkg.version} has already been published.`
-      if (!args.ignorePublished) throw new InputError(msg)
-      out.write(msg + '\n')
+    if (pkg.private) {
+      out.write(`${pkg.name} is private, and will not be published.`)
       publish = false
-    } else publishNone = false
+    } else {
+      const prev = await npmGetVersions(pkg.name)
+      if (prev.includes(pkg.version)) {
+        const msg = `${pkg.name}@${pkg.version} has already been published.`
+        if (!args.ignorePublished) throw new InputError(msg)
+        out.write(msg + '\n')
+        publish = false
+      } else publishNone = false
+    }
     packages.set(pkg.name, { root, package: pkg, publish })
   })
   if (publishNone)

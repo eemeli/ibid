@@ -17,6 +17,7 @@ export type Dependencies = Record<string, string>
 export interface Package {
   name: string
   version: string
+  private?: boolean
   repository?: { type: string; url: string }
   dependencies?: Record<string, string>
   devDependencies?: Record<string, string>

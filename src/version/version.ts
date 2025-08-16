@@ -68,9 +68,9 @@ export async function version(args: CmdArgs, out: Writable): Promise<void> {
   const cfgArg = args.config ? String(args.config) : null
   const config = await loadConfig('.', cfgArg, args)
   const updates: PackageUpdate[] = []
-  for (const root of await findPackageRoots(path)) {
-    updates.push(await getCurrentUpdate(root, config))
-  }
+  await findPackageRoots(path, async (root, pkg) => {
+    if (!pkg.private) updates.push(await getCurrentUpdate(root, config))
+  })
 
   if (updates.length === 0)
     throw new InputError(`No packages found in: ${path.join(', ')}`)

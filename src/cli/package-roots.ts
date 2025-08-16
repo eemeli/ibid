@@ -20,8 +20,8 @@ async function readPackage(dir: string, name = 'package.json') {
 
 export async function findPackageRoots(
   patterns: (string | number)[],
-  onPackage?: (root: string, pkg: Package) => void
-): Promise<Set<string>> {
+  onPackage: (root: string, pkg: Package) => void
+) {
   const roots = new Set<string>()
   if (patterns.length === 0) {
     const pkg = await readPackage('.')
@@ -41,5 +41,4 @@ export async function findPackageRoots(
       }
     }
   }
-  return roots
 }
